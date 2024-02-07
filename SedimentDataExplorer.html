@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sediment Template Data Explorer</title>
+    <style>
+        .checkbox-container {
+            display: inline-block;
+            margin-right: 20px;
+            /* Adjust the margin as needed */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Sediment Template Data Explorer - v0.20240203</h1>
+    Excel files -
+    <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
+    <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
+    <!-- Accept comma-separated URLs -->
+    <button onclick="importData()">Import Data</button>
+    <button onclick="updateChart()">(Re)Plot Chart</button>
+    <button onclick="exportChart()">Export Chart</button>
+    <button onclick="clearData()">Clear Data</button>
+    <br>
+    Selection tools -
+    <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
+    <button onclick="openChemicalSelection()">Select Chemicals</button>
+    <button onclick="clearSelections()">Clear Selections</button>
+
+    <div id="sampleModal" style="display: none;">
+        <h2>Select Samples</h2>
+        <button onclick="flipSampleSelections(true)">Select All</button>
+        <button onclick="flipSampleSelections(false)">Select None</button>
+        <br>
+        <label for="centreLat">Centre latitude:</label>
+        <input type="number" id="centreLat" placeholder="Leave blank for location">
+        <label for="centreLon">Centre longitude:</label>
+        <input type="number" id="centreLon" placeholder="Leave blank for location">
+        <label for="centreDist">Distance (m):</label>
+        <input type="number" id="centreDist" placeholder="Select 1 location">
+        <br>
+        <label for="minDepth">Minimum depth:</label>
+        <input type="number" id="minDepth">
+        <label for="maxDepth">Maximum depth:</label>
+        <input type="number" id="maxDepth">
+        <label for="containsText">Contains Text:</label>
+        <input type="text" id="containsText">
+        <button onclick="applySampleFilter()">Apply</button>
+        <div id="sampleCheckboxes"></div>
+        <button onclick="closeSampleSelection()">Confirm Selection</button>
+    </div>
+
+    <div id="chemicalModal" style="display: none;">
+        <h2>Select Chemicals</h2>
+        <button onclick="flipChemicalSelections(true)">Select All</button>
+        <button onclick="flipChemicalSelections(false)">Select None</button>
+        <br>
+        <label for="containsTextChemical">Contains Text:</label>
+        <input type="text" id="containsTextChemical">
+        <button onclick="applyChemicalFilter()">Apply</button>
+        <div id="chemicalCheckboxes"></div>
+        <button onclick="closeChemicalSelection()">Confirm Selection</button>
+    </div>
+
+    <div>
+        Sheetanmes -
+        <input type="checkbox" id="tracemetaldata" checked>
+        <label for="tracemetaldata">Trace metal data</label>
+        <input type="checkbox" id="pahdata" checked>
+        <label for="pahdata">PAH data</label>
+        <input type="checkbox" id="pcbdata" checked>
+        <label for="pcbdata">PCB data</label>
+        <input type="checkbox" id="bdedata" checked>
+        <label for="bdedata">BDE data</label>
+        <input type="checkbox" id="organotinsdata" checked>
+        <label for="organotinsdata">Organotins data</label>
+        <input type="checkbox" id="organochlorinedata" checked>
+        <label for="organochlorinedata">Organochlorine data</label>
+        <input type="checkbox" id="physicaldata" checked>
+        <label for="physicaldata">Physical data</label>
+    </div>
+
+    <div>
+        Chart types -
+        <input type="checkbox" id="samplegroup" checked>
+        <label for="samplegroup">Group by sample</label>
+        <input type="checkbox" id="chemicalgroup" checked>
+        <label for="chemicalgroup">Group by chemical</label>
+        <input type="checkbox" id="gorhamtest" checked>
+        <label for="gorhamtest">PAH - Gorham Test Protocol</label>
+        <input type="checkbox" id="totalHC" checked>
+        <label for="totalHC">PAH - Total hydrocarbons & Total PAHs/THC</label>
+        <input type="checkbox" id="congenertest" checked>
+        <label for="congenertest">PCB - Congener test</label>
+        <input type="checkbox" id="scaleType">
+        <label for="scaleType">Logarithmic Scale</label>
+    </div>
+
+    <div>
+        Location co-ordinate files -
+        <input type="file" id="fileLocations" multiple> <!-- Allow multiple file selection -->
+        <input type="text" id="urlLocations" placeholder="Enter comma-separated URLs">
+        <!-- Accept comma-separated URLs -->
+        <button onclick="importLocations()">Import Locations</button>
+    </div>
+
+    Status -
+    <label for="fileSave">Save - </label>
+    <input type="text" id="fileSave" placeholder="Enter file name" onchange="saveSnapShot()">
+
+    Load -
+    <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
+    <label for="urlLoad">Web </label>
+    <input type="text" id="urlLoad" placeholder="Enter URL" onchange="loadSnapShotURL()">
+    <div id="chartContainer"></div>
+    <div id="map" style="height: 400px;"></div>
+    <div id="fileDisplay"></div>
+    <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>
+    <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.4/xlsx.full.min.js"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+    <script src="SedimentDataExplorer.js"></script>
+    <script src="sdeCharts.js"></script>
+    <script src="sdeSelections.js"></script>
+    <script src="sdeMaps.js"></script>
+</body>
+
+</html>
