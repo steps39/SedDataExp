@@ -5,6 +5,7 @@
     const annotationPlugin = window['chartjs-plugin-annotation'];
     Chart.register(annotationPlugin);
     
+    markerPath = 'markers/';
     markerPngs = ['marker-icon-red.png', 'marker-icon-orange.png', 'marker-icon-yellow.png',
     'marker-icon-green.png', 'marker-icon-blue.png', 'marker-icon-violet.png',
     'marker-icon-grey.png', 'marker-icon-gold.png','marker-icon-black.png'];
@@ -18,6 +19,7 @@
     let instanceType = [];
     let instanceSheet = [];
     let highlighted = [];
+    let highlightMarkers = {};
     for (i = 1; i < noInstances; i++) {
         chartInstance[i] = null;
         instanceType[i] = null;
@@ -957,7 +959,7 @@ function filenameDisplay() {
 
     iconNo = 0;
     for (dateSampled in selectedSampleInfo) {
-        currentIcon = markerPngs[iconNo];
+        currentIcon = markerPath + markerPngs[iconNo];
         iconNo = (iconNo + 1) % 9;
 
         const fileURL = sampleInfo[dateSampled].fileURL;

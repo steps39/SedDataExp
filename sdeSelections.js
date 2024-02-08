@@ -134,14 +134,15 @@ function openChemicalSelection(sampleMeasurements) {
     const sampleCheckboxes = document.getElementById('sampleCheckboxes');
     sampleCheckboxes.innerHTML = '';
     
-    const datesSampled = Object.keys(sampleInfo);
+//    const datesSampled = Object.keys(sampleInfo);
+    const datesSampled = Object.keys(selectedSampleInfo);
     
     
     datesSampled.sort();
     datesSampled.forEach (dateSampled => {
     
     //    for (dateSampled in sampleInfo) {
-        const samples = Object.keys(sampleInfo[dateSampled].position);
+        const samples = Object.keys(selectedSampleInfo[dateSampled].position);
         const checkboxContainer = document.createElement('div');
         checkboxContainer.className = 'checkbox-container';
     

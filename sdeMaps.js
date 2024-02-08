@@ -22,8 +22,8 @@ function sampleMap(meas, linLog) {
     let hoveredSample = null;
 
     var greenIcon = L.icon({
-        iconUrl: 'blue-marker-icon.png', // Replace with the path to your marker icon
-        shadowUrl: 'marker-shadow.png',
+        iconUrl: markerPath + 'blue-marker-icon.png', // Replace with the path to your marker icon
+        shadowUrl: markerPath + 'marker-shadow.png',
 
         iconSize: [38, 95], // size of the icon
         shadowSize: [50, 64], // size of the shadow
@@ -35,7 +35,7 @@ function sampleMap(meas, linLog) {
     // Define a custom marker icon with a specific color
     var CustomIcon = L.Icon.extend({
         options: {
-            shadowUrl: 'marker-shadow.png',
+            shadowUrl: markerPath + 'marker-shadow.png',
             iconSize: [25, 41], // Replace with the size of your marker icon
             iconAnchor: [12, 41], // Replace with the anchor point of your marker icon
             popupAnchor: [1, -34], // Replace with the popup anchor point of your marker icon
@@ -43,11 +43,12 @@ function sampleMap(meas, linLog) {
     });
     // Add markers for each sample
     iconNo = 0;
-
+    sampleNo = -1;
+    const highlightIcon = new CustomIcon({ iconUrl: markerPath + 'marker-icon-highlight.png' });
     const datesSampled = Object.keys(selectedSampleInfo);
     datesSampled.sort();
     datesSampled.forEach(dateSampled => {
-        currentIcon = new CustomIcon({ iconUrl: markerPngs[iconNo] });
+        currentIcon = new CustomIcon({ iconUrl: markerPath + markerPngs[iconNo] });
         iconNo = (iconNo + 1) % 9;
         noSamples = 0;
         for (const dateSampled in selectedSampleInfo) {
@@ -55,7 +56,10 @@ function sampleMap(meas, linLog) {
         }
         console.log('noSamples', noSamples);
         highlighted = Array(noSamples).fill(false);
-        for (const sample in selectedSampleInfo[dateSampled].position) {
+        //        for (const sample in selectedSampleInfo[dateSampled].position) {
+        const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
+        allSamples.sort();
+        allSamples.forEach(sample => {
             if (selectedSampleInfo[dateSampled].position[sample]['Position latitude']) {
                 lat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
                 lon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
@@ -80,24 +84,34 @@ function sampleMap(meas, linLog) {
                             minLon = lon;
                         }
                     }
+                    sampleNo += 1;
                     // Create a marker for each sample
                     //						const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
                     /*						const marker = L.circleMarker([lat, lon],
                                         {radius: 4, color: 'white', fillColor: 'red', fillOpacity: 1}
                                         ).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
                                         marker.bindTooltip(sample, { permanent: false, direction: 'top' });*/
                     marker.isMarked = false;
+                    console.log(sampleNo, dateSampled, sample);
 
-                    // Add a click event listener to the marker
+                    // Add a click event listener to the static marker
                     marker.on('click', function () {
-                        hoveredSample = sample;
-                        createHighlights(meas, linLog, null, hoveredSample, marker.isMarked);
-                        if (!marker.isMarked) {
-                            marker.isMarked = true;
-                        } else {
-                            marker.isMarked = false;
-                        }
+//                        hoveredSample = sample;
+                        hoveredSample = dateSampled + ': ' + sample;
+                        createHighlights(meas, linLog, dateSampled, hoveredSample);
+                        // Update the chart - in routintes
+                        //console.log('update ',sample,i);
+                        //							chartInstance[i].update();
+                    });
+
+                    // Create a highlight for each sample
+                    //console.log(sampleNo,lat,lon);
+                    highlightMarkers[sampleNo] = new L.marker(new L.LatLng(lat, lon), { icon: highlightIcon });
+                    // Add a click event listener to the highlight marker
+                    highlightMarkers[sampleNo].on('click', function () {
+                        hoveredSample =  dateSampled + ': ' + sample;
+                        createHighlights(meas, linLog, dateSampled, hoveredSample);
                         // Update the chart - in routintes
                         //console.log('update ',sample,i);
                         //							chartInstance[i].update();
@@ -107,13 +121,12 @@ function sampleMap(meas, linLog) {
                     latSum += parseFloat(lat);
                     lonSum += parseFloat(lon);
                 };
+            } else {
+                // Missing lat and lon so don't create a marker but do update the sampleNo so that it still aligns with chart samples
+                sampleNo += 1;
+                highlightMarkers[sampleNo] = null;
             }
-
-        }
-        /*				iconNo += 1;
-                    if (iconNo > 8) {
-                        iconNo = 0;
-                    }*/
+       });
         console.log(iconNo, dateSampled);
     });
 
@@ -160,67 +173,67 @@ document.body.appendChild(img);
 }
 
 function parseCoordinate(input) {
-// Check if the input is undefined or null
-if (input == undefined || input == null) {
-return null;
-}
+    // Check if the input is undefined or null
+    if (input == undefined || input == null) {
+        return null;
+    }
 
-// Check if the input is already in digital format (e.g., 54.1 or -1.7)
-const digitalFormatRegex = /^[-+]?\d+(\.\d+)?$/;
-if (digitalFormatRegex.test(input)) {
-return parseFloat(input);
-}
+    // Check if the input is already in digital format (e.g., 54.1 or -1.7)
+    const digitalFormatRegex = /^[-+]?\d+(\.\d+)?$/;
+    if (digitalFormatRegex.test(input)) {
+        return parseFloat(input);
+    }
 
-// Check if the input is in degrees minutes digital seconds format (e.g., 54 10 9.6 N)
-const dmsRegex = /^(\d+)\s+(\d+)\s+([\d.]+)\s*([NSEW])$/i;
-const dmsMatch = input.match(dmsRegex);
-if (dmsMatch) {
-const degrees = parseFloat(dmsMatch[1]);
-const minutes = parseFloat(dmsMatch[2]);
-const seconds = parseFloat(dmsMatch[3]);
-const direction = dmsMatch[4].toUpperCase();
+    // Check if the input is in degrees minutes digital seconds format (e.g., 54 10 9.6 N)
+    const dmsRegex = /^(\d+)\s+(\d+)\s+([\d.]+)\s*([NSEW])$/i;
+    const dmsMatch = input.match(dmsRegex);
+    if (dmsMatch) {
+        const degrees = parseFloat(dmsMatch[1]);
+        const minutes = parseFloat(dmsMatch[2]);
+        const seconds = parseFloat(dmsMatch[3]);
+        const direction = dmsMatch[4].toUpperCase();
 
-let result = degrees + minutes / 60 + seconds / 3600;
+        let result = degrees + minutes / 60 + seconds / 3600;
 
-// Ensure negative for S or W directions
-if (direction === 'S' || direction === 'W') {
-    result = -result;
-}
+        // Ensure negative for S or W directions
+        if (direction === 'S' || direction === 'W') {
+            result = -result;
+        }
 
-return result;
-}
+        return result;
+    }
 
-// If the input doesn't match any recognized format, return null or handle accordingly
-return null;
+    // If the input doesn't match any recognized format, return null or handle accordingly
+    return null;
 }
 
 function parseCoordinates(latitude, longitude) {
-// Check if the input is undefined or null
-if (latitude == undefined || latitude == null || longitude == undefined || longitude == null) {
-return null;
-}
+    // Check if the input is undefined or null
+    if (latitude == undefined || latitude == null || longitude == undefined || longitude == null) {
+        return null;
+    }
 
-// Handle coordinates in digital degrees with N/S and E/W
-const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
-const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
-if (digitalDegreesMatch) {
-const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
-const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
-return { latitude: latValue, longitude: lonValue };
-}
+    // Handle coordinates in digital degrees with N/S and E/W
+    const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
+    const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
+    if (digitalDegreesMatch) {
+        const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
+        const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
+        return { latitude: latValue, longitude: lonValue };
+    }
 
-// Crude check of whether easting and northing
-if (latitude > 360) {
-// Use proj4js library to convert British National Grid to latitude and longitude
-proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
-const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
+    // Crude check of whether easting and northing
+    if (latitude > 360) {
+        // Use proj4js library to convert British National Grid to latitude and longitude
+        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
+        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
 
-return { latitude: point[1], longitude: point[0] };
-} else {
-return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
-}
+        return { latitude: point[1], longitude: point[0] };
+    } else {
+        return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
+    }
 
-// If the input doesn't match any recognized format, return null or handle accordingly
-return null;
+    // If the input doesn't match any recognized format, return null or handle accordingly
+    return null;
 }
 
