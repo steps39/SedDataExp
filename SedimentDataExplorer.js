@@ -139,12 +139,12 @@
     }
     
     function saveStatus(fileName) {
-    // Save data to a file
-    const dataBlob = new Blob([btoa(unescape(encodeURIComponent(JSON.stringify({ sampleInfo, sampleMeasurements, selectedSampleInfo, selectedSampleMeasurements }))))], { type: 'application/octet-stream' });
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(dataBlob);
-    downloadLink.download = fileName;
-    downloadLink.click();
+        // Save data to a file
+        const dataBlob = new Blob([btoa(unescape(encodeURIComponent(JSON.stringify({ sampleInfo, sampleMeasurements, selectedSampleInfo, selectedSampleMeasurements }))))], { type: 'application/octet-stream' });
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(dataBlob);
+        downloadLink.download = fileName;
+        downloadLink.click();
     }
     
     // Function to load data from a file URL
@@ -195,26 +195,44 @@
     }
 
     function importLocations() {
-        const fileInput = document.getElementById('fileLocations');
-        const urlInput = document.getElementById('urlLocations');
-        const files = fileInput.files; // Files is now a FileList object containing multiple files
-        const urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+        urls = {};
+        if (firstTime) {
+            firstTime = false;
+            files = {};
+            // Get the current URL
+            const currentURL = window.location.href;
+            
+            // Parse the URL to get the search parameters
+            const suppliedParams = new URLSearchParams(window.location.search);
 
-        if (files.length === 0 && urls.length === 0) {
-            alert('Please select files or enter URLs.');
-            return;
-        }
-        // Process files
-        for (let i = 0; i < files.length; i++) {
-            filename = files[i].name;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                processExcelLocations(data,filename);
-            };
-            reader.readAsArrayBuffer(files[i]);
-        }
+            // Get the value of the 'locations' parameter
+            const locationsParam = suppliedParams.get('locations');
+            if (!locationsParam) {
+                return;
+            } else {
+                    urls = locationsParam.split(',').map(url => url.trim()); // Split comma-separated URLs
+            }
+        } else {
+            const fileInput = document.getElementById('fileLocations');
+            const urlInput = document.getElementById('urlLocations');
+            const files = fileInput.files; // Files is now a FileList object containing multiple files
+            const urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
 
+            if (files.length === 0 && urls.length === 0) {
+                alert('Please select files or enter URLs.');
+                return;
+            }
+            // Process files
+            for (let i = 0; i < files.length; i++) {
+                filename = files[i].name;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    processExcelLocations(data,filename);
+                };
+                reader.readAsArrayBuffer(files[i]);
+            }
+        }
         // Process URLs only if URLs are supplied
         if (urls.length > 0) {
             urls.forEach(url => {
@@ -232,7 +250,7 @@
                     .catch(error => {
                         console.error('Error fetching the locations file:', error);
                     });
-             });
+                });
         }
         // Clear the input field after reading locations
         fileInput.value = '';
@@ -259,19 +277,39 @@
             namedLocations[sample].longitude = df[r][2];
 console.log(sample,namedLocations[sample]);
         }
+console.log('End of processExcelLocations');
+    }
+
+    function checkboxParameters(suppliedParams, paramName, checkboxNames) {
+        const param = suppliedParams.get(paramName);
+        if (param) {
+            sels = param.split(',').map(sel => sel.trim()); // Split comma-separated URLs
+            if (sels) {
+                // Blank all the checkboxes
+                for (let i = 0; i < checkboxNames.length; i++) {
+                    const checkbox = document.getElementById(checkboxNames[i]);
+                    checkbox.checked = false;
+                }
+                // Check all the boxes set in url
+                for (let i = 0; i < sels.length; i++) {
+                    const checkbox = document.getElementById(sels[i]);
+                    checkbox.checked = true;
+                }
+            }
+        }
     }
 
     function importData() {
         urls = {};
         if (firstTime) {
+            importLocations();
             firstTime = false;
             files = {};
             // Get the current URL
             const currentURL = window.location.href;
-            
             // Parse the URL to get the search parameters
             const suppliedParams = new URLSearchParams(window.location.search);
-            // Get the value of the 'file' parameter
+            // Get the value of the 'status' parameter
             const statusParam = suppliedParams.get('status');
             if (statusParam) {
                 loadStatus(statusParam);
@@ -281,40 +319,8 @@ console.log(sample,namedLocations[sample]);
                     urls = urlParam.split(',').map(url => url.trim()); // Split comma-separated URLs
                 }
             }
-            const selParam = suppliedParams.get('selcharts');
-            if (selParam) {
-                selcharts = selParam.split(',').map(sel => sel.trim()); // Split comma-separated URLs
-                if (selcharts) {
-                    // Blank all the checkboxes
-                    for (let i = 0; i < dataSheetNamesCheckboxes.length; i++) {
-console.log(i,dataSheetNamesCheckboxes[i]);
-                        const checkbox = document.getElementById(dataSheetNamesCheckboxes[i]);
-                        checkbox.checked = false;
-                    }
-                    // Check all the boxes set in url
-                    for (let i = 0; i < selcharts.length; i++) {
-                        const checkbox = document.getElementById(selcharts[i]);
-                        checkbox.checked = true;
-                    }
-                }
-            }
-            const subParam = suppliedParams.get('subcharts');
-            if (subParam) {
-                subcharts = subParam.split(',').map(subch => subch.trim()); // Split comma-separated URLs
-                if (subcharts) {
-                    // Blank all the checkboxes
-                    for (let i = 0; i < subChartNames.length; i++) {
-                        const checkbox = document.getElementById(subChartNames[i]);
-                        checkbox.checked = false;
-                    }
-                    // Check all the boxes set in url
-                    for (let i = 0; i < subcharts.length; i++) {
-                        const checkbox = document.getElementById(subcharts[i]);
-                        checkbox.checked = true;
-                    }
-                }
-            }
-            
+            checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
+            checkboxParameters(suppliedParams, 'subcharts', subChartNames);
         } else {
             const fileInput = document.getElementById('fileInput');
             const urlInput = document.getElementById('urlInput');
@@ -357,6 +363,7 @@ console.log(filename);
                     });
              });
         }
+console.log('Import Data out of fetch');
         // Clear the input field after reading data
         fileInput.value = '';
         urlInput.value = '';

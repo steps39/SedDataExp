@@ -14,7 +14,7 @@
 </head>
 
 <body>
-    <h1>Sediment Template Data Explorer - v0.20240203</h1>
+    <h1>Sediment Template Data Explorer - v0.20240211</h1>
     Excel files -
     <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
     <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
@@ -117,6 +117,7 @@
     <div id="chartContainer"></div>
     <div id="map" style="height: 400px;"></div>
     <div id="fileDisplay"></div>
+    <div id="sample-info-table-container"></div>
     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>
     <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -134,6 +135,7 @@
     <script src="sdeCharts.js"></script>
     <script src="sdeSelections.js"></script>
     <script src="sdeMaps.js"></script>
+    <script src="sdeTables.js"></script>
 </body>
 
 </html>
