@@ -35,7 +35,7 @@
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalhc','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
