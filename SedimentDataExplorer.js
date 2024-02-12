@@ -321,6 +321,11 @@ console.log('End of processExcelLocations');
             }
             checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
             checkboxParameters(suppliedParams, 'subcharts', subChartNames);
+            const noninter = suppliedParams.get('noninter');
+            if (!noninter) {
+                const everything = document.getElementById('everything');
+                everything.style.display = 'inline';
+            }
         } else {
             const fileInput = document.getElementById('fileInput');
             const urlInput = document.getElementById('urlInput');
