@@ -203,6 +203,23 @@ function parseCoordinate(input) {
         return result;
     }
 
+    // Check if the input is in degrees digital minutes format (e.g., 54:10.67983432N)
+    const dmRegex = /^(\d+)[\s\:]+([\d.]+)\s*([NSEW])$/i;
+    const dmMatch = input.match(dmRegex);
+    if (dmMatch) {
+        const degrees = parseFloat(dmMatch[1]);
+        const minutes = parseFloat(dmMatch[2]);
+        const direction = dmMatch[3].toUpperCase();
+
+        let result = degrees + minutes / 60;
+        // Ensure negative for S or W directions
+        if (direction === 'S' || direction === 'W') {
+            result = -result;
+        }
+
+        return result;
+    }
+
     // If the input doesn't match any recognized format, return null or handle accordingly
     return null;
 }
