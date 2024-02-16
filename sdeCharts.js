@@ -905,6 +905,7 @@ function findSamplesInSameLocation(clickedMapSample) {
 }
 
 function createHighlights(meas, linLog, dateSampled, hoveredSample) {
+console.log('createHighlights',hoveredSample,dateSampled);
     noSamples = 0;
     samples = [];
     const datesSampled = Object.keys(selectedSampleInfo);

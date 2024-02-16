@@ -39,12 +39,12 @@ function openChemicalSelection(sampleMeasurements) {
     function flipChemicalSelections(selection) {
         const checkboxes = document.querySelectorAll('#chemicalCheckboxes input[type="checkbox"]');
         checkboxes.forEach(checkbox => {
-        if (selection) {
-            checkbox.checked = true;
-        } else {
-            checkbox.checked = false;
-        };
-    });
+            if (selection) {
+                checkbox.checked = true;
+            } else {
+                checkbox.checked = false;
+            };
+        });
     }
     
         function applyChemicalFilter() {
@@ -176,6 +176,19 @@ function openChemicalSelection(sampleMeasurements) {
             checkbox.checked = false;
         };
     });
+    }
+    
+    function selectHighlighted(selection) {
+        const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+        index = 0;
+//        for (ds in selectedSampleInfo) {
+//            for (s in selectedSampleInfo[ds]) {
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = highlighted[index];
+        index += 1;
+    });
+//            }
+//        }
     }
     
         function applySampleFilter() {

@@ -98,8 +98,27 @@ function sampleMap(meas, linLog) {
                     // Add a click event listener to the static marker
                     marker.on('click', function () {
 //                        hoveredSample = sample;
-                        hoveredSample = dateSampled + ': ' + sample;
-                        createHighlights(meas, linLog, dateSampled, hoveredSample);
+
+
+const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
+const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+for (const ds in selectedSampleInfo) {
+    for (const s in selectedSampleInfo[ds].position) {
+        const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
+        const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
+        distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
+console.log('distance1',distance);
+        if (distance <= 10) {
+            hoveredSample =  ds + ': ' + s;
+            createHighlights(meas, linLog, ds, hoveredSample);
+        }
+    }
+}
+
+
+
+//                        hoveredSample = dateSampled + ': ' + sample;
+//                        createHighlights(meas, linLog, dateSampled, hoveredSample);
                         // Update the chart - in routintes
                         //console.log('update ',sample,i);
                         //							chartInstance[i].update();
@@ -110,13 +129,22 @@ function sampleMap(meas, linLog) {
                     highlightMarkers[sampleNo] = new L.marker(new L.LatLng(lat, lon), { icon: highlightIcon });
                     // Add a click event listener to the highlight marker
                     highlightMarkers[sampleNo].on('click', function () {
-                        hoveredSample =  dateSampled + ': ' + sample;
-                        createHighlights(meas, linLog, dateSampled, hoveredSample);
-                        // Update the chart - in routintes
-                        //console.log('update ',sample,i);
-                        //							chartInstance[i].update();
+                        // Mark not just the clicked position but any things which are in the same place
+                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
+                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+                        for (const ds in selectedSampleInfo) {
+                            for (const s in selectedSampleInfo[ds].position) {
+                                const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
+                                const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
+                                distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
+console.log('distance2',distance);
+                                if (distance <= 10) {
+                                    hoveredSample =  ds + ': ' + s;
+                                    createHighlights(meas, linLog, ds, hoveredSample);
+                                }
+                            }
+                        }
                     });
-
                     noLocations += 1;
                     latSum += parseFloat(lat);
                     lonSum += parseFloat(lon);
