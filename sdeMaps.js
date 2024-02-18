@@ -54,7 +54,7 @@ function sampleMap(meas, linLog) {
         for (const dateSampled in selectedSampleInfo) {
             noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
         }
-        console.log('noSamples', noSamples);
+//console.log('noSamples', noSamples);
         highlighted = Array(noSamples).fill(false);
         //        for (const sample in selectedSampleInfo[dateSampled].position) {
         const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
@@ -93,7 +93,7 @@ function sampleMap(meas, linLog) {
                                         ).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
                                         marker.bindTooltip(sample, { permanent: false, direction: 'top' });*/
                     marker.isMarked = false;
-                    console.log(sampleNo, dateSampled, sample);
+//console.log(sampleNo, dateSampled, sample);
 
                     // Add a click event listener to the static marker
                     marker.on('click', function () {
@@ -155,7 +155,7 @@ console.log('distance2',distance);
                 highlightMarkers[sampleNo] = null;
             }
        });
-        console.log(iconNo, dateSampled);
+//console.log(iconNo, dateSampled);
     });
 
     if (noLocations > 0) {

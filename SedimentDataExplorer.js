@@ -1,4 +1,4 @@
-
+    let testOne = {};
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -35,7 +35,7 @@
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','pahratios','ringfractions','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
@@ -635,11 +635,72 @@ console.log('No Lab sampl numb');
                     }
                 }
                 sampleMeasurements[dateSampled][sheetName].gorhamTest = sums;
+                const chemicals = sampleMeasurements[dateSampled][sheetName].chemicals;
+                sampleMeasurements[dateSampled][sheetName].ratios = {};
+                sampleMeasurements[dateSampled][sheetName].ringSums = {};
+                const allSamples = Object.keys(sampleInfo[dateSampled].position);
+                allSamples.sort();
+                allSamples.forEach(s => {
+    
+
+//                for (const s in chemicals['Acenapthene'].samples) {
+                    const ace = chemicals['Acenapthene'].samples[s];//3
+                    const aceph = chemicals['Acenapthylene'].samples[s];//3
+                    const anth = chemicals['Anthracene'].samples[s];//3//Ant
+                    const baa = chemicals['Benz[a]anthracene'].samples[s];//4
+                    const bap = chemicals['Benzo[a]pyrene'].samples[s];//5
+                    const bbf = chemicals['Benzo[b]fluoranthene'].samples[s];//4
+                    const bghip = chemicals['Benzo[g,h,i]perylene'].samples[s];//6//Bgp
+                    const bkf = chemicals['Benzo[k]fluoranthene'].samples[s];//4
+                    const chr = chemicals['Chrysene'].samples[s];//4
+                    const dba = chemicals['Dibenz[a,h]anthracene'].samples[s];//5
+                    const fl = chemicals['Fluorene'].samples[s];//3
+                    const flu = chemicals['Fluoranthene'].samples[s];//4
+                    const ip = chemicals['Indeno[123-c,d]pyrene'].samples[s];//5//Inp
+                    const phen = chemicals['Phenanthrene'].samples[s];//3
+                    const naph = chemicals['Napthalene'].samples[s];//2
+                    const pyr = chemicals['Pyrene'].samples[s];//4
+//                    const bgp = chemicals[''].samples[s];
+//                    const  = chemicals[''].samples[s];
+                    m = {};
+                    //Diagnostic ratios
+                    //IP/(IP+B(ghi)P)
+                    m['IP/(IP+B(ghi)P)'] = ip / (ip + bghip);
+                    //BaA/(BaA+Chr)
+                    m['BaA/(BaA+Chr)'] = baa / (baa + chr);
+                    //BaP/(BaP+Chr)
+                    m['BaP/(BaP+Chr)'] = bap / (bap + chr);
+                    //Phen/(Phen+Anth)
+                    m['Phen/(Phen+Anth)'] = phen / (phen + anth);
+                    //BaA/(BaA+BaP)
+                    m['BaA/(BaA+BaP)'] = baa / (baa + bap);
+                    //BbF/(BbF+BkF)
+                    m['BbF/(BbF+BkF)'] = bbf / (bbf + bkf);
+                    sampleMeasurements[dateSampled][sheetName].ratios[s] = m;
+                    m = {};
+                    // Dash Sums: L'PAHs - Phen + Anth + Flu + Pyr; H'PAHs - BaA + Chr + BbF + BkF + BaP + IP + DBA + BgP
+                    m['LdPAHs'] = phen + anth + flu + pyr;
+                    m['HdPAHs'] = baa + chr + bbf + bkf + bap + ip + dba + bghip;
+                    m['Total d PAHs'] = m['LdPAHs'] + m['HdPAHs'];
+                    // EPS Sums: LPAHs - Naph, Aceph, Ace, Fl, Phen and Ant; HPAHs - Flu, Pyr, BaA, Chr, BbF, BkF, BaP, DBA, BgP and Inp
+                    m['LPAHs'] = naph + aceph + ace + fl + phen + anth;
+                    m['HPAHs'] = flu + pyr + baa + chr + bbf + bkf + bap + dba + bghip + ip;
+                    m['Total EPA PAHs'] = m['LPAHs'] + m['HPAHs'];
+                    // Ring Sums
+                    m['Sum of 2 rings'] = naph;//2
+                    m['Sum of 3 rings'] = ace + aceph + anth + fl + phen;//3
+                    m['Sum of 4 rings'] = baa + bbf + bkf + chr + flu + pyr;//4
+                    m['Sum of 5 rings'] = bap + dba + ip;//5
+                    m['Sum of 6 rings'] = bghip;//6
+                    m['Total all rings'] = m['Sum of 2 rings'] + m['Sum of 3 rings'] + m['Sum of 4 rings'] + m['Sum of 5 rings'] + m['Sum of 6 rings'];
+                    sampleMeasurements[dateSampled][sheetName].ringSums[s] = m;
+                });
             }
             return dateAnalysed;
         }
 
 function parseDates(dateString) {
+console.log('dateString pd',dateString);
 // Check if the date field is empty
 if (!dateString) {
     return ['Missing'];
@@ -671,20 +732,35 @@ dateParts.forEach(part => {
 return dates.length > 0 ? dates : ['Missing'];
 }
 
-function convertToUKFormat(dateString) {
-const parts = dateString.split('/');
-if (parts.length === 3) {
-    // Assuming the format is mm/dd/yy
-    const mm = parts[0].padStart(2, '0');
-    const dd = parts[1].padStart(2, '0');
-    const yy = parts[2].padStart(2, '0');
+    function convertToUKFormat(dateString) {
+console.log('dateString cUKf',dateString);
+    const parts = dateString.split('/');
+console.log('parts cUKf',parts);
+    if (parts.length === 3) {
+        if (parts[2].length === 2) {
+            // Assuming the format is mm/dd/yy
+            const mm = parts[0].padStart(2, '0');
+            const dd = parts[1].padStart(2, '0');
+            const yy = parts[2].padStart(2, '0');
 
-    // Construct the UK format: dd/mm/yy
-    return `${yy}/${mm}/${dd}`;
-}
+            // Construct the UK format: dd/mm/yy
+console.log('return',`20${yy}/${mm}/${dd}`);
+            return `20${yy}/${mm}/${dd}`;
+            } else {
+                if (parts[2].length === 4) {
+                    // Assuming the format is mm/dd/yy
+                    const dd = parts[0].padStart(2, '0');
+                    const mm = parts[1].padStart(2, '0');
+                    const yy = parts[2].padStart(2, '0');
 
-// Return null for invalid date formats
-return null;
+                    // Construct the UK format: dd/mm/yy
+console.log('return',`${yy}/${mm}/${dd}`);
+                    return `${yy}/${mm}/${dd}`;
+                }
+            }
+        }
+    // Return null for invalid date formats
+    return null;
 }
 
         function extractApplicationDataFromSheet(sheetName, sheetData, url) {

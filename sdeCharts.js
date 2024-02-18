@@ -58,6 +58,7 @@ function displayCharts(sheetName, instanceNo, yScaleType) {
             instanceNo += 1;
             selectedSums = sumsForGorhamCharting();
             displayGorhamTest(selectedSums, sheetName, instanceNo, yScaleType, unitTitle);
+            //instanceNo += 1;
         }
         if (sheetName === 'PAH data' && subsToDisplay['totalHC']) {
             instanceNo += 1;
@@ -65,6 +66,20 @@ function displayCharts(sheetName, instanceNo, yScaleType) {
             unitTitle = retData['unitTitle'];
             selectedSums = retData['measChart'];
             displayTotalHC(selectedSums, sheetName, instanceNo, yScaleType, unitTitle);
+        }
+        if (sheetName === 'PAH data' && subsToDisplay['pahratios']) {
+            instanceNo += 1;
+            retData = ratiosForPAHs();
+            unitTitle = retData['unitTitle'];
+            selectedSums = retData['measChart'];
+            displayPAHRatios(selectedSums, sheetName, instanceNo, yScaleType, unitTitle);
+        }
+        if (sheetName === 'PAH data' && subsToDisplay['ringfractions']) {
+            instanceNo += 1;
+            retData = ringFractionsForPAHs();
+            unitTitle = retData['unitTitle'];
+            selectedSums = retData['measChart'];
+            displayRingFractions(selectedSums, sheetName, instanceNo, yScaleType, unitTitle);
         }
         if (sheetName === 'PCB data' && subsToDisplay['congenertest']) {
             instanceNo += 1;
@@ -133,7 +148,7 @@ function sumsForCongenerCharting() {
                 const allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
-            console.log(ds,s);
+//console.log(ds,s);
                 if (selectedSampleMeasurements[ds]['PCB data'].congenerTest[s] == undefined || selectedSampleMeasurements[ds]['PCB data'].congenerTest[s] == null) {
                     measChart[ds + ': ' + s] = { ICES7 : 0.0, All : 0.0 };
                 } else {
@@ -184,36 +199,176 @@ function sumsForTotalHCCharting() {
     const datesSampled = Object.keys(selectedSampleMeasurements);
     unitTitle = blankSheets[ct]['totalHCUnit'];
     measChart = {};
-sampleNo = -1;
+    sampleNo = -1;
     datesSampled.sort();
-       datesSampled.forEach (ds => {
-        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
-//            for (const s in selectedSampleMeasurements[ds]['PAH data'].totalHC) {
-                const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
-                allSamples.sort();
-                allSamples.forEach(s => {
-                            if (selectedSampleMeasurements[ds]['PAH data'].total[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null) {
-                    measChart[ds + ': ' + s] = { totalHC : 0.0, fractionPAH : 0.0};
-                } else {
-//							measChart[ds + ': ' + s] = {totalHC : selected[ds]['PAH data'].totalHC[s], fractionPAH : (selected[ds]['PAH data'].total[s] / (1000 * selected[ds]['PAH data'].totalHC[s]))};
-                    measChart[ds + ': ' + s] = {totalHC : selectedSampleMeasurements[ds]['PAH data'].totalHC[s], fractionPAH : selectedSampleMeasurements[ds]['PAH data'].total[s] / 1000};
-                }
-sampleNo += 1;
-console.log(sampleNo,ds,s);
+    datesSampled.forEach (ds => {
+        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
+            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
+            allSamples.sort();
+            allSamples.forEach(s => {
+            if (selectedSampleMeasurements[ds]['PAH data'].total[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null) {
+                measChart[ds + ': ' + s] = { totalHC : 0.0, fractionPAH : 0.0};
+            } else {
+                measChart[ds + ': ' + s] = {totalHC : selectedSampleMeasurements[ds]['PAH data'].totalHC[s], fractionPAH : selectedSampleMeasurements[ds]['PAH data'].total[s] / 1000};
+            }
+            sampleNo += 1;
+//console.log(sampleNo,ds,s);
             });
         } else {
-//            for (const s in selectedSampleInfo[ds].position) {
-    const allSamples = Object.keys(selectedSampleInfo[ds].position);
-    allSamples.sort();
-    allSamples.forEach(s => {
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            allSamples.sort();
+            allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = { totalHC : 0.0, fractionPAH : 0.0};
-sampleNo += 1;
+                sampleNo += 1;
 console.log(sampleNo,ds,s);
             });
         }
     });
     return {unitTitle, measChart}
 }
+
+function ratiosForPAHs() {
+    const datesSampled = Object.keys(selectedSampleMeasurements);
+    unitTitle = 'Ratio';
+    measChart = {};
+    sampleNo = -1;
+    datesSampled.sort();
+    datesSampled.forEach (ds => {
+        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
+//            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
+            const ratios = selectedSampleMeasurements[ds]['PAH data'].ratios;
+            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                measChart[ds + ': ' + s] = ratios[s];
+/*                if (selectedSampleMeasurements[ds]['PAH data'].total[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null) {
+                    measChart[ds + ': ' + s] = { totalHC : 0.0, fractionPAH : 0.0};
+                } else {
+                const ace = chemicals['Acenapthene'].samples[s];//3
+                const aceph = chemicals['Acenapthylene'].samples[s];//3
+                const anth = chemicals['Anthracene'].samples[s];//3//Ant
+                const baa = chemicals['Benz[a]anthracene'].samples[s];//4
+                const bap = chemicals['Benzo[a]pyrene'].samples[s];//5
+                const bbf = chemicals['Benzo[b]fluoranthene'].samples[s];//4
+                const bghip = chemicals['Benzo[g,h,i]perylene'].samples[s];//6//Bgp
+                const bkf = chemicals['Benzo[k]fluoranthene'].samples[s];//4
+                const chr = chemicals['Chrysene'].samples[s];//4
+                const dba = chemicals['Dibenz[a,h]anthracene'].samples[s];//5
+                const fl = chemicals['Fluorene'].samples[s];//3
+                const flu = chemicals['Fluoranthene'].samples[s];//4
+                const ip = chemicals['Indeno[123-c,d]pyrene'].samples[s];//5//Inp
+                const phen = chemicals['Phenanthrene'].samples[s];//3
+                const naph = chemicals['Napthalene'].samples[s];//2
+                const pyr = chemicals['Pyrene'].samples[s];//4
+//                    const bgp = chemicals[''].samples[s];
+//                    const  = chemicals[''].samples[s];
+                    const m = {};
+                    //Diagnostic ratios
+                    //IP/(IP+B(ghi)P)
+                    m['IP/(IP+B(ghi)P)'] = ip / (ip + bghip);
+                    //BaA/(BaA+Chr)
+                    m['BaA/(BaA+Chr)'] = baa / (baa + chr);
+                    //BaP/(BaP+Chr)
+                    m['BaP/(BaP+Chr)'] = bap / (bap + chr);
+                    //Phen/(Phen+Anth)
+                    m['Phen/(Phen+Anth)'] = phen / (phen + anth);
+                    //BaA/(BaA+BaP)
+                    m['BaA/(BaA+BaP)'] = baa / (baa + bap);
+                    //BbF/(BbF+BkF)
+                    m['BbF/(BbF+BkF)'] = bbf / (bbf + bkf);
+                    measChart[ds + ': ' + s] = m;
+                    // Dash Sums: L'PAHs - Phen + Anth + Flu + Pyr; H'PAHs - BaA + Chr + BbF + BkF + BaP + IP + DBA + BgP
+                    lmwDash = phen + anth + flu + pyr;
+                    hmwDash = baa + chr + bbf + bkf + bap + ip + dba + bghip;
+                    totalDash = lmwDash + hmwDash;
+                    // EPS Sums: LPAHs - Naph, Aceph, Ace, Fl, Phen and Ant; HPAHs - Flu, Pyr, BaA, Chr, BbF, BkF, BaP, DBA, BgP and Inp
+                    lmwEPA = naph + aceph + ace + fl + phen + anth;
+                    hmwEPA = flu + pyr + baa + chr + bbf + bkf + bap + dba + bghip + ip;
+                    totalEPA = lmwEPA + hmwEPA;
+                    // Ring Sums
+                    sum2Ring = naph;//2
+                    sum3Ring = ace + aceph + anth + fl + phen;//3
+                    sum4Ring = baa + bbf + bkf + chr + flu + pyr;//4
+                    sum5Ring = bap + dba + ip;//5
+                    sum6Ring = bghip;//6
+    */
+                //}
+                sampleNo += 1;
+    //console.log(sampleNo,ds,s);
+            });
+        } else {
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                const m = {};
+                //IP/(IP+B(ghi)P)
+                m['IP/(IP+B(ghi)P)'] = 0.0;
+                //BaA/(BaA+Chr)
+                m['BaA/(BaA+Chr)'] = 0.0;
+                //BaP/(BaP+Chr)
+                m['BaP/(BaP+Chr)'] = 0.0;
+                //Phen/(Phen+Anth)
+                m['Phen/(Phen+Anth)'] = 0.0;
+                //BaA/(BaA+BaP)
+                m['BaA/(BaA+BaP)'] = 0.0;
+                //BbF/(BbF+BkF)
+                m['BbF/(BbF+BkF)'] = 0.0;
+                measChart[ds + ': ' + s] = m;
+            sampleNo += 1;
+console.log(sampleNo,ds,s);
+            });
+        }
+    });
+console.log('ratios',measChart);
+    return {unitTitle, measChart}
+}
+
+function ringFractionsForPAHs() {
+    const datesSampled = Object.keys(selectedSampleMeasurements);
+    unitTitle = 'Fraction per ring size';
+    measChart = {};
+    sampleNo = -1;
+    datesSampled.sort();
+    datesSampled.forEach (ds => {
+        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
+//            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
+            const ringSums = selectedSampleMeasurements[ds]['PAH data'].ringSums;
+            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                const rs = ringSums[s];
+                const total = rs['Total all rings'];
+                const m = {};
+                m['2rings/tot'] = rs['Sum of 2 rings'] / total;
+                m['3rings/tot'] = rs['Sum of 3 rings'] / total;
+                m['4rings/tot'] = rs['Sum of 4 rings'] / total;
+                m['5rings/tot'] = rs['Sum of 5 rings'] / total;
+                m['6rings/tot'] = rs['Sum of 6 rings'] / total;
+                measChart[ds + ': ' + s] = m;
+                sampleNo += 1;
+    //console.log(sampleNo,ds,s);
+            });
+        } else {
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                const m = {};
+                m['2rings/tot'] = 0;
+                m['3rings/tot'] = 0;
+                m['4rings/tot'] = 0;
+                m['5rings/tot'] = 0;
+                m['6rings/tot'] = 0;
+                measChart[ds + ': ' + s] = m;
+                sampleNo += 1;
+console.log(sampleNo,ds,s);
+            });
+        }
+    });
+console.log('ratios',measChart);
+    return {unitTitle, measChart}
+}
+
+
 
 
 
@@ -483,7 +638,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, yLogLin
                         maxRotation: 90,
                         minRotation: 90,
                         autoSkip: false,
-                    }
+                    },
                 },
                 y: {
                     beginAtZero: true,
@@ -492,7 +647,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, yLogLin
                         display: true,
                         text: yTitle,
                         position: 'left',
-                    }
+                    },
                 },
             },
             autocolors: {
@@ -753,12 +908,80 @@ function displayGorhamTest(sums, sheetName, instanceNo, yLogLin, unitTitle) {
   chartInstance[instanceNo].update();
 }
 
+
+function displayPAHRatios(ratios, sheetName, instanceNo, yLogLin, unitTitle) {
+    createCanvas(instanceNo);
+    const convas = document.getElementById("chart" + instanceNo);
+    convas.style.display = "block";
+    instanceType[instanceNo] = 'pahratios';
+    instanceSheet[instanceNo] = sheetName;
+    const allSamples = Object.keys(ratios);
+    const allRatios = Object.keys(ratios[allSamples[0]]); // Assuming all samples have the same chemicals
+    const datasets = allRatios.map((ratio, index) => {
+        const data = allSamples.map(sample => ratios[sample][ratio]); // Using the first concentration value for simplicity
+        return {
+            label: ratio,
+            data: data,
+            borderWidth: 1,
+            yAxisID: 'y',
+        };
+    });
+    displayAnyChart(ratios, allSamples, datasets, instanceNo, sheetName + ' Ratios', unitTitle, yLogLin);
+    chartInstance[instanceNo].options.plugins.annotation.annotations = {};
+    chartInstance[instanceNo].update();
+}
+
+function displayRingFractions(fractions, sheetName, instanceNo, yLogLin, unitTitle) {
+    createCanvas(instanceNo);
+    const convas = document.getElementById("chart" + instanceNo);
+    convas.style.display = "block";
+    instanceType[instanceNo] = 'ringfractions';
+    instanceSheet[instanceNo] = sheetName;
+    const allSamples = Object.keys(fractions);
+    const allFractions = Object.keys(fractions[allSamples[0]]); // Assuming all samples have the same chemicals
+    const datasets = allFractions.map((fraction, index) => {
+        const data = allSamples.map(sample => fractions[sample][fraction]); // Using the first concentration value for simplicity
+        return {
+            label: fraction,
+            data: data,
+            borderWidth: 1,
+            yAxisID: 'y',
+        };
+    });
+    displayAnyChart(fractions, allSamples, datasets, instanceNo, sheetName + ' Ring Fractions', unitTitle, yLogLin);
+    chartInstance[instanceNo].options.plugins.annotation.annotations = {};
+
+    chartInstance[instanceNo].options.scales = {
+        x: {
+            beginAtZero: true,
+            ticks: {
+                maxRotation: 90,
+                minRotation: 90,
+                autoSkip: false,
+            },
+            stacked : true
+        },
+        y: {
+            beginAtZero: true,
+            min: 0.0,
+            max: 1.0,
+            title: {
+                display: true,
+                text: unitTitle,
+                position: 'left',
+            },
+            stacked : true
+        },
+    };
+    chartInstance[instanceNo].update();
+}
+
 function displayCongener(sums, sheetName, instanceNo, yLogLin, unitTitle) {
     createCanvas(instanceNo);
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
-   instanceType[instanceNo] = 'congener';
-instanceSheet[instanceNo] = sheetName;
+    instanceType[instanceNo] = 'congener';
+    instanceSheet[instanceNo] = sheetName;
     const samples = Object.keys(sums);
     const ICES7SumData = samples.map(sample => sums[sample].ICES7);
     const allSumData = samples.map(sample => sums[sample].All);
@@ -965,7 +1188,8 @@ console.log(highlighted);
     clickedIndexes.forEach(item => {
         console.log(item);
         for (let i = 1; i < lastInstanceNo + 1; i++) {
-            if (instanceType[i] === 'gorham' || instanceType[i] === 'chemical' || instanceType[i] === 'congener' || instanceType[i] === 'totalHC') {
+            if (instanceType[i] === 'gorham' || instanceType[i] === 'chemical' || instanceType[i] === 'congener' ||
+                instanceType[i] === 'totalHC' || instanceType[i] === 'pahratios' || instanceType[i] === 'ringfractions') {
                 if (highlighted[item]) {
                     displayChartHighlight(meas, linLog, i, dateSampled, item);
                 } else {
