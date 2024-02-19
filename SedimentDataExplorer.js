@@ -19,6 +19,9 @@
     let instanceType = [];
     let instanceSheet = [];
     let highlighted = [];
+    let legends = [];
+    let ylinlog = [];
+    let stacked = [];
     let highlightMarkers = {};
     for (i = 1; i < noInstances; i++) {
         chartInstance[i] = null;
@@ -35,7 +38,7 @@
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','pahratios','ringfractions','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','pahratios','ringfractions','eparatios','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
@@ -991,14 +994,78 @@ container.appendChild(canvas); // Append the canvas to the container
 
 // Function to create a button for resetting zoom
 function createResetZoomButton(chart,instanceNo) {
-const button = document.createElement('button');
-button.id = 'button'+instanceNo
-button.textContent = 'Reset Zoom';
-button.addEventListener('click', () => {
-    chart.resetZoom();
-});
-const container = document.getElementById('chartContainer');
-container.appendChild(button);
+    const button = document.createElement('button');
+    button.id = 'buttonz'+instanceNo
+    button.textContent = 'Reset Zoom';
+    button.addEventListener('click', () => {
+        chart.resetZoom();
+    });
+    const container = document.getElementById('chartContainer');
+    container.appendChild(button);
+}
+    
+// Function to create a button for toggling legend
+function createToggleLegendButton(chart,instanceNo) {
+    const button = document.createElement('button');
+    button.id = 'buttonl'+instanceNo
+    button.textContent = 'Toggle legend';
+    button.addEventListener('click', () => {
+        if (legends[instanceNo]) {
+            chartInstance[instanceNo].options.plugins.legend.display = false;
+            chartInstance[instanceNo].update();
+            legends[instanceNo] = false;
+        } else {
+            chartInstance[instanceNo].options.plugins.legend.display = true;
+            chartInstance[instanceNo].update();
+            legends[instanceNo] = true;
+        }
+//        chart.resetZoom();
+    });
+    const container = document.getElementById('chartContainer');
+    container.appendChild(button);
+}
+    
+// Function to create a button for toggling log scale
+function createToggleLinLogButton(chart,instanceNo) {
+    const button = document.createElement('button');
+    button.id = 'buttonl'+instanceNo
+    button.textContent = 'Toggle y lin/log';
+    button.addEventListener('click', () => {
+        if (ylinlog[instanceNo]) {
+            chartInstance[instanceNo].options.scales.y.type = 'linear';
+            chartInstance[instanceNo].update();
+            ylinlog[instanceNo] = false;
+        } else {
+            chartInstance[instanceNo].options.scales.y.type = 'logarithmic';
+            chartInstance[instanceNo].update();
+            ylinlog[instanceNo] = true;
+        }
+    });
+    const container = document.getElementById('chartContainer');
+    container.appendChild(button);
+}
+    
+// Function to create a button for toggling legend
+function createStackedButton(chart,instanceNo) {
+    const button = document.createElement('button');
+    button.id = 'buttonl'+instanceNo
+    button.textContent = 'Toggle stacked';
+    button.addEventListener('click', () => {
+        if (stacked[instanceNo]) {
+            chartInstance[instanceNo].options.scales.x.stacked = false;
+            chartInstance[instanceNo].options.scales.y.stacked = false;
+            chartInstance[instanceNo].update();
+            stacked[instanceNo] = false;
+        } else {
+            chartInstance[instanceNo].options.scales.x.stacked = true;
+            chartInstance[instanceNo].options.scales.y.stacked = true;
+            chartInstance[instanceNo].update();
+            stacked[instanceNo] = true;
+        }
+//        chart.resetZoom();
+    });
+    const container = document.getElementById('chartContainer');
+    container.appendChild(button);
 }
     
 function clearCanvasAndChart(canvas, chartInstanceNo) {

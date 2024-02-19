@@ -1,4 +1,4 @@
-function sampleMap(meas, linLog) {
+function sampleMap(meas) {
     // Check if there's an existing map and remove it
     if (map) {
         map.remove();
@@ -110,7 +110,7 @@ for (const ds in selectedSampleInfo) {
 console.log('distance1',distance);
         if (distance <= 10) {
             hoveredSample =  ds + ': ' + s;
-            createHighlights(meas, linLog, ds, hoveredSample);
+            createHighlights(meas, ds, hoveredSample);
         }
     }
 }
@@ -118,7 +118,7 @@ console.log('distance1',distance);
 
 
 //                        hoveredSample = dateSampled + ': ' + sample;
-//                        createHighlights(meas, linLog, dateSampled, hoveredSample);
+//                        createHighlights(meas, dateSampled, hoveredSample);
                         // Update the chart - in routintes
                         //console.log('update ',sample,i);
                         //							chartInstance[i].update();
@@ -140,7 +140,7 @@ console.log('distance1',distance);
 console.log('distance2',distance);
                                 if (distance <= 10) {
                                     hoveredSample =  ds + ': ' + s;
-                                    createHighlights(meas, linLog, ds, hoveredSample);
+                                    createHighlights(meas, ds, hoveredSample);
                                 }
                             }
                         }
