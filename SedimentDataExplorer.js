@@ -353,26 +353,63 @@ console.log(filename);
         }
 
         // Process URLs only if URLs are supplied
-        if (urls.length > 0) {
+/*        if (urls.length > 0) {
             urls.forEach(url => {
-            // Check if the URL is a valid URL before fetching
-                 if  (!/^https?:\/\//i.test(url)) {
-                     console.error('Invalid URL:', url);
-                     return;
-                 }
+                // Check if the URL is a valid URL before fetching
+                if (!/^https?:\/\//i.test(url)) {
+                    console.error('Invalid URL:', url);
+                    return;
+                }
 
-                 fetch(url)
+                fetch(url)
                     .then(response => response.arrayBuffer())
                     .then(data => {
-                        processExcelData(new Uint8Array(data),url);
+                        processExcelData(new Uint8Array(data), url);
+//                        updateChart();
+                        console.log('processexceldata again');
                     })
                     .catch(error => {
                         console.error('Error fetching the file:', error);
                     });
-             });
+                console.log('here again');
+            });
+            console.log('there again');
+        }*/
+        if (urls.length > 0) {
+            // Array to store all fetch promises
+            const fetchPromises = [];
+        
+            urls.forEach(url => {
+                // Check if the URL is a valid URL before fetching
+                if (!/^https?:\/\//i.test(url)) {
+                    console.error('Invalid URL:', url);
+                    return;
+                }
+        
+                // Push each fetch promise into the array
+                fetchPromises.push(
+                    fetch(url)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            processExcelData(new Uint8Array(data), url);
+                            console.log('processexceldata again');
+                        })
+                        .catch(error => {
+                            console.error('Error fetching the file:', error);
+                        })
+                );
+            });
+        
+            // Wait for all fetch promises to resolve
+            Promise.all(fetchPromises)
+                .then(() => {
+                    updateChart();
+                    console.log('there again');
+                });
         }
-console.log('Import Data out of fetch');
-        // Clear the input field after reading data
+        console.log('Import Data out of fetch');
+//        updateChart();
+// Clear the input field after reading data
         fileInput.value = '';
         urlInput.value = '';
     }
@@ -702,43 +739,43 @@ console.log('No Lab sampl numb');
             return dateAnalysed;
         }
 
-function parseDates(dateString) {
-console.log('dateString pd',dateString);
-// Check if the date field is empty
-if (!dateString) {
-    return ['Missing'];
-}
+        function parseDates(dateString) {
+            console.log('dateString pd', dateString);
+            // Check if the date field is empty
+            if (!dateString) {
+                return ['Missing'];
+            }
 
-const dates = [];
+            const dates = [];
 
-// Split the input by commas or hyphens
-const dateParts = dateString.split(/,|-/);
-dateParts.forEach(part => {
-    // Trim leading/trailing spaces
-    const trimmedPart = part.trim();
+            // Split the input by commas or hyphens
+            const dateParts = dateString.split(/,|-/);
+            dateParts.forEach(part => {
+                // Trim leading/trailing spaces
+                const trimmedPart = part.trim();
 
-    // Check if it's a range (contains a hyphen)
-    if (trimmedPart.includes('/')) {
-        const ukDate = convertToUKFormat(trimmedPart);
-        if (ukDate) {
-            dates.push(ukDate);
+                // Check if it's a range (contains a hyphen)
+                if (trimmedPart.includes('/')) {
+                    const ukDate = convertToUKFormat(trimmedPart);
+                    if (ukDate) {
+                        dates.push(ukDate);
+                    }
+                } else {
+                    // Single date
+                    const ukDate = convertToUKFormat(trimmedPart);
+                    if (ukDate) {
+                        dates.push(ukDate);
+                    }
+                }
+            });
+
+            return dates.length > 0 ? dates : ['Missing'];
         }
-    } else {
-        // Single date
-        const ukDate = convertToUKFormat(trimmedPart);
-        if (ukDate) {
-            dates.push(ukDate);
-        }
-    }
-});
-
-return dates.length > 0 ? dates : ['Missing'];
-}
 
     function convertToUKFormat(dateString) {
-console.log('dateString cUKf',dateString);
+//console.log('dateString cUKf',dateString);
     const parts = dateString.split('/');
-console.log('parts cUKf',parts);
+//console.log('parts cUKf',parts);
     if (parts.length === 3) {
         if (parts[2].length === 2) {
             // Assuming the format is mm/dd/yy
@@ -747,7 +784,7 @@ console.log('parts cUKf',parts);
             const yy = parts[2].padStart(2, '0');
 
             // Construct the UK format: dd/mm/yy
-console.log('return',`20${yy}/${mm}/${dd}`);
+//console.log('return',`20${yy}/${mm}/${dd}`);
             return `20${yy}/${mm}/${dd}`;
             } else {
                 if (parts[2].length === 4) {
@@ -757,14 +794,14 @@ console.log('return',`20${yy}/${mm}/${dd}`);
                     const yy = parts[2].padStart(2, '0');
 
                     // Construct the UK format: dd/mm/yy
-console.log('return',`${yy}/${mm}/${dd}`);
+//console.log('return',`${yy}/${mm}/${dd}`);
                     return `${yy}/${mm}/${dd}`;
                 }
             }
         }
     // Return null for invalid date formats
     return null;
-}
+    }
 
         function extractApplicationDataFromSheet(sheetName, sheetData, url) {
 // console.log('extractappdata',url);
@@ -953,8 +990,9 @@ console.log(extraValue);
         
         selectedSampleMeasurements = sampleMeasurements;
         selectedSampleInfo = sampleInfo;
-        updateChart();
+//        updateChart();
     };
+//    updateChart();
 
     function processDepth(enteredDepth) {
 //		console.log(enteredDepth);
@@ -994,18 +1032,20 @@ container.appendChild(canvas); // Append the canvas to the container
 
 // Function to create a button for resetting zoom
 function createResetZoomButton(chart,instanceNo) {
+console.log('creating zoon buttom',instanceNo);
+    const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttonz'+instanceNo
     button.textContent = 'Reset Zoom';
     button.addEventListener('click', () => {
         chart.resetZoom();
     });
-    const container = document.getElementById('chartContainer');
     container.appendChild(button);
 }
     
 // Function to create a button for toggling legend
 function createToggleLegendButton(chart,instanceNo) {
+    const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttonl'+instanceNo
     button.textContent = 'Toggle legend';
@@ -1021,14 +1061,14 @@ function createToggleLegendButton(chart,instanceNo) {
         }
 //        chart.resetZoom();
     });
-    const container = document.getElementById('chartContainer');
     container.appendChild(button);
 }
     
 // Function to create a button for toggling log scale
 function createToggleLinLogButton(chart,instanceNo) {
+    const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
-    button.id = 'buttonl'+instanceNo
+    button.id = 'buttono'+instanceNo
     button.textContent = 'Toggle y lin/log';
     button.addEventListener('click', () => {
         if (ylinlog[instanceNo]) {
@@ -1041,14 +1081,14 @@ function createToggleLinLogButton(chart,instanceNo) {
             ylinlog[instanceNo] = true;
         }
     });
-    const container = document.getElementById('chartContainer');
     container.appendChild(button);
 }
     
 // Function to create a button for toggling legend
 function createStackedButton(chart,instanceNo) {
+    const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
-    button.id = 'buttonl'+instanceNo
+    button.id = 'buttons'+instanceNo
     button.textContent = 'Toggle stacked';
     button.addEventListener('click', () => {
         if (stacked[instanceNo]) {
@@ -1064,7 +1104,6 @@ function createStackedButton(chart,instanceNo) {
         }
 //        chart.resetZoom();
     });
-    const container = document.getElementById('chartContainer');
     container.appendChild(button);
 }
     
@@ -1082,16 +1121,38 @@ function clearCanvasAndChart(canvas, chartInstanceNo) {
         // Remove the canvas
         const convas = document.getElementById("chart" + chartInstanceNo);
         convas.remove();
-        // Remove a reset button if created
-        const buttonToRemove = document.getElementById('button' + chartInstanceNo);
+        // Remove all the buttons if created
+        removeButtons(chartInstanceNo);
+/*        const buttonToRemove = document.getElementById('button' + chartInstanceNo);
         // Check if the button exists
         if (buttonToRemove) {
             // Remove the button
             buttonToRemove.remove();
         } else {
             console.log('Button not found', chartInstanceNo);
-        }
+        }*/
     }
+}
+
+function removeButtons(chartInstanceNo) {
+console.log(lastInstanceNo);
+console.log(chartInstanceNo);
+    removeButton(chartInstanceNo, 'z');
+    removeButton(chartInstanceNo, 'l');
+    removeButton(chartInstanceNo, 'o');
+    removeButton(chartInstanceNo, 's');
+}
+
+function removeButton(chartInstanceNo, buttonType) {
+        // Remove a reset button if created
+        const buttonToRemove = document.getElementById('button' + buttonType + chartInstanceNo);
+        // Check if the button exists
+        if (buttonToRemove) {
+            // Remove the button
+            buttonToRemove.remove();
+        } else {
+            console.log('Button ' + buttonType + ' not found', chartInstanceNo);
+        }
 }
 
 function chemicalTypeHasData(sheetName) {

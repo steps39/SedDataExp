@@ -1,4 +1,5 @@
 function updateChart(){
+console.log('UPDATECHART*******************');
     if (lastInstanceNo > 0) {
         const canvas = [];
         for (i = 1; i < lastInstanceNo + 1; i++) {
