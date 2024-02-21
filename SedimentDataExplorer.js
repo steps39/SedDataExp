@@ -340,16 +340,19 @@ console.log('End of processExcelLocations');
             return;
         }
         // Process files
-        for (let i = 0; i < files.length; i++) {
-            const filename = files[i].name;
-console.log(filename);
-            const reader = new FileReader();
+        if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const filename = files[i].name;
+    console.log(filename);
+                const reader = new FileReader();
 
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                processExcelData(data,filename);
-            };
-            reader.readAsArrayBuffer(files[i]);
+                reader.onload = function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    processExcelData(data,filename);
+                };
+                reader.readAsArrayBuffer(files[i]);
+            }
+            updateChart();
         }
 
         // Process URLs only if URLs are supplied
@@ -524,7 +527,10 @@ console.log('No Lab sampl numb');
                                         }
                                         if (!(sample == undefined || sample == null)) {
 //console.log(sample);
-                                            const concentration = df[row][col+corec];
+                                            let concentration = df[row][col+corec];
+                            if(isNaN(concentration)) {
+                                concentration = 0.0;
+                            }
                                             if(sample.includes('detection')) {
                                                 meas.chemicals[chemical][sample] = concentration;
                                                 //.push(parseFloat(concentration) || 0);
@@ -749,7 +755,7 @@ console.log('No Lab sampl numb');
             const dates = [];
 
             // Split the input by commas or hyphens
-            const dateParts = dateString.split(/,|-/);
+            const dateParts = dateString.split('/,|-/');
             dateParts.forEach(part => {
                 // Trim leading/trailing spaces
                 const trimmedPart = part.trim();
@@ -804,13 +810,13 @@ console.log('No Lab sampl numb');
     }
 
         function extractApplicationDataFromSheet(sheetName, sheetData, url) {
-// console.log('extractappdata',url);
+console.log('extractappdata',url);
             const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
 //                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
 
 
-// console.log(sheetName);  //Output each cell value to console
-// console.log(df.length);
+ console.log(sheetName);  //Output each cell value to console
+ console.log(df.length);
             let startRow = -1;
             let startCol = -1;
 
@@ -832,6 +838,7 @@ console.log('No Lab sampl numb');
             const applicationTitle = df[16][4];*/
             for (i = 16; 19; i++) {
                 dateRow = i;
+console.log('df[dateRow][2]',dateRow,df[dateRow][2]);                
                 if (df[dateRow][2].includes('Date sampled:')) {
                     break;
                 }
@@ -842,7 +849,9 @@ console.log('No Lab sampl numb');
                  applicant = df[dateRow-3][4];
                 applicationNumber = df[dateRow-2][4];
                 applicationTitle = df[dateRow-1][4];
+console.log(df[dateRow][4]);
                 dateSampled = parseDates(df[dateRow][4])[0];
+console.log(dateSampled);
             } else {
                  applicant = df[14][4];
                 applicationNumber = df[15][4];
@@ -1032,7 +1041,7 @@ container.appendChild(canvas); // Append the canvas to the container
 
 // Function to create a button for resetting zoom
 function createResetZoomButton(chart,instanceNo) {
-console.log('creating zoon buttom',instanceNo);
+//console.log('creating zoon buttom',instanceNo);
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttonz'+instanceNo
@@ -1123,20 +1132,12 @@ function clearCanvasAndChart(canvas, chartInstanceNo) {
         convas.remove();
         // Remove all the buttons if created
         removeButtons(chartInstanceNo);
-/*        const buttonToRemove = document.getElementById('button' + chartInstanceNo);
-        // Check if the button exists
-        if (buttonToRemove) {
-            // Remove the button
-            buttonToRemove.remove();
-        } else {
-            console.log('Button not found', chartInstanceNo);
-        }*/
     }
 }
 
 function removeButtons(chartInstanceNo) {
-console.log(lastInstanceNo);
-console.log(chartInstanceNo);
+//console.log(lastInstanceNo);
+//console.log(chartInstanceNo);
     removeButton(chartInstanceNo, 'z');
     removeButton(chartInstanceNo, 'l');
     removeButton(chartInstanceNo, 'o');

@@ -242,8 +242,8 @@ function ratiosForPAHs() {
     datesSampled.sort();
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
-            const ratios = selectedSampleMeasurements[ds]['PAH data'].ratios;
-            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
+            const ratios = sampleMeasurements[ds]['PAH data'].ratios;
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
             allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = ratios[s];
@@ -286,8 +286,8 @@ function epaRatiosForPAHs() {
         datesSampled.forEach (ds => {
             if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
     //            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
-                const ringSums = selectedSampleMeasurements[ds]['PAH data'].ringSums;
-                const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
+                const ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
+                const allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
                     const rs = ringSums[s];
@@ -324,8 +324,8 @@ function epaRatiosForPAHs() {
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
 //            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
-            const ringSums = selectedSampleMeasurements[ds]['PAH data'].ringSums;
-            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
+            const ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
             allSamples.forEach(s => {
                 const rs = ringSums[s];
