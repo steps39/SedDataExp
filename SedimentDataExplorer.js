@@ -4,6 +4,9 @@
     Chart.register(autocolors);
     const annotationPlugin = window['chartjs-plugin-annotation'];
     Chart.register(annotationPlugin);
+    // Importing the necessary library for coordinate conversion
+//    const osGridConverter = require('os-transform.js');
+    const osGridConverter = window['os-transform.js'];
     
     markerPath = 'markers/';
     markerPngs = ['marker-icon-red.png', 'marker-icon-orange.png', 'marker-icon-yellow.png',
@@ -38,7 +41,7 @@
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','pahratios','ringfractions','eparatios','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','pahratios','ringfractions','eparatios','simpleratios','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
@@ -333,6 +336,7 @@ console.log('End of processExcelLocations');
             const fileInput = document.getElementById('fileInput');
             const urlInput = document.getElementById('urlInput');
             files = fileInput.files; // Files is now a FileList object containing multiple files
+//console.log(files);
             urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
         }
         if (files.length === 0 && urls.length === 0) {
@@ -341,18 +345,28 @@ console.log('End of processExcelLocations');
         }
         // Process files
         if (files.length > 0) {
+            let filesProcessed = 0; // counter to track the number of files processed
+            let fL = files.length;
+//console.log(files.length);
             for (let i = 0; i < files.length; i++) {
                 const filename = files[i].name;
-    console.log(filename);
+//console.log(filename);
                 const reader = new FileReader();
 
                 reader.onload = function (e) {
                     const data = new Uint8Array(e.target.result);
                     processExcelData(data,filename);
+                    filesProcessed++; // Increment the counter after processing each file
+                    // Check if all files have been processed
+//console.log(files.length,fL, filesProcessed);
+                    if (filesProcessed === fL) {
+//console.log('calling updateChart');
+                        updateChart(); // Call updateChart once all files have been processed
+                    }
                 };
                 reader.readAsArrayBuffer(files[i]);
             }
-            updateChart();
+//            updateChart();
         }
 
         // Process URLs only if URLs are supplied
@@ -684,6 +698,7 @@ console.log('No Lab sampl numb');
                 const chemicals = sampleMeasurements[dateSampled][sheetName].chemicals;
                 sampleMeasurements[dateSampled][sheetName].ratios = {};
                 sampleMeasurements[dateSampled][sheetName].ringSums = {};
+                sampleMeasurements[dateSampled][sheetName].simpleRatios = {};
                 const allSamples = Object.keys(sampleInfo[dateSampled].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
@@ -740,6 +755,18 @@ console.log('No Lab sampl numb');
                     m['Sum of 6 rings'] = bghip;//6
                     m['Total all rings'] = m['Sum of 2 rings'] + m['Sum of 3 rings'] + m['Sum of 4 rings'] + m['Sum of 5 rings'] + m['Sum of 6 rings'];
                     sampleMeasurements[dateSampled][sheetName].ringSums[s] = m;
+                    m = {};
+                    m['Phen/Anth'] = phen / anth;
+                    m['Flu/Pyr'] = flu / pyr;
+                    m['Baa/Chr'] = baa / chr;
+                    if (chemicals['Benzo[e]pyrene']=== undefined || chemicals['Benzo[e]pyrene']  === null) {
+                        const bep = chemicals['Benzo[e]pyrene'].sample[s];
+                        m['Bep/Bap'] = bep / bap;
+                    } else {
+                        m['Bep/Bap'] = 0;
+                    }
+
+                    sampleMeasurements[dateSampled][sheetName].simpleRatios[s] = m;
                 });
             }
             return dateAnalysed;
@@ -916,6 +943,8 @@ console.log(extraValue);
                                 sInfo['Excluded sample (MMO use)'] = df[row][excCol];
                                 sInfo['Dredge area'] = df[row][dreCol];
                                 point = parseCoordinates(df[row][latCol],df[row][lonCol]);
+console.log(df[row][latCol],df[row][lonCol]);
+console.log(point);
                                 if (point === null || point === undefined) {
                                     // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
                                     if (namedLocations[sample] !== null && namedLocations[sample] !== undefined) {

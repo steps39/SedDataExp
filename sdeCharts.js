@@ -81,12 +81,19 @@ function displayCharts(sheetName, instanceNo) {
             selectedSums = retData['measChart'];
             displayRingFractions(selectedSums, sheetName, instanceNo, unitTitle);
         }
-        if (sheetName === 'PAH data' && subsToDisplay['pahratios']) {
+        if (sheetName === 'PAH data' && subsToDisplay['eparatios']) {
             instanceNo += 1;
             retData = epaRatiosForPAHs();
             unitTitle = retData['unitTitle'];
             selectedSums = retData['measChart'];
             displayEpaRatios(selectedSums, sheetName, instanceNo, unitTitle);
+        }
+        if (sheetName === 'PAH data' && subsToDisplay['simpleratios']) {
+            instanceNo += 1;
+            retData = simpleRatiosForPAHs();
+            unitTitle = retData['unitTitle'];
+            selectedSums = retData['measChart'];
+            displaySimpleRatios(selectedSums, sheetName, instanceNo, unitTitle);
         }
         if (sheetName === 'PCB data' && subsToDisplay['congenertest']) {
             instanceNo += 1;
@@ -256,6 +263,49 @@ function ratiosForPAHs() {
             allSamples.forEach(s => {
                 const m = {};
                 //IP/(IP+B(ghi)P)
+                m['IP/(IP+B(ghi)P)'] = 0.0;
+                //BaA/(BaA+Chr)
+                m['BaA/(BaA+Chr)'] = 0.0;
+                //BaP/(BaP+Chr)
+                m['BaP/(BaP+Chr)'] = 0.0;
+                //Phen/(Phen+Anth)
+                m['Phen/(Phen+Anth)'] = 0.0;
+                //BaA/(BaA+BaP)
+                m['BaA/(BaA+BaP)'] = 0.0;
+                //BbF/(BbF+BkF)
+                m['BbF/(BbF+BkF)'] = 0.0;
+                measChart[ds + ': ' + s] = m;
+            sampleNo += 1;
+console.log(sampleNo,ds,s);
+            });
+        }
+    });
+console.log('ratios',measChart);
+    return {unitTitle, measChart}
+}
+
+function simpleRatiosForPAHs() {
+    const datesSampled = Object.keys(selectedSampleMeasurements);
+    unitTitle = 'Ratio';
+    measChart = {};
+    sampleNo = -1;
+    datesSampled.sort();
+    datesSampled.forEach (ds => {
+        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
+            const simpleRatios = sampleMeasurements[ds]['PAH data'].simpleRatios;
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                measChart[ds + ': ' + s] = simpleRatios[s];
+                sampleNo += 1;
+    //console.log(sampleNo,ds,s);
+            });
+        } else {
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                const m = {};
+                //IP/(IP+B(ghi)P)    ????????????????????????????????????
                 m['IP/(IP+B(ghi)P)'] = 0.0;
                 //BaA/(BaA+Chr)
                 m['BaA/(BaA+Chr)'] = 0.0;
@@ -939,7 +989,7 @@ function displayEpaRatios(epaRatios, sheetName, instanceNo, unitTitle) {
     createCanvas(instanceNo);
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
-    instanceType[instanceNo] = 'pahepa';
+    instanceType[instanceNo] = 'eparatios';
     instanceSheet[instanceNo] = sheetName;
     const allSamples = Object.keys(epaRatios);
     const allRatios = Object.keys(epaRatios[allSamples[0]]); // Assuming all samples have the same chemicals
@@ -953,6 +1003,28 @@ function displayEpaRatios(epaRatios, sheetName, instanceNo, unitTitle) {
         };
     });
     displayAnyChart(epaRatios, allSamples, datasets, instanceNo, sheetName + ': EPA Ratios', unitTitle,);
+    chartInstance[instanceNo].options.plugins.annotation.annotations = {};
+    chartInstance[instanceNo].update();
+}
+
+function displaySimpleRatios(simpleRatios, sheetName, instanceNo, unitTitle) {
+    createCanvas(instanceNo);
+    const convas = document.getElementById("chart" + instanceNo);
+    convas.style.display = "block";
+    instanceType[instanceNo] = 'simpleratios';
+    instanceSheet[instanceNo] = sheetName;
+    const allSamples = Object.keys(simpleRatios);
+    const allRatios = Object.keys(simpleRatios[allSamples[0]]); // Assuming all samples have the same chemicals
+    const datasets = allRatios.map((ratio, index) => {
+        const data = allSamples.map(sample => simpleRatios[sample][ratio]); // Using the first concentration value for simplicity
+        return {
+            label: ratio,
+            data: data,
+            borderWidth: 1,
+            yAxisID: 'y',
+        };
+    });
+    displayAnyChart(simpleRatios, allSamples, datasets, instanceNo, sheetName + ': Simple Ratios', unitTitle,);
     chartInstance[instanceNo].options.plugins.annotation.annotations = {};
     chartInstance[instanceNo].update();
 }
@@ -1194,7 +1266,7 @@ console.log(highlighted);
         for (let i = 1; i < lastInstanceNo + 1; i++) {
             if (instanceType[i] === 'gorham' || instanceType[i] === 'chemical' || instanceType[i] === 'congener' ||
                 instanceType[i] === 'totalHC' || instanceType[i] === 'pahratios' || instanceType[i] === 'ringfractions' ||
-                instanceType[i] === 'eparatios') {
+                instanceType[i] === 'eparatios' || instanceType[i] === 'simpleratios') {
                 if (highlighted[item]) {
                     displayChartHighlight(meas, i, dateSampled, item);
                 } else {

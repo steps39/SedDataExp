@@ -253,8 +253,27 @@ function parseCoordinate(input) {
 }
 
 function parseCoordinates(latitude, longitude) {
-    // Check if the input is undefined or null
-    if (latitude == undefined || latitude == null || longitude == undefined || longitude == null) {
+console.log('parse coordinates');
+console.log(latitude,longitude);
+    // Check to see if only latitude in which case UK National Grid Reference System is being used
+    // Use https://github.com/OrdnanceSurvey/os-transform
+    if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
+console.log(latitude);
+        const en = os.Transform.fromGridRef(latitude);
+console.log(en);
+        if (en.ea === undefined || en.ea === null) {
+            console.log('Looks like this is an invalid grid reference ',latitude);
+            return null;
+        }
+        const latlong = os.Transform.toLatLng(en);
+console.log(latlong);
+        if (latlong === undefined || latlong == null) {
+            return null;
+        }
+        return {latitude : latlong.lat, longitude : latlong.lng}
+    }
+    // Check if all input is undefined or null
+    if ((latitude == undefined || latitude == null) && (longitude == undefined || longitude == null)) {
         return null;
     }
 

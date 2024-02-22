@@ -308,7 +308,7 @@ function openChemicalSelection(sampleMeasurements) {
             for (dateSampled in sampleMeasurements) {
     //console.log(dateSampled);
                 const chemicalTypes = Object.keys(sampleMeasurements[dateSampled]);
-                const chemicals = Object.keys(sampleMeasurements[dateSampled][chemicalTypes[0]].chemicals);
+//                const chemicals = Object.keys(sampleMeasurements[dateSampled][chemicalTypes[0]].chemicals);
                 for (const chemicalType in sampleMeasurements[dateSampled]) {
                     if (chemicalType === 'Physical Data') {
                         for (const sample in sampleMeasurements[dateSampled][chemicalType].samples) {
