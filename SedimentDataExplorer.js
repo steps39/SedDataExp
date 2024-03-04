@@ -56,6 +56,7 @@
     let selectedSampleInfo = {};
     let blankMeasurements = {};
     let namedLocations = {};
+    let chemInfo = {};
     //All actions level mg/kg
     const actionLevels = {};
     actionLevels['Trace metal data'] = {
@@ -199,6 +200,94 @@
             clearCanvasAndChart(canvas[i], i);
         }
     }
+
+    function importChemInfo() {
+        urls = {};
+console.log('importChemInfo');
+        if (firstTime) {
+            firstTime = false;
+            files = {};
+            // Get the current URL
+            const currentURL = window.location.href;
+            
+            // Parse the URL to get the search parameters
+            const suppliedParams = new URLSearchParams(window.location.search);
+
+            // Get the value of the 'cheminfo' parameter
+            const cheminfoParam = suppliedParams.get('cheminfo');
+            if (!cheminfoParam) {
+                return;
+            } else {
+                    urls = cheminfoParam.split(',').map(url => url.trim()); // Split comma-separated URLs
+            }
+        } else {
+            const fileInput = document.getElementById('fileChemInfo');
+            const urlInput = document.getElementById('urlChemInfo');
+            const files = fileInput.files; // Files is now a FileList object containing multiple files
+            const urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+
+            if (files.length === 0 && urls.length === 0) {
+                alert('Please select files or enter URLs.');
+                return;
+            }
+            // Process files
+            for (let i = 0; i < files.length; i++) {
+                filename = files[i].name;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    processExcelChemInfo(data,filename);
+                };
+                reader.readAsArrayBuffer(files[i]);
+            }
+        }
+        // Process URLs only if URLs are supplied
+        if (urls.length > 0) {
+            urls.forEach(url => {
+            // Check if the URL is a valid URL before fetching
+                 if  (!/^https?:\/\//i.test(url)) {
+                     console.error('Invalid URL:', url);
+                     return;
+                 }
+
+                 fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(data => {
+                        processExcelChemInfo(new Uint8Array(data),url);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching the chemInfo file:', error);
+                    });
+                });
+        }
+        // Clear the input field after reading locations
+        fileInput.value = '';
+        urlInput.value = '';
+    }
+    
+    function processExcelChemInfo(data,url) {
+        // Based on simple Excel data in first sheet
+        // row 1 column titles
+        // column 1 compound name
+        // column 2 - n property
+        const workbook = XLSX.read(data, { type: 'array' });
+//console.log(workbook);
+        sheetData = workbook.Sheets['Sheet1'];
+//console.log(sheetData);
+        const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
+        for (let r = 1; r < df.length; r++) {
+            const chemical = df[r][0];
+            chemInfo[chemical] = {};
+            for (let c = 1; c < df[r].length; c++) {
+                const property = df[0][c];
+                chemInfo[chemical][property] = df[r][c];
+            }
+console.log(chemInfo[chemical]);
+        }
+console.log('End of processChemInfo');
+    }
+
+
 
     function importLocations() {
         urls = {};
@@ -1086,16 +1175,18 @@ function createToggleLegendButton(chart,instanceNo) {
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttonl'+instanceNo
-    button.textContent = 'Toggle legend';
+    button.textContent = 'Legend';
     button.addEventListener('click', () => {
         if (legends[instanceNo]) {
             chartInstance[instanceNo].options.plugins.legend.display = false;
             chartInstance[instanceNo].update();
             legends[instanceNo] = false;
+            button.innerHTML = 'Legend';
         } else {
             chartInstance[instanceNo].options.plugins.legend.display = true;
             chartInstance[instanceNo].update();
             legends[instanceNo] = true;
+            button.innerHTML = 'No Legend';
         }
 //        chart.resetZoom();
     });
@@ -1107,16 +1198,18 @@ function createToggleLinLogButton(chart,instanceNo) {
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttono'+instanceNo
-    button.textContent = 'Toggle y lin/log';
+    button.textContent = 'Y Log';
     button.addEventListener('click', () => {
         if (ylinlog[instanceNo]) {
             chartInstance[instanceNo].options.scales.y.type = 'linear';
             chartInstance[instanceNo].update();
             ylinlog[instanceNo] = false;
+            button.innerHTML = 'Y Log';
         } else {
             chartInstance[instanceNo].options.scales.y.type = 'logarithmic';
             chartInstance[instanceNo].update();
             ylinlog[instanceNo] = true;
+            button.innerHTML = 'Y Lin';
         }
     });
     container.appendChild(button);
@@ -1127,18 +1220,20 @@ function createStackedButton(chart,instanceNo) {
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttons'+instanceNo
-    button.textContent = 'Toggle stacked';
+    button.textContent = 'Stack';
     button.addEventListener('click', () => {
         if (stacked[instanceNo]) {
             chartInstance[instanceNo].options.scales.x.stacked = false;
             chartInstance[instanceNo].options.scales.y.stacked = false;
             chartInstance[instanceNo].update();
             stacked[instanceNo] = false;
+            button.innerHTML = 'Stack';
         } else {
             chartInstance[instanceNo].options.scales.x.stacked = true;
             chartInstance[instanceNo].options.scales.y.stacked = true;
             chartInstance[instanceNo].update();
             stacked[instanceNo] = true;
+            button.innerHTML = 'Unstack';
         }
 //        chart.resetZoom();
     });

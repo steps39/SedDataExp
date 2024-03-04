@@ -45,7 +45,7 @@ function displayCharts(sheetName, instanceNo) {
 //console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
         
-//console.log('selectedMeas ', selectedMeas);
+console.log('selectedMeas ', selectedMeas);
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
@@ -53,6 +53,29 @@ function displayCharts(sheetName, instanceNo) {
         if (subsToDisplay['chemicalgroup']) {
             instanceNo += 1;
             displayChemicalChart(selectedMeas, sheetName, instanceNo, unitTitle);
+        }
+console.log('About to sort');
+        if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
+            const chemicalNames = Object.keys(chemInfo);
+            const properties = Object.keys(chemInfo[chemicalNames[0]]);
+            for (i = 0; i<5 ; i++) {
+
+                // Step 2: Sort the chemical names based on the property (e.g., molWeight)
+                chemicalNames.sort((a, b) => chemInfo[a][properties[i]] - chemInfo[b][properties[i]]);
+                
+                // Step 3-6: Iterate through the sorted chemical names and populate selectedMeas
+                const sortedSelectedMeas = {};
+                chemicalNames.forEach((chemical) => {
+                    if (selectedMeas[chemical]) {
+                        sortedSelectedMeas[chemical] = selectedMeas[chemical];
+                    }
+                });
+    console.log(sortedSelectedMeas);
+                instanceNo += 1;
+                displaySampleChart(sortedSelectedMeas, sheetName + ': Sorted by ' + properties[i], instanceNo, unitTitle);
+                instanceNo += 1;
+                displayChemicalChart(sortedSelectedMeas, sheetName + ': Sorted by ' + properties[i], instanceNo, unitTitle);
+            }
         }
         if (sheetName === 'PAH data' && subsToDisplay['gorhamtest']) {
             instanceNo += 1;
@@ -774,6 +797,8 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle) {
         });
     });
     legends[instanceNo] = false;
+//    ctx.style.width = '10%'; // Set a small width
+//    ctx.style.height = '10%'; // Set a small height    
 }
 
 
@@ -796,6 +821,7 @@ const datasets = allSamples.map((sample, index) => {
 });
 displayAnyChart(meas, allChemicals,datasets,instanceNo,sheetName,unitTitle);
 chartInstance[instanceNo].options.plugins.annotation.annotations = {};
+//chartInstance[instanceNo].resize(600,600);
 let allal = actionLevels[sheetName];
 
 

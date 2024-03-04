@@ -101,7 +101,7 @@
             <input type="checkbox" id="eparatios" checked>
             <label for="eparatios">PAH - EPA Ratios</label>
             <input type="checkbox" id="simpleratios" checked>
-            <label for="simpleratios">PAH - EPA Ratios</label>
+            <label for="simpleratios">PAH - Simple Ratios</label>
             <input type="checkbox" id="congenertest" checked>
             <label for="congenertest">PCB - Congener test</label>
 <!--            <input type="checkbox" id="scaleType">
@@ -114,6 +114,14 @@
             <input type="text" id="urlLocations" placeholder="Enter comma-separated URLs">
             <!-- Accept comma-separated URLs -->
             <button onclick="importLocations()">Import Locations</button>
+        </div>
+
+        <div>
+            ChemInfo files
+            <input type="file" id="fileChemInfo" multiple> <!-- Allow multiple file selection -->
+            <input type="text" id="urlChemInfo" placeholder="Enter comma-separated URLs">
+            <!-- Accept comma-separated URLs -->
+            <button onclick="importChemInfo()">Import Chem Info</button>
         </div>
 
         Status -
