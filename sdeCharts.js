@@ -1,5 +1,5 @@
 function updateChart(){
-console.log('UPDATECHART*******************');
+//console.log('UPDATECHART*******************');
     if (lastInstanceNo > 0) {
         const canvas = [];
         for (i = 1; i < lastInstanceNo + 1; i++) {
@@ -23,7 +23,7 @@ console.log('UPDATECHART*******************');
             lastInstanceNo = displayCharts(sheetName, lastInstanceNo);
         }
     }
-console.log('lastInstanceNo ',lastInstanceNo);			
+//console.log('lastInstanceNo ',lastInstanceNo);			
     sampleMap(selectedMeas);
     filenameDisplay();
 }
@@ -45,7 +45,7 @@ function displayCharts(sheetName, instanceNo) {
 //console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
         
-console.log('selectedMeas ', selectedMeas);
+//console.log('selectedMeas ', selectedMeas);
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
@@ -54,11 +54,11 @@ console.log('selectedMeas ', selectedMeas);
             instanceNo += 1;
             displayChemicalChart(selectedMeas, sheetName, instanceNo, unitTitle);
         }
-console.log('About to sort');
+//console.log('About to sort');
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
             const properties = Object.keys(chemInfo[chemicalNames[0]]);
-            for (i = 0; i<5 ; i++) {
+            for (i = 0; i<14 ; i++) {
 
                 // Step 2: Sort the chemical names based on the property (e.g., molWeight)
                 chemicalNames.sort((a, b) => chemInfo[a][properties[i]] - chemInfo[b][properties[i]]);
@@ -70,7 +70,7 @@ console.log('About to sort');
                         sortedSelectedMeas[chemical] = selectedMeas[chemical];
                     }
                 });
-    console.log(sortedSelectedMeas);
+//    console.log(sortedSelectedMeas);
                 instanceNo += 1;
                 displaySampleChart(sortedSelectedMeas, sheetName + ': Sorted by ' + properties[i], instanceNo, unitTitle);
                 instanceNo += 1;
@@ -142,12 +142,10 @@ function dataForCharting(sheetName) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
                 }
-//						for (const s in selected[ds][ct].chemicals[c].samples) {
-//                for (const s in selectedSampleInfo[ds].position) {
-                    const allSamples = Object.keys(selectedSampleInfo[ds].position);
-                    allSamples.sort();
-                    allSamples.forEach(s => {
-                                    if (selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == undefined || selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == null) {
+                const allSamples = Object.keys(selectedSampleInfo[ds].position);
+                allSamples.sort();
+               allSamples.forEach(s => {
+                    if (selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == undefined || selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == null) {
                         measChart[c][ds + ': ' + s] = 0.0;
                     } else {
                         measChart[c][ds + ': ' + s] = selectedSampleMeasurements[ds][ct].chemicals[c].samples[s];
@@ -160,11 +158,11 @@ function dataForCharting(sheetName) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
                 }
-//                for (const s in selectedSampleInfo[ds].position) {
-                    const allSamples = Object.keys(selectedSampleInfo[ds].position);
-                    allSamples.sort();
-                    allSamples.forEach(s => {
-                                    measChart[c][ds + ': ' + s] = 0.0;
+//               for (const s in selectedSampleInfo[ds].position) {
+                const allSamples = Object.keys(selectedSampleInfo[ds].position);
+                allSamples.sort();
+                allSamples.forEach(s => {
+                    measChart[c][ds + ': ' + s] = 0.0;
                 });
             }
         }
@@ -299,11 +297,11 @@ function ratiosForPAHs() {
                 m['BbF/(BbF+BkF)'] = 0.0;
                 measChart[ds + ': ' + s] = m;
             sampleNo += 1;
-console.log(sampleNo,ds,s);
+//console.log(sampleNo,ds,s);
             });
         }
     });
-console.log('ratios',measChart);
+//console.log('ratios',measChart);
     return {unitTitle, measChart}
 }
 
@@ -321,7 +319,7 @@ function simpleRatiosForPAHs() {
             allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = simpleRatios[s];
                 sampleNo += 1;
-    //console.log(sampleNo,ds,s);
+//console.log(sampleNo,ds,s);
             });
         } else {
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
@@ -342,11 +340,11 @@ function simpleRatiosForPAHs() {
                 m['BbF/(BbF+BkF)'] = 0.0;
                 measChart[ds + ': ' + s] = m;
             sampleNo += 1;
-console.log(sampleNo,ds,s);
+//console.log(sampleNo,ds,s);
             });
         }
     });
-console.log('ratios',measChart);
+//console.log('ratios',measChart);
     return {unitTitle, measChart}
 }
 
@@ -385,7 +383,7 @@ function epaRatiosForPAHs() {
                 });
             }
         });
-    console.log('ratios',measChart);
+//console.log('ratios',measChart);
         return {unitTitle, measChart}
     }
     function ringFractionsForPAHs() {
@@ -411,7 +409,7 @@ function epaRatiosForPAHs() {
                 m['6rings/tot'] = rs['Sum of 6 rings'] / total;
                 measChart[ds + ': ' + s] = m;
                 sampleNo += 1;
-    //console.log(sampleNo,ds,s);
+//console.log(sampleNo,ds,s);
             });
         } else {
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
@@ -425,17 +423,13 @@ function epaRatiosForPAHs() {
                 m['6rings/tot'] = 0;
                 measChart[ds + ': ' + s] = m;
                 sampleNo += 1;
-console.log(sampleNo,ds,s);
+//console.log(sampleNo,ds,s);
             });
         }
     });
-console.log('ratios',measChart);
+//console.log('ratios',measChart);
     return {unitTitle, measChart}
 }
-
-
-
-
 
 function setBlanksForCharting() {
     const datesSampled = Object.keys(selectedSampleMeasurements);
@@ -739,7 +733,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle) {
                 position: 'right',
             }
         };
-        console.log(stanGraph);
+//console.log(stanGraph);
     };
     chartInstance[instanceNo] = new Chart(ctx, stanGraph);
     createResetZoomButton(chartInstance[instanceNo], instanceNo);
@@ -1230,7 +1224,7 @@ function findSamplesInSameLocation(clickedMapSample) {
 }
 
 function createHighlights(meas, dateSampled, hoveredSample) {
-console.log('createHighlights',hoveredSample,dateSampled);
+//console.log('createHighlights',hoveredSample,dateSampled);
     noSamples = 0;
     samples = [];
     const datesSampled = Object.keys(selectedSampleInfo);
@@ -1248,7 +1242,7 @@ console.log('createHighlights',hoveredSample,dateSampled);
         });
         //			}
     });
-console.log(hoveredSample);
+//console.log(hoveredSample);
     if (!dateSampled) {
         clickedSamples = findSamplesInSameLocation(hoveredSample);
         console.log('Not dateSampled',hoveredSample);
@@ -1256,9 +1250,9 @@ console.log(hoveredSample);
         clickedSamples = [];
         clickedSamples[0] = dateSampled + ': ' + hoveredSample;
 //        clickedSamples[0] = hoveredSample;
-console.log('dateSampled',dateSampled,hoveredSample);
+//console.log('dateSampled',dateSampled,hoveredSample);
     }
-console.log('clickedSamples',clickedSamples);
+//console.log('clickedSamples',clickedSamples);
     const allChemicals = Object.keys(meas);
     let clickedIndexes = [];
 //    console.log('samples', samples);
@@ -1272,7 +1266,7 @@ console.log('clickedSamples',clickedSamples);
             }
         });
     });
-console.log('clickedIndexes',clickedIndexes);
+//console.log('clickedIndexes',clickedIndexes);
     clickedIndexes.forEach(item => {
 //        if (isMarked === null) {
             console.log('doing the null bit');
@@ -1286,7 +1280,7 @@ console.log('doing the other bit');
             highlighted[item] = !isMarked;
         }*/
     });
-console.log(highlighted);
+//console.log(highlighted);
     clickedIndexes.forEach(item => {
         console.log(item);
         for (let i = 1; i < lastInstanceNo + 1; i++) {
@@ -1323,7 +1317,7 @@ console.log(highlighted);
 // Function to display the chart based on the clicked sample
 function displayChartHighlight(meas, instanceNo, dateSampled, item) {
   // Draw a rectangle around the clicked data
-console.log('about to highlight',instanceNo,item);
+//console.log('about to highlight',instanceNo,item);
   chartInstance[instanceNo].options.plugins.annotation.annotations[('tempBox-' + instanceNo + '-'+item)] = {
     type: 'box',
     xScaleID: 'x',
@@ -1340,7 +1334,7 @@ console.log('about to highlight',instanceNo,item);
 }
 
 function removeChartHighlight(meas, instanceNo, dateSampled, item) {
-console.log('about to remove highlight',instanceNo,item);
+//console.log('about to remove highlight',instanceNo,item);
       delete chartInstance[instanceNo].options.plugins.annotation.annotations['tempBox-' + instanceNo + '-'+item];
   // Update the chart
   chartInstance[instanceNo].update();

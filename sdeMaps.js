@@ -107,7 +107,7 @@ for (const ds in selectedSampleInfo) {
         const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
         const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
         distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-console.log('distance1',distance);
+//console.log('distance1',distance);
         if (distance <= 10) {
             hoveredSample =  ds + ': ' + s;
             createHighlights(meas, ds, hoveredSample);
@@ -137,7 +137,7 @@ console.log('distance1',distance);
                                 const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
                                 const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
                                 distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-console.log('distance2',distance);
+//console.log('distance2',distance);
                                 if (distance <= 10) {
                                     hoveredSample =  ds + ': ' + s;
                                     createHighlights(meas, ds, hoveredSample);
@@ -253,20 +253,20 @@ function parseCoordinate(input) {
 }
 
 function parseCoordinates(latitude, longitude) {
-console.log('parse coordinates');
-console.log(latitude,longitude);
+//console.log('parse coordinates');
+//console.log(latitude,longitude);
     // Check to see if only latitude in which case UK National Grid Reference System is being used
     // Use https://github.com/OrdnanceSurvey/os-transform
     if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
-console.log(latitude);
+//console.log(latitude);
         const en = os.Transform.fromGridRef(latitude);
-console.log(en);
+//console.log(en);
         if (en.ea === undefined || en.ea === null) {
             console.log('Looks like this is an invalid grid reference ',latitude);
             return null;
         }
         const latlong = os.Transform.toLatLng(en);
-console.log(latlong);
+//console.log(latlong);
         if (latlong === undefined || latlong == null) {
             return null;
         }

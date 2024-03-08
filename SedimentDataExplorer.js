@@ -282,9 +282,9 @@ console.log('importChemInfo');
                 const property = df[0][c];
                 chemInfo[chemical][property] = df[r][c];
             }
-console.log(chemInfo[chemical]);
+//console.log(chemInfo[chemical]);
         }
-console.log('End of processChemInfo');
+//console.log('End of processChemInfo');
     }
 
 
@@ -498,7 +498,7 @@ console.log('End of processExcelLocations');
                         .then(response => response.arrayBuffer())
                         .then(data => {
                             processExcelData(new Uint8Array(data), url);
-                            console.log('processexceldata again');
+//console.log('processexceldata again');
                         })
                         .catch(error => {
                             console.error('Error fetching the file:', error);
@@ -510,10 +510,10 @@ console.log('End of processExcelLocations');
             Promise.all(fetchPromises)
                 .then(() => {
                     updateChart();
-                    console.log('there again');
+//console.log('there again');
                 });
         }
-        console.log('Import Data out of fetch');
+//console.log('Import Data out of fetch');
 //        updateChart();
 // Clear the input field after reading data
         fileInput.value = '';
@@ -584,11 +584,11 @@ console.log('End of processExcelLocations');
                         corec = 0;
                         extraValue = df[r][c];
                         if (typeof extraValue === 'string' && extraValue.includes('Laboratory sample number')) {
-console.log('Lab sampl numb');
+//console.log('Lab sampl numb');
                             corec = 0;
                             measurementUnit = df[r][c+4];
                         } else {
-console.log('No Lab sampl numb');
+//console.log('No Lab sampl numb');
                             corec = 0;
                             measurementUnit = df[r][c+3];
                         }
@@ -862,7 +862,7 @@ console.log('No Lab sampl numb');
         }
 
         function parseDates(dateString) {
-            console.log('dateString pd', dateString);
+//console.log('dateString pd', dateString);
             // Check if the date field is empty
             if (!dateString) {
                 return ['Missing'];
@@ -926,13 +926,12 @@ console.log('No Lab sampl numb');
     }
 
         function extractApplicationDataFromSheet(sheetName, sheetData, url) {
-console.log('extractappdata',url);
+//console.log('extractappdata',url);
             const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
 //                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
 
-
- console.log(sheetName);  //Output each cell value to console
- console.log(df.length);
+//console.log(sheetName);  //Output each cell value to console
+//console.log(df.length);
             let startRow = -1;
             let startCol = -1;
 
@@ -954,7 +953,7 @@ console.log('extractappdata',url);
             const applicationTitle = df[16][4];*/
             for (i = 16; 19; i++) {
                 dateRow = i;
-console.log('df[dateRow][2]',dateRow,df[dateRow][2]);                
+//console.log('df[dateRow][2]',dateRow,df[dateRow][2]);                
                 if (df[dateRow][2].includes('Date sampled:')) {
                     break;
                 }
@@ -965,9 +964,9 @@ console.log('df[dateRow][2]',dateRow,df[dateRow][2]);
                  applicant = df[dateRow-3][4];
                 applicationNumber = df[dateRow-2][4];
                 applicationTitle = df[dateRow-1][4];
-console.log(df[dateRow][4]);
+//console.log(df[dateRow][4]);
                 dateSampled = parseDates(df[dateRow][4])[0];
-console.log(dateSampled);
+//console.log(dateSampled);
             } else {
                  applicant = df[14][4];
                 applicationNumber = df[15][4];
@@ -981,7 +980,7 @@ console.log(dateSampled);
             sampleInfo[dateSampled]['Application title'] = applicationTitle;
             sampleInfo[dateSampled]['Date sampled'] = dateSampled;
             sampleInfo[dateSampled]['fileURL'] = url;
-console.log('extractapplicationdatafromsheet ', dateSampled,url);
+//console.log('extractapplicationdatafromsheet ', dateSampled,url);
             sampleInfo[dateSampled].position = {};
             sampleMeasurements[dateSampled] = {};
 
@@ -1000,9 +999,9 @@ console.log('extractapplicationdatafromsheet ', dateSampled,url);
 // console.log(c,r,cellValue);
 //                        if (typeof cellValue === 'string' && cellValue.includes('Excluded sample (MMO use)')) {
                     if (typeof cellValue === 'string' && cellValue.includes('Sample location (decimal degrees, WGS84)')) {
-console.log('Sample Location');
+//console.log('Sample Location');
                         const extraValue = df[r][c-1]
-console.log(extraValue);
+//console.log(extraValue);
                         if (typeof extraValue === 'string' && extraValue.includes('Excluded sample (MMO use)')) {
                             startRow = r + 2;
                             startCol = c-2;
@@ -1032,8 +1031,8 @@ console.log(extraValue);
                                 sInfo['Excluded sample (MMO use)'] = df[row][excCol];
                                 sInfo['Dredge area'] = df[row][dreCol];
                                 point = parseCoordinates(df[row][latCol],df[row][lonCol]);
-console.log(df[row][latCol],df[row][lonCol]);
-console.log(point);
+//console.log(df[row][latCol],df[row][lonCol]);
+//console.log(point);
                                 if (point === null || point === undefined) {
                                     // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
                                     if (namedLocations[sample] !== null && namedLocations[sample] !== undefined) {
