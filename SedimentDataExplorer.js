@@ -1,4 +1,5 @@
     let testOne = {};
+    let TEST = false;
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -1150,10 +1151,10 @@ console.log('End of processExcelLocations');
     
 // Function to create a new canvas for a chart
 function createCanvas(instanceNo) {
-const container = document.getElementById('chartContainer');
-const canvas = document.createElement('canvas');
-canvas.id = 'chart' + instanceNo; // Unique chart ID
-container.appendChild(canvas); // Append the canvas to the container
+    const container = document.getElementById('chartContainer');
+    const canvas = document.createElement('canvas');
+    canvas.id = 'chart' + instanceNo; // Unique chart ID
+    container.appendChild(canvas); // Append the canvas to the container
 }
 
 // Function to create a button for resetting zoom
@@ -1174,7 +1175,11 @@ function createToggleLegendButton(chart,instanceNo) {
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttonl'+instanceNo
-    button.textContent = 'Legend';
+    if (!legends[instanceNo]) {
+        button.textContent = 'Legend';
+    } else {
+        button.textContent = 'No Legend';
+    }
     button.addEventListener('click', () => {
         if (legends[instanceNo]) {
             chartInstance[instanceNo].options.plugins.legend.display = false;

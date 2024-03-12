@@ -111,7 +111,10 @@ for (const ds in selectedSampleInfo) {
         if (distance <= 10) {
             hoveredSample =  ds + ': ' + s;
             createHighlights(meas, ds, hoveredSample);
-        }
+/*let popup = marker.getPopup();
+let chart_div = document.getElementById("c_radar_"+hoveredSample);
+popup.setContent(chart_div);*/
+                    }
     }
 }
 
@@ -132,6 +135,8 @@ for (const ds in selectedSampleInfo) {
                         // Mark not just the clicked position but any things which are in the same place
                         const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
                         const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+chart_div = document.getElementById("c_radar_2015/06/03: 1");
+popup.setContent(cart_div);
                         for (const ds in selectedSampleInfo) {
                             for (const s in selectedSampleInfo[ds].position) {
                                 const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
