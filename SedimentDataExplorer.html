@@ -15,7 +15,7 @@
 
 <body>
     <div id="everything" style="display: none;">
-        <h1>Sediment Template Data Explorer - v0.20240307</h1>
+        <h1>Sediment Template Data Explorer - v0.20240514</h1>
         Excel files -
         <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
         <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
@@ -90,6 +90,8 @@
             <label for="samplegroup">Group by sample</label>
             <input type="checkbox" id="chemicalgroup" checked>
             <label for="chemicalgroup">Group by chemical</label>
+            <input type="checkbox" id="positionplace" checked>
+            <label for="positionplace">Plot by position</label>
             <input type="checkbox" id="gorhamtest" checked>
             <label for="gorhamtest">PAH - Gorham Test Protocol</label>
             <input type="checkbox" id="totalHC" checked>
@@ -134,7 +136,8 @@
         <input type="text" id="urlLoad" placeholder="Enter URL" onchange="loadSnapShotURL()">
     </div>
     <div id="chartContainer"></div>
-    <div id="map" style="height: 400px;"></div>
+    <div id="map" style="height: 800px;"></div>
+    Radar Popup: <div id="radarPlots"></div>
     <div id="fileDisplay"></div>
     <div id="sample-info-table-container"></div>
     <div id="chartsForMapContainer"></div>

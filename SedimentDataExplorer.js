@@ -1,5 +1,5 @@
     let testOne = {};
-    let TEST = false;
+    let radarPlot = "None";
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -20,6 +20,7 @@
     let lastInstanceNo = 0;
     let noInstances = 16;
     let chartInstance = [];
+    let popupInstance = [];
     let instanceType = [];
     let instanceSheet = [];
     let highlighted = [];
@@ -42,7 +43,7 @@
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','gorhamtest','totalHC','pahratios','ringfractions','eparatios','simpleratios','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalHC','pahratios','ringfractions','eparatios','simpleratios','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
@@ -107,6 +108,36 @@
 
     firstTime = true;
     
+    const ccontainer = document.getElementById('radarPlots');
+radarPlotTypes = dataSheetNames;
+radarPlotTypes[0] = "None";
+    radarPlotTypes.forEach((name, index) => {
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.id = `radio${index}`;
+        radio.name = 'dataSheet';
+        radio.value = name;
+        if (name === "None") {
+            radio.checked = true;
+        } /*else {
+            radio.checked = false;
+        }*/
+        const label = document.createElement('label');
+        label.htmlFor = `radio${index}`;
+        label.appendChild(document.createTextNode(name));
+
+        // Attach event listener to each radio button
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                radarPlot = this.value; // Set radarPlot to the selected value
+                console.log('Selected radar plot:', radarPlot);
+            }
+        });
+
+        ccontainer.appendChild(radio);
+        ccontainer.appendChild(label);
+    });
+
     importData();
 
     function saveSnapShot() {
@@ -1202,7 +1233,11 @@ function createToggleLinLogButton(chart,instanceNo) {
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttono'+instanceNo
-    button.textContent = 'Y Log';
+    if (!ylinlog[instanceNo]) {
+        button.textContent = 'Y Log';
+    } else {
+        button.textContent = 'Y Lin';
+    }
     button.addEventListener('click', () => {
         if (ylinlog[instanceNo]) {
             chartInstance[instanceNo].options.scales.y.type = 'linear';
@@ -1224,7 +1259,11 @@ function createStackedButton(chart,instanceNo) {
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttons'+instanceNo
-    button.textContent = 'Stack';
+    if (!stacked[instanceNo]) {
+        button.textContent = 'Stack';
+    } else {
+        button.textContent = 'Unstack';
+    }
     button.addEventListener('click', () => {
         if (stacked[instanceNo]) {
             chartInstance[instanceNo].options.scales.x.stacked = false;

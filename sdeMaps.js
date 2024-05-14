@@ -54,7 +54,7 @@ function sampleMap(meas) {
         for (const dateSampled in selectedSampleInfo) {
             noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
         }
-//console.log('noSamples', noSamples);
+        //console.log('noSamples', noSamples);
         highlighted = Array(noSamples).fill(false);
         //        for (const sample in selectedSampleInfo[dateSampled].position) {
         const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
@@ -87,41 +87,54 @@ function sampleMap(meas) {
                     sampleNo += 1;
                     // Create a marker for each sample
                     //						const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                    /*						const marker = L.circleMarker([lat, lon],
+                    const popupStatic = '<p style="height:200px; width:200px">static content</p>';
+//                    let popup = marker.getPopup();
+                    let chart_div = document.getElementById("c_radar_" + dateSampled + ": " + sample);
+                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
+//                    popup.setContent(chart_div);
+//                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+//                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map);
+//const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}<br>${popupStatic}`);
+/*						const marker = L.circleMarker([lat, lon],
                                         {radius: 4, color: 'white', fillColor: 'red', fillOpacity: 1}
                                         ).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
                                         marker.bindTooltip(sample, { permanent: false, direction: 'top' });*/
-                    marker.isMarked = false;
-//console.log(sampleNo, dateSampled, sample);
+                        marker.isMarked = false;
+                    //console.log(sampleNo, dateSampled, sample);
 
                     // Add a click event listener to the static marker
                     marker.on('click', function () {
-//                        hoveredSample = sample;
+                        //                        hoveredSample = sample;
 
 
-const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
-const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
-for (const ds in selectedSampleInfo) {
-    for (const s in selectedSampleInfo[ds].position) {
-        const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
-        const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
-        distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-//console.log('distance1',distance);
-        if (distance <= 10) {
-            hoveredSample =  ds + ': ' + s;
-            createHighlights(meas, ds, hoveredSample);
-/*let popup = marker.getPopup();
-let chart_div = document.getElementById("c_radar_"+hoveredSample);
-popup.setContent(chart_div);*/
-                    }
-    }
-}
+                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
+                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+                        for (const ds in selectedSampleInfo) {
+                            for (const s in selectedSampleInfo[ds].position) {
+                                const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
+                                const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
+                                distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
+                                //console.log('distance1',distance);
+                                if (distance <= 10) {
+                                    hoveredSample = ds + ': ' + s;
+                                    createHighlights(meas, ds, hoveredSample);
+                                    popupInstance[hoveredSample].update();
+                                    let popup = marker.getPopup();
+                                    let chart_div = document.getElementById("c_radar_" + hoveredSample);
+                                    chart_div.style.height = '300px';
+                                    chart_div.style.width = '250px';
+/*                                    popup.options.closeOnClick = false;
+                                    popup.options.autoClose = false;*/
+                                    popup.setContent(chart_div);
+console.log(popup);
+                                }
+                            }
+                        }
 
 
 
-//                        hoveredSample = dateSampled + ': ' + sample;
-//                        createHighlights(meas, dateSampled, hoveredSample);
+                        //                        hoveredSample = dateSampled + ': ' + sample;
+                        //                        createHighlights(meas, dateSampled, hoveredSample);
                         // Update the chart - in routintes
                         //console.log('update ',sample,i);
                         //							chartInstance[i].update();
@@ -135,17 +148,23 @@ popup.setContent(chart_div);*/
                         // Mark not just the clicked position but any things which are in the same place
                         const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
                         const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
-chart_div = document.getElementById("c_radar_2015/06/03: 1");
-popup.setContent(cart_div);
                         for (const ds in selectedSampleInfo) {
                             for (const s in selectedSampleInfo[ds].position) {
                                 const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
                                 const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
                                 distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-//console.log('distance2',distance);
+                                //console.log('distance2',distance);
                                 if (distance <= 10) {
-                                    hoveredSample =  ds + ': ' + s;
+                                    hoveredSample = ds + ': ' + s;
                                     createHighlights(meas, ds, hoveredSample);
+                                    popupInstance[hoveredSample].update();
+                                    popup = marker.getPopup();
+                                    chart_div = document.getElementById("c_radar_" + hoveredSample);
+/*                                    chart_div.style.height = '200px';
+                                    chart_div.style.width = '400px';*/
+/*                                    popup.options.closeOnClick = false;
+                                    popup.options.autoClose = false;*/
+                                    popup.setContent(chart_div);
                                 }
                             }
                         }
@@ -159,8 +178,8 @@ popup.setContent(cart_div);
                 sampleNo += 1;
                 highlightMarkers[sampleNo] = null;
             }
-       });
-//console.log(iconNo, dateSampled);
+        });
+        //console.log(iconNo, dateSampled);
     });
 
     if (noLocations > 0) {
