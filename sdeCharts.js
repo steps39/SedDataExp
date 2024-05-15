@@ -576,7 +576,7 @@ console.log('data ',scatterData);
  * You may use this function with both 2 or 3 interval colors for your gradient.
  * For example, you want to have a gradient between Bootstrap's danger-warning-success colors.
  */
-function colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
+/*function colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
     var color1 = rgbColor1;
     var color2 = rgbColor2;
     var fade = fadeFraction;
@@ -604,6 +604,32 @@ function colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
     };
 
     return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
+  }*/
+
+/**
+ * You may use this function with both 2 or 3 interval colors for your gradient.
+ * For example, you want to have a gradient between Bootstrap's danger-warning-success colors.
+ */
+function colorGradient(fraction, rgbColor1, rgbColor2) {
+    var colorStart = rgbColor1;
+    var colorEnd = rgbColor2;
+    var percent = fraction;
+//console.log(percent,rgbColor1,rgbColor2,colorStart,colorEnd);
+    rs = colorStart.red * colorStart.red;
+    gs = colorStart.green * colorStart.green;
+    bs = colorStart.blue * colorStart.blue;
+    re = colorEnd.red * colorEnd.red;
+    ge = colorEnd.green * colorEnd.green;
+    be = colorEnd.blue * colorEnd.blue;
+//console.log(rs,gs,bs,re,ge,be);
+    var gradient = {
+        red : Math.floor(Math.sqrt(rs * (1 - percent) + re * percent),10),
+        green : Math.floor(Math.sqrt(gs * (1 - percent) + ge * percent),10),
+        blue : Math.floor(Math.sqrt(bs * (1 - percent) + be * percent),10)
+    };
+//console.log(percent, colorStart, colorEnd, gradient);
+
+    return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
   }
 
 function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, unitTitle) {
@@ -616,17 +642,8 @@ console.log(scatterData);
     convas.style.display = "block";
     instanceType[instanceNo] = 'Scatter';
     instanceSheet[instanceNo] = sheetName;
-/*    var color1 = {
-        red: 19, green: 233, blue: 19
-      };
-      var color2 = {
-        red: 255, green: 255, blue: 0
-      };
-      var color3 = {
-        red: 255, green: 0, blue: 0
-      };*/
       var color1 = {
-        red: 0, green: 255, blue: 0
+        red: 19, green: 255, blue: 19
       };
       var color2 = {
         red: 255, green: 0, blue: 0
@@ -656,6 +673,9 @@ console.log(scatterData);
                     data: scatterData,
                     backgroundColor:
                        allSamples.map(sample => colorGradient(oneChemical[sample], color1, color2)),
+                    borderColor:
+                       allSamples.map(sample => colorGradient(oneChemical[sample], color1, color2)),
+                       
 //                       pointRadius: 10
                        pointRadius: function(context) {
                         return convas.width / 50
@@ -666,7 +686,7 @@ console.log(scatterData);
             plugins: {
                 title: {
                     display: true,
-                    text: sheetName + ' - ' + unitTitle
+                    text: unitTitle
                     },
                     subtitle: {
                         display: true,
@@ -713,10 +733,10 @@ console.log(scatterData);
 console.log(chartConfig);
     const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
     chartInstance[instanceNo] = new Chart(ctx, chartConfig);
-    createResetZoomButton(chartInstance[instanceNo], instanceNo);
+/*    createResetZoomButton(chartInstance[instanceNo], instanceNo);
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
-    createStackedButton(chartInstance[instanceNo], instanceNo);
+    createStackedButton(chartInstance[instanceNo], instanceNo);*/
 
     Chart.register({
         id: 'selectSample',
