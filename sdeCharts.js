@@ -60,6 +60,7 @@ function displayCharts(sheetName, instanceNo) {
             instanceNo += 1;
             displayChemicalChart(selectedMeas, sheetName, instanceNo, unitTitle);
         }
+
         if (subsToDisplay['positionplace']) {
             retData = dataForScatterCharting(sheetName);
             unitTitle = retData['unitTitle'];
@@ -67,12 +68,41 @@ function displayCharts(sheetName, instanceNo) {
             scatterData = retData['scatterData'];
             chemicalData = retData['chemicalData'];
             const allChemicals = Object.keys(chemicalData);
+
+            // Step 1: Create a table element
+            const scatterTable = document.createElement('table');
+            const noCharts = allChemicals.length;
+            const startInstanceNo = instanceNo;
+            // Step 2: Loop to create rows and cells for the table
+            for (let i = 0; i < noCharts; i++) {
+                instanceNo += 1;
+                if (i % 4 === 0) {
+                    console.log('created row');
+                    row = scatterTable.insertRow(); // Create a row
+                    console.log(row);
+                }
+                const cell = row.insertCell(); // Create a cell
+                const canvas = document.createElement('canvas'); // Create a canvas for the chart
+                canvas.id = 'chart' + instanceNo;; // Unique id for each chart canvas
+                cell.appendChild(canvas); // Append the canvas to the cell
+                //  }
+            }
+
+            // Step 3: Append the table to a container element in your HTML (e.g., <div id="container"></div>)
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.appendChild(scatterTable);
+            instanceNo = startInstanceNo;
+            i = 0;
             for (const c in chemicalData) {
                 instanceNo += 1;
                 displayScatterChart(scatterData, chemicalData[c], sheetName, instanceNo, c);
+                i += 1;
             }
         }
-/*        if (radarPlot === sheetName) {
+
+
+
+        /*        if (radarPlot === sheetName) {
             createRadarPlot(selectedMeas, sheetName);
         }*/
 //console.log('About to sort');
@@ -577,7 +607,7 @@ console.log(scatterData);
     legends[instanceNo] = false;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
-    createCanvas(instanceNo);
+//    createCanvas(instanceNo,row);
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
     instanceType[instanceNo] = 'Scatter';
@@ -611,20 +641,6 @@ console.log(scatterData);
 //console.log(oneChemical[s]);
       }
 //console.log(oneChemical);
-      
-/*    // Extract sample names from the PSD data structure
-    const sampleNames = Object.keys(meas);
-
-    // Create datasets for each sample
-    const datasets = sampleNames.map((sampleName, index) => {
-        return {
-            label: sampleName,
-            data: meas[sampleName],
-//		            borderColor: getRandomColor(), // Function to generate random color
-            borderWidth: 2,
-            fill: false,
-        };
-    });*/
     // Chart configuration
     const chartConfig = {
         type: 'scatter',
@@ -636,16 +652,23 @@ console.log(scatterData);
                     data: scatterData,
                     backgroundColor:
                        allSamples.map(sample => colorGradient(oneChemical[sample], color1, color2)),
-                    pointRadius: 20
-                  }]
+//                       pointRadius: 10
+                       pointRadius: function(context) {
+                        return convas.width / 50
+                       }
+                    }]
         },
         options: {
             plugins: {
                 title: {
-                  display: true,
-                  text: sheetName + ' ' + unitTitle
-                  },
-                  legend: {
+                    display: true,
+                    text: sheetName + ' - ' + unitTitle
+                    },
+                    subtitle: {
+                        display: true,
+                        text: 'Min: ' + minConc + ' Max: ' + maxConc
+                        },
+                          legend: {
                     display: false, 
                     position: 'bottom', 
                     labels: {
@@ -667,14 +690,14 @@ console.log(scatterData);
                         position: 'bottom',
                         title: {
                             display: true,
-                            text: 'mm'
+                            text: 'Longitude'
                             }
                     },
                     y: {
 //                        beginAtZero: true,
                         title: {
                             display: true,
-                            text: unitTitle
+                            text: 'Latitude'
                             }
                         }
                     },

@@ -483,7 +483,7 @@ console.log('End of processExcelLocations');
                     if (filesProcessed === fL) {
 //console.log('calling updateChart');
                         updateChart(); // Call updateChart once all files have been processed
-                    }
+3                    }
                 };
                 reader.readAsArrayBuffer(files[i]);
             }
@@ -1181,11 +1181,24 @@ console.log('End of processExcelLocations');
     }
     
 // Function to create a new canvas for a chart
-function createCanvas(instanceNo) {
-    const container = document.getElementById('chartContainer');
-    const canvas = document.createElement('canvas');
-    canvas.id = 'chart' + instanceNo; // Unique chart ID
-    container.appendChild(canvas); // Append the canvas to the container
+function createCanvas(instanceNo, row) {
+//    if(typeof row === 'undefined') {
+        htmlContainer = 'chartContainer';
+        const container = document.getElementById(htmlContainer);
+//    const container = document.getElementById('chartContainer');
+        const canvas = document.createElement('canvas');
+        canvas.id = 'chart' + instanceNo; // Unique chart ID
+        container.appendChild(canvas); // Append the canvas to the container
+/*    } else {
+        htmlContainer = 'table';
+console.log(row);
+//        const cell = row.insertCell(); // Create a cell
+        const container = document.getElementById(htmlContainer);
+//    const container = document.getElementById('chartContainer');
+        const canvas = document.createElement('canvas');
+        canvas.id = 'chart' + instanceNo; // Unique chart ID
+        row.appendChild(canvas); // Append the canvas to the container
+    }*/
 }
 
 // Function to create a button for resetting zoom
