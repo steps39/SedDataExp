@@ -536,23 +536,27 @@ function dataForScatterCharting(sheetName) {
 //    datesSampled.sort();
     i = 0;
     datesSampled.forEach (ds => {
-        const allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
-        for (const s in selectedSampleMeasurements[ds][ct].chemicals[allChemicals[0]].samples) {
-             scatterData[i] = ({x: sampleInfo[ds].position[s]['Position longitude'], 
-                         y: sampleInfo[ds].position[s]['Position latitude']});
+        if (!(selectedSampleMeasurements[ds][ct] === undefined)) {
+            const allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
+            for (const s in selectedSampleMeasurements[ds][ct].chemicals[allChemicals[0]].samples) {
+                scatterData[i] = ({
+                    x: sampleInfo[ds].position[s]['Position longitude'],
+                    y: sampleInfo[ds].position[s]['Position latitude']
+                });
                 i += 1;
-//console.log(sampleInfo[ds].position[s]['Position latitude']);
-//console.log(sampleInfo[ds].position[s]['Position longitude']);             
-        }
-        for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
-            if (chemicalData[c] == undefined || chemicalData[c] == null) {
-                chemicalData[c] = {};
+                //console.log(sampleInfo[ds].position[s]['Position latitude']);
+                //console.log(sampleInfo[ds].position[s]['Position longitude']);             
             }
-            currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
-//console.log(currentChemical);
-            for (const s in currentChemical.samples) {
-                chemicalData[c][ds + ' : ' + s] = currentChemical.samples[s];
-//console.log(currentChemical.samples[s])
+            for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
+                if (chemicalData[c] == undefined || chemicalData[c] == null) {
+                    chemicalData[c] = {};
+                }
+                currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
+                //console.log(currentChemical);
+                for (const s in currentChemical.samples) {
+                    chemicalData[c][ds + ' : ' + s] = currentChemical.samples[s];
+                    //console.log(currentChemical.samples[s])
+                }
             }
         }
     });
