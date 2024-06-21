@@ -256,27 +256,31 @@ function sumsForGorhamCharting() {
     const datesSampled = Object.keys(selectedSampleMeasurements);
     measChart = {};
     datesSampled.sort();
-       datesSampled.forEach (ds => {
+    datesSampled.forEach(ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
-//            for (const s in selectedSampleMeasurements[ds]['PAH data'].gorhamTest) {
-    const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
-    allSamples.sort();
-    allSamples.forEach(s => {
-    if (selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s] == null) {
-                    measChart[ds + ': ' + s] = { hmwSum : 0.0, lmwSum : 0.0};
+            //            for (const s in selectedSampleMeasurements[ds]['PAH data'].gorhamTest) {
+            const allChemicals = Object.keys(selectedSampleMeasurements[ds]['PAH data'].chemicals);
+console.log(allChemicals);
+            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].chemicals[allChemicals[0]].samples);
+console.log(allSamples);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                if (selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s] == null) {
+                    measChart[ds + ': ' + s] = { hmwSum: 0.0, lmwSum: 0.0 };
                 } else {
                     measChart[ds + ': ' + s] = selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s];
                 }
             });
         } else {
-//            for (const s in selectedSampleInfo[ds].position) {
-    const allSamples = Object.keys(selectedSampleInfo[ds].position);
-    allSamples.sort();
-    allSamples.forEach(s => {
-                measChart[ds + ': ' + s] = { hmwSum : 0.0, lmwSum : 0.0};
+            //            for (const s in selectedSampleInfo[ds].position) {
+            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            allSamples.sort();
+            allSamples.forEach(s => {
+                measChart[ds + ': ' + s] = { hmwSum: 0.0, lmwSum: 0.0 };
             });
         }
     });
+    console.log(measChart);
     return measChart
 }
 
@@ -286,30 +290,45 @@ function sumsForTotalHCCharting() {
     measChart = {};
     sampleNo = -1;
     datesSampled.sort();
-    datesSampled.forEach (ds => {
-        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
-            const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].totalHC);
-            allSamples.sort();
+    datesSampled.forEach(ds => {
+        const allSamples = Object.keys(selectedSampleInfo[ds].position);
+        allSamples.sort();
+        if (!(selectedSampleMeasurements[ds]['PAH data'].totalHC == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC == null)) {
             allSamples.forEach(s => {
-            if (selectedSampleMeasurements[ds]['PAH data'].total[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null) {
-                measChart[ds + ': ' + s] = { totalHC : 0.0, fractionPAH : 0.0};
-            } else {
-                measChart[ds + ': ' + s] = {totalHC : selectedSampleMeasurements[ds]['PAH data'].totalHC[s], fractionPAH : selectedSampleMeasurements[ds]['PAH data'].total[s] / 1000};
-            }
-            sampleNo += 1;
-//console.log(sampleNo,ds,s);
+                if (!(selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null)) {
+                    measChart[ds + ': ' + s] = { totalHC: selectedSampleMeasurements[ds]['PAH data'].totalHC[s] };
+                } else {
+                    measChart[ds + ': ' + s] = { totalHC: 0.0 };
+                }
+                sampleNo += 1;
+                //console.log(sampleNo,ds,s);
             });
         } else {
-            const allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
             allSamples.forEach(s => {
-                measChart[ds + ': ' + s] = { totalHC : 0.0, fractionPAH : 0.0};
+                measChart[ds + ': ' + s] = { totalHC: 0.0 };
                 sampleNo += 1;
-console.log(sampleNo,ds,s);
+                console.log(sampleNo, ds, s);
+            });
+        }
+        if (!(selectedSampleMeasurements[ds]['PAH data'].total == undefined || selectedSampleMeasurements[ds]['PAH data'].total == null)) {
+            allSamples.forEach(s => {
+                if (!(selectedSampleMeasurements[ds]['PAH data'].total[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].total[s] == null)) {
+                    measChart[ds + ': ' + s] = { fractionPAH: selectedSampleMeasurements[ds]['PAH data'].total[s] / 1000 };
+                } else {
+                    measChart[ds + ': ' + s] = { fractionPAH: 0.0 };
+                }
+                sampleNo += 1;
+                //console.log(sampleNo,ds,s);
+            });
+        } else {
+            allSamples.forEach(s => {
+                measChart[ds + ': ' + s] = { fractionPAH: 0.0 };
+                sampleNo += 1;
+                console.log(sampleNo, ds, s);
             });
         }
     });
-    return {unitTitle, measChart}
+    return { unitTitle, measChart }
 }
 
 function ratiosForPAHs() {
@@ -632,6 +651,17 @@ function colorGradient(fraction, rgbColor1, rgbColor2) {
     return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
   }
 
+  function resizeChart(chart) {
+    // Get the parent container of the chart
+    var container = chart.canvas.parentNode;
+
+    // Toggle the class to resize the chart
+    container.classList.toggle('large-chart');
+    
+    // Update the chart to reflect the new size
+    chart.resize();
+}
+
 function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, unitTitle) {
 console.log(scatterData);
     legends[instanceNo] = false;
@@ -678,15 +708,20 @@ console.log(scatterData);
                        
 //                       pointRadius: 10
                        pointRadius: function(context) {
-                        return convas.width / 50
+                        return convas.width / 70
                        }
                     }]
         },
         options: {
             plugins: {
+                repsonsive: true,
                 title: {
                     display: true,
-                    text: unitTitle
+                    text: unitTitle,
+                    onEvent: function() {
+                        console.log('this is fed');
+                        resizeChart(chartInstance[instanceNo]);
+                    }
                     },
                     subtitle: {
                         display: true,
@@ -733,10 +768,20 @@ console.log(scatterData);
 console.log(chartConfig);
     const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
     chartInstance[instanceNo] = new Chart(ctx, chartConfig);
+    createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
 /*    createResetZoomButton(chartInstance[instanceNo], instanceNo);
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);*/
+
+/*    document.querySelector('chart' + instanceNo).addEventListener('mouseenter', function() {
+        chartInstance[instanceNo].resize(200, 200); // Adjust dimensions to match CSS hover effect
+      });
+      
+      document.querySelector('chart' + instanceNo).addEventListener('mouseleave', function() {
+        chartInstance[instanceNo].resize(400, 400); // Restore original dimensions
+      });*/
+
 
     Chart.register({
         id: 'selectSample',

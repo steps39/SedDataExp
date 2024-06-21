@@ -27,6 +27,7 @@
     let legends = [];
     let ylinlog = [];
     let stacked = [];
+    let largeSize = [];
     let highlightMarkers = {};
     for (i = 1; i < noInstances; i++) {
         chartInstance[i] = null;
@@ -1237,6 +1238,33 @@ function createToggleLegendButton(chart,instanceNo) {
             button.innerHTML = 'No Legend';
         }
 //        chart.resetZoom();
+    });
+    container.appendChild(button);
+}
+    
+// Function to create a button for canvassize
+function createToggleCanvasSize(canvas, chart,instanceNo,chemical) {
+    const container = document.getElementById('chartContainer');
+    const button = document.createElement('button');
+    button.id = 'buttonc'+instanceNo
+    if (!largeSize[instanceNo]) {
+        button.textContent = chemical;
+    } else {
+        button.textContent = chemical;
+    }
+    button.addEventListener('click', () => {
+        if (largeSize[instanceNo]) {
+            canvas.width = 1200;
+            canvas.height = 800;
+            largeSize[instanceNo] = false;
+//            button.innerHTML = 'Y Log';
+        } else {
+              canvas.width = 400;
+              canvas.height = 250;
+              largeSize[instanceNo] = true;
+//              button.innerHTML = 'Y Lin';
+        }
+        chartInstance[instanceNo].update();
     });
     container.appendChild(button);
 }
