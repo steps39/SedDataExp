@@ -15,8 +15,8 @@
 
 <body>
     <div id="everything" style="display: none;">
-        <h1>Sediment Template Data Explorer - v0.20240514</h1>
-        Excel files -
+        <h1>Sediment Template Data Explorer - v0.20240725</h1>
+        MMO Templates -
         <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
         <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
         <!-- Accept comma-separated URLs -->
@@ -24,6 +24,33 @@
         <button onclick="updateChart()">(Re)Plot Chart</button>
         <button onclick="exportChart()">Export Chart</button>
         <button onclick="clearData()">Clear Data</button>
+        <br>
+        CEFAS Sediment Data -
+        <button onclick="openCEFASSelection()">Select CEFAS Data Sets</button>
+        <div id="sedDataModal" style="display: none;">
+            <h2>Select Data Sets</h2>
+            <input type="file" id="fileInputDD" multiple onchange="importDredgeData()"> <!-- Allow multiple file selection -->
+            <input type="text" id="urlInputDD" placeholder="URLs comma-separated" onchange="importDredgeData()">
+            <!-- Accept comma-separated URLs -->
+             <br>
+            <input type="text" id="mlApplications" placeholder="MLA ids comma-separated" onchange="closeCEFASSelection()">
+            <button onclick="closeCEFASSelection()">Finish CEFAS Selection</button>
+            <br>
+            <label for="centreLatitude">Centre Latitude:</label>
+            <input type="number" id="centreLatitude">
+            <label for="centreLongitude">Centre Longitude:</label>
+            <input type="number" id="centreLongitude">
+            <label for="radius">Radius (m):</label>
+            <input type="number" id="radius">
+            <br>
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate">
+            <label for="finishDate">Finish Date</label>
+            <input type="date" id="finishDate">
+            <br>
+            <button onclick="closeCEFASSearch()">Search CEFAS Selection</button>
+        </div>
+
         <br>
         Selection tools -
         <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
@@ -135,7 +162,11 @@
         <label for="urlLoad">Web </label>
         <input type="text" id="urlLoad" placeholder="Enter URL" onchange="loadSnapShotURL()">
     </div>
-    <div id="fileDisplay"></div>
+    <br>
+    <button onclick="toggleFileDisplay()">Toggle File Display</button>
+    <br>
+    <div id="fileDisplay">
+    </div>
     <div id="sample-info-table-container"></div>
     <div id="map" style="height: 800px;"></div>
     Radar Popup: <div id="radarPlots"></div>
@@ -156,6 +187,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="os-transform.js"></script>
     <script src="SedimentDataExplorer.js"></script>
+    <script src="sdeDataUtilities.js"></script>
+    <script src="sdeDredgeData.js"></script>
     <script src="sdeCharts.js"></script>
     <script src="sdeSelections.js"></script>
     <script src="sdeMaps.js"></script>

@@ -301,119 +301,121 @@ function openChemicalSelection(sampleMeasurements) {
             selectedSampleInfo = getSelectedSamples(selectedSamples);
             updateChart();
         }
-    
-    
-        function getselectedSampleMeasurements(selectedSamples) {
-            selectedMeas = {};
+
+
+function getselectedSampleMeasurements(selectedSamples) {
+    selectedMeas = {};
     //console.log(selectedSamples);
-            for (dateSampled in sampleMeasurements) {
-    //console.log(dateSampled);
-                const chemicalTypes = Object.keys(sampleMeasurements[dateSampled]);
-//                const chemicals = Object.keys(sampleMeasurements[dateSampled][chemicalTypes[0]].chemicals);
-                for (const chemicalType in sampleMeasurements[dateSampled]) {
-                    if (chemicalType === 'Physical Data') {
-                        for (const sample in sampleMeasurements[dateSampled][chemicalType].samples) {
-                            if (selectedSamples.includes(dateSampled + ': ' + sample)) {
-                                if (!selectedMeas[dateSampled]) {
-                                    selectedMeas[dateSampled] = {};
-                                    selectedMeas[dateSampled][chemicalType] = {};
-                                    selectedMeas[dateSampled][chemicalType].samples = {};
-                                    selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
-                                    selectedMeas[dateSampled][chemicalType].sizes = sampleMeasurements[dateSampled][chemicalType].sizes;
-    //console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
-                                } else {
-                                    if (!selectedMeas[dateSampled][chemicalType]) {
-                                        selectedMeas[dateSampled][chemicalType] = {};
-                                        selectedMeas[dateSampled][chemicalType].samples = {};
-                                        selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
-                                        selectedMeas[dateSampled][chemicalType].sizes = sampleMeasurements[dateSampled][chemicalType].sizes;
-    //console.log('2 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
-                                    }
-    //console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
-                                    selectedMeas[dateSampled][chemicalType].samples[sample] = {};
-                                    selectedMeas[dateSampled][chemicalType].samples[sample].psd = sampleMeasurements[dateSampled][chemicalType].samples[sample].psd;
-                                }
+    for (dateSampled in sampleMeasurements) {
+        //console.log(dateSampled);
+        const chemicalTypes = Object.keys(sampleMeasurements[dateSampled]);
+        //                const chemicals = Object.keys(sampleMeasurements[dateSampled][chemicalTypes[0]].chemicals);
+        for (const chemicalType in sampleMeasurements[dateSampled]) {
+            if (chemicalType === 'Physical Data') {
+                for (const sample in sampleMeasurements[dateSampled][chemicalType].samples) {
+                    if (selectedSamples.includes(dateSampled + ': ' + sample)) {
+                        if (!selectedMeas[dateSampled]) {
+                            selectedMeas[dateSampled] = {};
+                            selectedMeas[dateSampled][chemicalType] = {};
+                            selectedMeas[dateSampled][chemicalType].samples = {};
+                            selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
+                            selectedMeas[dateSampled][chemicalType].sizes = sampleMeasurements[dateSampled][chemicalType].sizes;
+                            //console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
+                        } else {
+                            if (!selectedMeas[dateSampled][chemicalType]) {
+                                selectedMeas[dateSampled][chemicalType] = {};
+                                selectedMeas[dateSampled][chemicalType].samples = {};
+                                selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
+                                selectedMeas[dateSampled][chemicalType].sizes = sampleMeasurements[dateSampled][chemicalType].sizes;
+                                //console.log('2 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
                             }
-                        }		
-                                        
-    //console.log('Create ', dateSampled, chemicalType);
-    //console.log('should do Gorham Test here');
-                        
-                    } else {
-                        for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
-                            for (const sample in sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
-    //console.log(sample);
-                                if (selectedSamples.includes(dateSampled + ': ' + sample)) {
-    //console.log('Found one');
-                                    if (!selectedMeas[dateSampled]) {
-    //console.log('Create ', dateSampled);
-                                        selectedMeas[dateSampled] = {};
-    //    						for (const chemicalType in sampleMeasurements[dateSampled]) {
-                                        selectedMeas[dateSampled][chemicalType] = {};
-                                        selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
-                                        selectedMeas[dateSampled][chemicalType].chemicals = {};
-    //console.log('Create ', dateSampled, chemicalType);
-    //console.log('should do Gorham Test here');
-                                        if (chemicalType == 'PAH data') {
-    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                            selectedMeas[dateSampled][chemicalType].gorhamTest = {};
-                                            selectedMeas[dateSampled][chemicalType].gorhamTest[sample] = sampleMeasurements[dateSampled][chemicalType].gorhamTest[sample];
-                                            selectedMeas[dateSampled][chemicalType].total = {};
-                                            selectedMeas[dateSampled][chemicalType].total[sample] = selectedSampleMeasurements[dateSampled][chemicalType].total[sample];
-                                            selectedMeas[dateSampled][chemicalType].totalHC = {};
-                                        selectedMeas[dateSampled][chemicalType].totalHCUnit = selectedSampleMeasurements[dateSampled][chemicalType].totalHCUnit;
-                                            selectedMeas[dateSampled][chemicalType].totalHC[sample] = selectedSampleMeasurements[dateSampled][chemicalType].totalHC[sample];
-                                        }
-                                        if (chemicalType == 'PCB data') {
-    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                            selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                            selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
-                                        }
-                                         for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
-    //console.log('Create ', dateSampled, chemicalType,chemical);
-                                            selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
-                                            selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
-                                            selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
-                                        }
-    //							}
-                                    } else {
-    //   						for (const chemicalType in sampleMeasurements[dateSampled]) {
-    //console.log('ch ', dateSampled,sample,chemicalType);
-                                        if (!selectedMeas[dateSampled][chemicalType]) {
-                                            selectedMeas[dateSampled][chemicalType] = {};
-                                            selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
-                                            selectedMeas[dateSampled][chemicalType].chemicals = {};
-                                            if (chemicalType === 'PAH data') {
-    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                                selectedMeas[dateSampled][chemicalType].gorhamTest = {};
-                                                selectedMeas[dateSampled][chemicalType].gorhamTest[sample] = sampleMeasurements[dateSampled][chemicalType].gorhamTest[sample];
-                                            }
-                                            if (chemicalType == 'PCB data') {
-    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
-                                            }
-                                               for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
-    //console.log('Create ', dateSampled, chemicalType,chemical);
-                                                selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
-                                                selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
-                                                selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
-                                            }
-                                        } else {
-                                            if (chemicalType === 'PAH data') {
-    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                                selectedMeas[dateSampled][chemicalType].gorhamTest[sample] = sampleMeasurements[dateSampled][chemicalType].gorhamTest[sample];
-                                                selectedMeas[dateSampled][chemicalType].total[sample] = selectedSampleMeasurements[dateSampled][chemicalType].total[sample];
-                                                selectedMeas[dateSampled][chemicalType].totalHC[sample] = selectedSampleMeasurements[dateSampled][chemicalType].totalHC[sample];
-                                            }
-                                            if (chemicalType == 'PCB data') {
-    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
-                                            }
-                                               for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
-                                                selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
-                                            }
-                                        }
+                            //console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
+                            selectedMeas[dateSampled][chemicalType].samples[sample] = {};
+                            selectedMeas[dateSampled][chemicalType].samples[sample].psd = sampleMeasurements[dateSampled][chemicalType].samples[sample].psd;
+                        }
+                    }
+                }
+
+                //console.log('Create ', dateSampled, chemicalType);
+                //console.log('should do Gorham Test here');
+
+            } else {
+                for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
+                    for (const sample in sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
+                        //console.log(sample);
+                        if (selectedSamples.includes(dateSampled + ': ' + sample)) {
+                            //console.log('Found one');
+                            if (!selectedMeas[dateSampled]) {
+                                //console.log('Create ', dateSampled);
+                                selectedMeas[dateSampled] = {};
+                                //    						for (const chemicalType in sampleMeasurements[dateSampled]) {
+                                selectedMeas[dateSampled][chemicalType] = {};
+                                selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
+                                selectedMeas[dateSampled][chemicalType].chemicals = {};
+                                //console.log('Create ', dateSampled, chemicalType);
+                                //console.log('should do Gorham Test here');
+                                if (chemicalType == 'PAH data') {
+                                    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                    selectedMeas[dateSampled][chemicalType].gorhamTest = {};
+                                    selectedMeas[dateSampled][chemicalType].gorhamTest[sample] = sampleMeasurements[dateSampled][chemicalType].gorhamTest[sample];
+                                    selectedMeas[dateSampled][chemicalType].total = {};
+                                    selectedMeas[dateSampled][chemicalType].total[sample] = selectedSampleMeasurements[dateSampled][chemicalType].total[sample];
+                                    selectedMeas[dateSampled][chemicalType].totalHC = {};
+                                    selectedMeas[dateSampled][chemicalType].totalHCUnit = selectedSampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+                                    selectedMeas[dateSampled][chemicalType].totalHC[sample] = selectedSampleMeasurements[dateSampled][chemicalType].totalHC[sample];
+                                }
+                                if (chemicalType == 'PCB data') {
+                                    //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                    selectedMeas[dateSampled][chemicalType].congenerTest = {};
+                                    selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
+                                }
+                                for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
+                                    //console.log('Create ', dateSampled, chemicalType,chemical);
+                                    selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
+                                    selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
+                                    selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
+                                }
+                                //							}
+                            } else {
+                                //   						for (const chemicalType in sampleMeasurements[dateSampled]) {
+                                //console.log('ch ', dateSampled,sample,chemicalType);
+                                if (!selectedMeas[dateSampled][chemicalType]) {
+                                    selectedMeas[dateSampled][chemicalType] = {};
+                                    selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
+                                    selectedMeas[dateSampled][chemicalType].chemicals = {};
+                                    if (chemicalType === 'PAH data') {
+                                        //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                        selectedMeas[dateSampled][chemicalType].gorhamTest = {};
+                                        selectedMeas[dateSampled][chemicalType].gorhamTest[sample] = sampleMeasurements[dateSampled][chemicalType].gorhamTest[sample];
+                                        selectedMeas[dateSampled][chemicalType].total = {};
+                                        selectedMeas[dateSampled][chemicalType].total[sample] = selectedSampleMeasurements[dateSampled][chemicalType].total[sample];
+                                        selectedMeas[dateSampled][chemicalType].totalHC = {};
+                                        selectedMeas[dateSampled][chemicalType].totalHC[sample] = selectedSampleMeasurements[dateSampled][chemicalType].totalHC[sample];
+                                    }
+                                    if (chemicalType == 'PCB data') {
+                                        //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                        selectedMeas[dateSampled][chemicalType].congenerTest = {};
+                                        selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
+                                    }
+                                    for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
+                                        //console.log('Create ', dateSampled, chemicalType,chemical);
+                                        selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
+                                        selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
+                                        selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
+                                    }
+                                } else {
+                                    if (chemicalType === 'PAH data') {
+                                        //console.log('Create ', dateSampled, chemicalType, sample, 'Gorham Test');
+                                        selectedMeas[dateSampled][chemicalType].gorhamTest[sample] = sampleMeasurements[dateSampled][chemicalType].gorhamTest[sample];
+                                        selectedMeas[dateSampled][chemicalType].total[sample] = selectedSampleMeasurements[dateSampled][chemicalType].total[sample];
+                                        selectedMeas[dateSampled][chemicalType].totalHC[sample] = selectedSampleMeasurements[dateSampled][chemicalType].totalHC[sample];
+                                    }
+                                    if (chemicalType == 'PCB data') {
+                                        //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                        selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
+                                    }
+                                    for (const chemical in sampleMeasurements[dateSampled][chemicalType].chemicals) {
+                                        selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
                                     }
                                 }
                             }
@@ -421,10 +423,12 @@ function openChemicalSelection(sampleMeasurements) {
                     }
                 }
             }
-    // console.log(selectedMeas); // Output each cell value to console
-            return selectedMeas;
         }
-    
+    }
+    // console.log(selectedMeas); // Output each cell value to console
+    return selectedMeas;
+}
+
         function getSelectedSamples(selectedSamples) {
             selectedSamps = {};
             for (const dateSampled in sampleInfo) {

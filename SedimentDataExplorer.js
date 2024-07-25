@@ -141,7 +141,71 @@ radarPlotTypes[0] = "None";
 
     importData();
 
-    function saveSnapShot() {
+    function parseDates(dateString) {
+        //console.log('dateString pd', dateString);
+                    // Check if the date field is empty
+                    if (!dateString) {
+                        return ['Missing'];
+                    }
+        
+                    const dates = [];
+        
+                    // Split the input by commas or hyphens
+                    const dateParts = dateString.split('/,|-/');
+                    dateParts.forEach(part => {
+                        // Trim leading/trailing spaces
+                        const trimmedPart = part.trim();
+        
+                        // Check if it's a range (contains a hyphen)
+                        if (trimmedPart.includes('/')) {
+                            const ukDate = convertToUKFormat(trimmedPart);
+                            if (ukDate) {
+                                dates.push(ukDate);
+                            }
+                        } else {
+                            // Single date
+                            const ukDate = convertToUKFormat(trimmedPart);
+                            if (ukDate) {
+                                dates.push(ukDate);
+                            }
+                        }
+                    });
+        
+                    return dates.length > 0 ? dates : ['Missing'];
+                }
+        
+            function convertToUKFormat(dateString) {
+        //console.log('dateString cUKf',dateString);
+            const parts = dateString.split('/');
+        //console.log('parts cUKf',parts);
+            if (parts.length === 3) {
+                if (parts[2].length === 2) {
+                    // Assuming the format is mm/dd/yy
+                    const mm = parts[0].padStart(2, '0');
+                    const dd = parts[1].padStart(2, '0');
+                    const yy = parts[2].padStart(2, '0');
+        
+                    // Construct the UK format: dd/mm/yy
+        //console.log('return',`20${yy}/${mm}/${dd}`);
+                    return `20${yy}/${mm}/${dd}`;
+                    } else {
+                        if (parts[2].length === 4) {
+                            // Assuming the format is mm/dd/yy
+                            const dd = parts[0].padStart(2, '0');
+                            const mm = parts[1].padStart(2, '0');
+                            const yy = parts[2].padStart(2, '0');
+        
+                            // Construct the UK format: dd/mm/yy
+        //console.log('return',`${yy}/${mm}/${dd}`);
+                            return `${yy}/${mm}/${dd}`;
+                        }
+                    }
+                }
+            // Return null for invalid date formats
+            return null;
+            }
+        
+            function saveSnapShot() {
         const fileSave = document.getElementById('fileSave');
         const fileName = fileSave.value;
         saveStatus(fileName);
@@ -426,6 +490,8 @@ console.log('End of processExcelLocations');
             }
         }
     }
+
+
 
     function importData() {
         urls = {};
@@ -767,6 +833,7 @@ console.log('End of processExcelLocations');
 //console.log(sheetName, 'meas ', meas);
             sampleMeasurements[dateSampled][sheetName] = meas;
             const sums = {};
+/*            
             if (sheetName === "PCB data") {
                 const ICES7 = ["2,2',5,5'-Tetrachlorobiphenyl","2,4,4'-Trichlorobiphenyl","2,2',3,4,4',5,5'-Heptachlorobiphenyl",
                                 "2,2',4,4',5,5'-Hexachlorobiphenyl","2,2',3,4,4',5'-Hexachlorobiphenyl",
@@ -891,72 +958,18 @@ console.log('End of processExcelLocations');
                     sampleMeasurements[dateSampled][sheetName].simpleRatios[s] = m;
                 });
             }
-            return dateAnalysed;
-        }
-
-        function parseDates(dateString) {
-//console.log('dateString pd', dateString);
-            // Check if the date field is empty
-            if (!dateString) {
-                return ['Missing'];
-            }
-
-            const dates = [];
-
-            // Split the input by commas or hyphens
-            const dateParts = dateString.split('/,|-/');
-            dateParts.forEach(part => {
-                // Trim leading/trailing spaces
-                const trimmedPart = part.trim();
-
-                // Check if it's a range (contains a hyphen)
-                if (trimmedPart.includes('/')) {
-                    const ukDate = convertToUKFormat(trimmedPart);
-                    if (ukDate) {
-                        dates.push(ukDate);
-                    }
-                } else {
-                    // Single date
-                    const ukDate = convertToUKFormat(trimmedPart);
-                    if (ukDate) {
-                        dates.push(ukDate);
-                    }
-                }
-            });
-
-            return dates.length > 0 ? dates : ['Missing'];
-        }
-
-    function convertToUKFormat(dateString) {
-//console.log('dateString cUKf',dateString);
-    const parts = dateString.split('/');
-//console.log('parts cUKf',parts);
-    if (parts.length === 3) {
-        if (parts[2].length === 2) {
-            // Assuming the format is mm/dd/yy
-            const mm = parts[0].padStart(2, '0');
-            const dd = parts[1].padStart(2, '0');
-            const yy = parts[2].padStart(2, '0');
-
-            // Construct the UK format: dd/mm/yy
-//console.log('return',`20${yy}/${mm}/${dd}`);
-            return `20${yy}/${mm}/${dd}`;
-            } else {
-                if (parts[2].length === 4) {
-                    // Assuming the format is mm/dd/yy
-                    const dd = parts[0].padStart(2, '0');
-                    const mm = parts[1].padStart(2, '0');
-                    const yy = parts[2].padStart(2, '0');
-
-                    // Construct the UK format: dd/mm/yy
-//console.log('return',`${yy}/${mm}/${dd}`);
-                    return `${yy}/${mm}/${dd}`;
-                }
-            }
-        }
-    // Return null for invalid date formats
-    return null;
+*/
+console.log(meas);
+//for (const sheetName in meas) {
+    if (sheetName === 'PAH data') {
+        pahPostProcess(meas);
     }
+    if (sheetName === 'PCB data') {
+        pcbPostProcess(meas);
+    }
+//}
+       return dateAnalysed;
+        }
 
         function extractApplicationDataFromSheet(sheetName, sheetData, url) {
 //console.log('extractappdata',url);
@@ -1350,6 +1363,7 @@ function removeButtons(chartInstanceNo) {
     removeButton(chartInstanceNo, 'l');
     removeButton(chartInstanceNo, 'o');
     removeButton(chartInstanceNo, 's');
+    removeButton(chartInstanceNo, 'c');    
 }
 
 function removeButton(chartInstanceNo, buttonType) {
@@ -1359,8 +1373,8 @@ function removeButton(chartInstanceNo, buttonType) {
         if (buttonToRemove) {
             // Remove the button
             buttonToRemove.remove();
-        } else {
-            console.log('Button ' + buttonType + ' not found', chartInstanceNo);
+//        } else {
+//            console.log('Button ' + buttonType + ' not found', chartInstanceNo);
         }
 }
 
@@ -1377,7 +1391,6 @@ function chemicalTypeHasData(sheetName) {
 }
 
 function filenameDisplay() {
-
     const fileDisplayDiv = document.getElementById("fileDisplay");
     // blank it each time
     fileDisplayDiv.innerHTML = "";
@@ -1410,6 +1423,14 @@ function filenameDisplay() {
         // Add a line break for better readability
         fileDisplayDiv.appendChild(document.createElement("br"));
     };
+    fileDisplayDiv.style.display = 'none';
 }
 
-
+function toggleFileDisplay() {
+    const fileDisplayDiv = document.getElementById("fileDisplay");
+    if (fileDisplayDiv.style.display === 'block') {
+        fileDisplayDiv.style.display = 'none';
+    } else {
+        fileDisplayDiv.style.display = 'block';
+    }
+}
