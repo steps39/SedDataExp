@@ -25,13 +25,16 @@
         <button onclick="exportChart()">Export Chart</button>
         <button onclick="clearData()">Clear Data</button>
         <br>
-        CEFAS Sediment Data -
+        CEFAS Sediment Data - 
         <button onclick="openCEFASSelection()">Select CEFAS Data Sets</button>
-        <div id="sedDataModal" style="display: none;">
+        <div id="sedDredgeData" style="display: none;">
+        </div>
+            <div id="sedDataModal" style="display: none;">
             <h2>Select Data Sets</h2>
-            <input type="file" id="fileInputDD" multiple onchange="importDredgeData()"> <!-- Allow multiple file selection -->
-            <input type="text" id="urlInputDD" placeholder="URLs comma-separated" onchange="importDredgeData()">
-            <!-- Accept comma-separated URLs -->
+            <label for="fileInputDD">CEFAS dredge data file</label>
+            <input type="file" id="fileInputDD" onchange="importDredgeData()"> <!-- Could allow multiple file selection -->
+            <input type="text" id="urlInputDD" placeholder="URL" onchange="importDredgeData()">
+            <!-- Would accept comma-separated URLs -->
              <br>
             <input type="text" id="mlApplications" placeholder="MLA ids comma-separated" onchange="closeCEFASSelection()">
             <button onclick="closeCEFASSelection()">Finish CEFAS Selection</button>

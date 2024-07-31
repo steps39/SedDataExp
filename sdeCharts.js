@@ -1218,7 +1218,9 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
             for (let i = 0; i < chart.scales.x.ticks.length; i++) {
                 if (x >= left + (right * i) && x <= left + (right * (i + 1))) {
                     console.log('x label', i);
-                    const regexPattern = /^(\S+): (.+)$/;
+//                    const regexPattern = /^(\S+): (.+)$/;
+                    const regexPattern = /^(.+): (.+)$/;
+console.log(all[i]);
                     const matchResult = all[i].match(regexPattern);
                     if (matchResult) {
                         // Extracted parts

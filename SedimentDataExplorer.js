@@ -35,6 +35,7 @@
         instanceSheet[i] = null;
     }
     dataSheetNames = ['Physical Data','Trace metal data','PAH data','PCB data','BDE data','Organotins data','Organochlorine data'];
+    dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT','Organochlorine data': 'OC'};
     dataSheetNamesCheckboxes = [];
     for (let i = 0; i < dataSheetNames.length; i++) {
         dataSheetNamesCheckboxes[i] = dataSheetNames[i].replace(/\s/g, '').toLowerCase();
@@ -1396,7 +1397,11 @@ function filenameDisplay() {
     fileDisplayDiv.innerHTML = "";
 
     iconNo = 0;
-    for (dateSampled in selectedSampleInfo) {
+    const datesSampled = Object.keys(selectedSampleInfo);
+    datesSampled.sort();
+    datesSampled.forEach(dateSampled => {
+
+//    for (dateSampled in selectedSampleInfo) {
         currentIcon = markerPath + markerPngs[iconNo];
         iconNo = (iconNo + 1) % 9;
 
@@ -1413,16 +1418,27 @@ function filenameDisplay() {
         linkElement.href = fileURL;
         // console.log(fileURL);
         // console.log(dateSampled);
-        linkElement.textContent = `File for ${dateSampled}: ${fileURL}`;
+        positions = Object.keys(selectedSampleInfo[dateSampled].position);
+        infos = '';
+        for (dataType in selectedSampleMeasurements[dateSampled]) {
+            infos += dataSheetAbr[dataType] + ' ';
+        }
+//        infos = 'PAH BDE OC OT PCB Phys TM';
+        textElement1 = document.createTextNode(`${dateSampled} has ${positions.length} samples with ${infos}:`);
+        textElement2 = document.createTextNode(`File `);
+        linkElement.textContent = `${fileURL}`;
         linkElement.target = "_blank"; // Open link in a new tab/window
 
         // Append the icon before the link
         fileDisplayDiv.appendChild(iconElement);
+        fileDisplayDiv.appendChild(textElement1);
+        fileDisplayDiv.appendChild(document.createElement("br"));
+        fileDisplayDiv.appendChild(textElement2);
         fileDisplayDiv.appendChild(linkElement);
 
         // Add a line break for better readability
         fileDisplayDiv.appendChild(document.createElement("br"));
-    };
+    });
     fileDisplayDiv.style.display = 'none';
 }
 

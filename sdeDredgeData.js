@@ -1,5 +1,6 @@
 CEFASdata = {};
 CEFASfile = {};
+CEFASUniqueRows = {};
 ddLookup = {};
 ddLookup.chemical = {};
 ddLookup.sheet = {};
@@ -161,102 +162,104 @@ ddLookup.sheet['pb']="Trace metal data";
 ddLookup.sheet['zn']="Trace metal data";
 
 
+CEFASconcentration='concentration';
+CEFASlatitude = 'lat';
+CEFASlongitude = 'lon';
+CEFASmla = 'ml_application';
+CEFASchemical = 'parameter_measured';
+CEFASsampledate = 'sample_date_collection';
+CEFASdepth = 'sample_depth';
+CEFASsamplename = 'sample_reference';
+
 everything = {};
 
-    function importDredgeData() {
-        urls = {};
-        const fileInputDD = document.getElementById('fileInputDD');
-        const urlInputDD = document.getElementById('urlInputDD');
-        files = fileInputDD.files; // Files is now a FileList object containing multiple files
-//console.log(files);
-        urls = urlInputDD.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
-        if (files.length === 0 && urls.length === 0) {
-            alert('Please select files or enter URLs.');
-            return;
-        }
-        // Process files
-        if (files.length > 0) {
-            let filesProcessed = 0; // counter to track the number of files processed
-            let fL = files.length;
-console.log(files.length);
-            for (let i = 0; i < files.length; i++) {
-                CEFASfilename = files[i].name;
-//console.log(filename);
-                const reader = new FileReader();
-
-                reader.onload = function (e) {
-                    CEFASdata = new Uint8Array(e.target.result);
-//                    var workbook = XLSX.read(data, {type:"array"});
-//console.log(workbook);
-//everything = workbook;
-//everything 
-//                    processDDExcelData(data,filename);
-                    filesProcessed++; // Increment the counter after processing each file
-                    // Check if all files have been processed
-//console.log(files.length,fL, filesProcessed);
-/*                    if (filesProcessed === fL) {
-//console.log('calling updateChart');
-                        updateChart(); // Call updateChart once all files have been processed
-                    }*/
-                };
-                reader.readAsArrayBuffer(files[i]);
-            }
-        }
-        if (urls.length > 0) {
-            // Array to store all fetch promises
-            const fetchPromises = [];
-        
-            urls.forEach(url => {
-                // Check if the URL is a valid URL before fetching
-                if (!/^https?:\/\//i.test(url)) {
-                    console.error('Invalid URL:', url);
-                    return;
-                }
-        
-                // Push each fetch promise into the array
-                fetchPromises.push(
-                    fetch(url)
-                        .then(response => response.arrayBuffer())
-                        .then(data => {
-                            processDDExcelData(new Uint8Array(data), url);
-console.log('processexcelDDdata again');
-                        })
-                        .catch(error => {
-                            console.error('Error fetching the DD file:', error);
-                        })
-                );
-            });
-/*        
-            // Wait for all fetch promises to resolve
-            Promise.all(fetchPromises)
-                .then(() => {
-                    updateChart();
-//console.log('there again');
-                });
-                */
-        }
-
-//console.log('Import Data out of fetch');
-//        updateChart();
-// Clear the input field after reading data
-//CEFASdata = data;
-//CEFASfile = filename;
-        fileInputDD.value = '';
-        urlInputDD.value = '';
+function importDredgeData() {
+    urls = {};
+    const fileInputDD = document.getElementById('fileInputDD');
+    const urlInputDD = document.getElementById('urlInputDD');
+    files = fileInputDD.files; // Files is now a FileList object containing multiple files
+    //console.log(files);
+    urls = urlInputDD.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+    if (files.length === 0 && urls.length === 0) {
+        alert('Please select files or enter URLs.');
+        return;
     }
+    // Process files
+    if (files.length > 0) {
+        let filesProcessed = 0; // counter to track the number of files processed
+        let fL = files.length;
+        console.log(files.length);
+        for (let i = 0; i < files.length; i++) {
+            CEFASfilename = files[i].name;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                data = new Uint8Array(e.target.result);
+                filesProcessed++; // Increment the counter after processing each file
+                ret = loadDredgeData(data);
+                CEFASdata = ret['df'];
+                CEFASUniqueRows = ret['uniqueRows'];
+            };
+            reader.readAsArrayBuffer(files[i]);
+        }
+    }
+    if (urls.length > 0) {
+        // Array to store all fetch promises
+        const fetchPromises = [];
 
-function processDDExcelData(data, url) {
-    console.log('processexceldata', url);
+        urls.forEach(url => {
+            // Check if the URL is a valid URL before fetching
+            if (!/^https?:\/\//i.test(url)) {
+                console.error('Invalid URL:', url);
+                return;
+            }
+
+            // Push each fetch promise into the array
+            fetchPromises.push(
+                fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(data => {
+                        var data = new Uint8Array(e.target.result);
+                        ret = loadDredgeData(data);
+                        CEFASdata = ret['df'];
+                        CEFASUniqueRows = ret['uniqueRows'];
+                    })
+                    .catch(error => {
+                        console.error('Error fetching the DD file:', error);
+                    })
+            );
+        });
+    }
+    fileInputDD.value = '';
+    urlInputDD.value = '';
+}
+
+function loadDredgeData(data) {
     const workbook = XLSX.read(data, { type: 'array' });
     //everything = workbook;        
     sheetData = workbook.Sheets['Dredge Contaminant Seabed Data '];
-//    mlApplication = 'MLA/2016/00341,MLA/2017/00002';
+    let uniqueRows = [];
+    let uniqueMLAs = [];
+    const df = XLSX.utils.sheet_to_json(sheetData, { cellText: true });
+    console.log(df);
+    df.forEach(row => {
+        let mlaName = row[CEFASmla];
+        if (mlaName && !uniqueMLAs[mlaName]) {
+            console.log('found a unique one ', mlaName);
+            uniqueMLAs[mlaName] = true;
+            uniqueRows.push(row);
+        }
+    });
+    sedDredgeDataDisplay(uniqueRows.length);
+    return {df,uniqueRows};
+}
+
+        function processDDExcelData(data, url) {
+    console.log('processexceldata', url);
+sheetData = data;
     const mlaInput = document.getElementById('mlApplications');
-//console.log(mlaInput);
     mlas = mlaInput.value.trim().split(',').map(mla => mla.trim()); // Split comma-separated URLs
 if (mlas.length > 0) {
         mlas.forEach(mlApplication => {
-//console.log(mlApplication);
             extractDataFromSheet(sheetData, mlApplication);
         });
     }
@@ -266,36 +269,32 @@ if (mlas.length > 0) {
     updateChart();
 
 }
+
     
 function extractDataFromSheet(sheetData, mlApplication) {
-    const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
-    //                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
-    let startRow = -1;
-    let startCol = -1;
-    let measurementUnit = 'Not set';
-    let totalSum = 0;
-    testDD = df.filter(row => row[4] && row[4].includes(mlApplication));
-    let sampleColumnIndex = 3;
+df = sheetData;
+    testDD = df.filter(row => row[CEFASmla] && row[CEFASmla].includes(mlApplication));
     let uniqueSamples = {};
     let uniqueRows = [];
 
     testDD.forEach(row => {
-        let sampleName = row[sampleColumnIndex];
+        let sampleName = row[CEFASsamplename];
         if (sampleName && !uniqueSamples[sampleName]) {
             uniqueSamples[sampleName] = true;
             uniqueRows.push(row);
         }
     });
     //console.log(uniqueRows);
-    sampleDate = parseDates(uniqueRows[0][5]);
-    dateSampled = sampleDate + ' ' + uniqueRows[0][4];
-console.log(dateSampled);
+    sampleDate = parseDates(uniqueRows[0][CEFASsampledate]);
+    dateSampled = sampleDate + ' ' + uniqueRows[0][CEFASmla];
+//console.log(dateSampled);
     sampleInfo[dateSampled] = {};
     sampleInfo[dateSampled]['Date Sampled'] = sampleDate;
     sampleInfo[dateSampled]['fileURL'] = CEFASfilename;
     sampleInfo[dateSampled].position = {};
     uniqueRows.forEach(row => {
-        sampleInfo[dateSampled].position[row[3]] = { 'Position latitude': row[7], 'Position longitude': row[6], 'Sampling depth (m)': row[12] };
+        sampleInfo[dateSampled].position[row[CEFASsamplename]] = { 'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],
+             'Sampling depth (m)': row[CEFASdepth] };
     });
     if (!(dateSampled in sampleMeasurements)) {
         meas = {};
@@ -305,12 +304,12 @@ console.log(dateSampled);
     everything = testDD;
     //meas = {};
     testDD.forEach(row => {
-        chemicalAbr = row[8].trim();
+        chemicalAbr = row[CEFASchemical].trim();
         if (chemicalAbr in ddLookup.sheet) {
             sheetName = ddLookup.sheet[chemicalAbr];
             chemicalName = ddLookup.chemical[chemicalAbr];
-            sample = row[3];
-            concentration = parseFloat(row[9]);
+            sample = row[CEFASsamplename];
+            concentration = parseFloat(row[CEFASconcentration]);
             if (!(sheetName in meas)) {
                 meas[sheetName] = {};
                 meas[sheetName].chemicals = {};
@@ -326,8 +325,6 @@ console.log(dateSampled);
                     meas[sheetName].chemicals[chemicalName] = {};
                     meas[sheetName].chemicals[chemicalName].samples = {};
                 }
-//                    console.log(sheetName, chemicalName);
-                //console.log(ddLookup.chemical[chemicalAbr]);
                 if (!(sample in meas[sheetName].total)) {
                     meas[sheetName].total[sample] = 0;
                 }
@@ -370,53 +367,46 @@ function closeCEFASSearch() {
     const radius = parseFloat(document.getElementById('radius').value);
     startDate = new Date(document.getElementById('startDate').value);
     finishDate = new Date(document.getElementById('finishDate').value);
-console.log(startDate,finishDate);
-    //    console.log('processexceldata', url);
-    const workbook = XLSX.read(CEFASdata, { type: 'array' });
-    //everything = workbook;        
-    sheetData = workbook.Sheets['Dredge Contaminant Seabed Data '];
-    let uniqueRows = [];
-    let uniqueMLAs = [];
-    mlaColumnIndex = 4;
-    const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
-    df.forEach(row => {
-        let mlaName = row[mlaColumnIndex];
-        if (mlaName && !uniqueMLAs[mlaName]) {
-            uniqueMLAs[mlaName] = true;
-            uniqueRows.push(row);
-        }
-    });
     mlas = [];
+    uniqueRows = CEFASUniqueRows;
+    console.log(uniqueRows);
     uniqueRows.forEach(row => {
-        samplingDate = new Date(parseDates(row[5])[0]);
-        sampleLat = row[7];
-        sampleLon = row[6];
+        samplingDate = new Date(parseDates(row[CEFASsampledate])[0]);
+        sampleLat = row[CEFASlatitude];
+        sampleLon = row[CEFASlongitude];
         distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
         if (distance <= radius) {
             console.log(startDate);
             if(startDate.toString() === 'Invalid Date' || finishDate.toString() === 'Invalid Date'){
-//            if(startDate.toString() === 'Invalid Date'){
                     console.log('Pushing Invalid Date');
-console.log(samplingDate);
-                mlas.push(row[4]);
+                mlas.push(row[CEFASmla]);
             } else {
-                console.log(isBetweenDates(startDate,finishDate,samplingDate));
                 if (isBetweenDates(startDate,finishDate,samplingDate)){
-console.log('Pushing');
-console.log(samplingDate);
-                    mlas.push(row[4]);
+                    mlas.push(row[CEFASmla]);
                 }
             }
         }
     });
-//console.log(mlas);
+console.log(mlas);
     if (mlas.length > 0) {
         mlas.forEach(mlApplication => {
             //console.log(mlApplication);
-            extractDataFromSheet(sheetData, mlApplication);
+            extractDataFromSheet(CEFASdata, mlApplication);
         });
         selectedSampleInfo = sampleInfo;
         selectedSampleMeasurements = sampleMeasurements;
         updateChart();
     }
 }
+
+function sedDredgeDataDisplay(noMLAs) {
+    const sedDDDisplayDiv = document.getElementById("sedDredgeData");
+    // blank it each time
+    sedDDDisplayDiv.innerHTML = "";
+    var countNode = document.createTextNode(`${noMLAs} marine applications available`);
+    sedDDDisplayDiv.appendChild(countNode);
+        // Add a line break for better readability
+        sedDDDisplayDiv.appendChild(document.createElement("br"));
+    sedDDDisplayDiv.style.display = 'block';
+}
+

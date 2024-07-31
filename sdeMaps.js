@@ -117,8 +117,14 @@ function sampleMap(meas) {
                                 //console.log('distance1',distance);
                                 if (distance <= 10) {
                                     hoveredSample = ds + ': ' + s;
+console.log(meas);
+console.log(ds);
+console.log(hoveredSample);
                                     createHighlights(meas, ds, hoveredSample);
-                                    popupInstance[hoveredSample].update();
+console.log(popupInstance);
+                                    if(hoveredSample in popupInstance) {
+                                        popupInstance[hoveredSample].update();
+                                    }
                                     let popup = marker.getPopup();
                                     let chart_div = document.getElementById("c_radar_" + hoveredSample);
                                     chart_div.style.height = '300px';
@@ -156,8 +162,12 @@ console.log(popup);
                                 //console.log('distance2',distance);
                                 if (distance <= 10) {
                                     hoveredSample = ds + ': ' + s;
+console.log(meas,ds,hoveredSample);
                                     createHighlights(meas, ds, hoveredSample);
-                                    popupInstance[hoveredSample].update();
+console.log(popupInstance);
+                                    if(hoveredSample in popupInstance) {
+                                        popupInstance[hoveredSample].update();
+                                    }
                                     popup = marker.getPopup();
                                     chart_div = document.getElementById("c_radar_" + hoveredSample);
 /*                                    chart_div.style.height = '200px';
