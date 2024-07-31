@@ -494,71 +494,93 @@ console.log('End of processExcelLocations');
 
 
 
-    function importData() {
-        urls = {};
-        if (firstTime) {
-            importLocations();
-            firstTime = false;
-            files = {};
-            // Get the current URL
-            const currentURL = window.location.href;
-            // Parse the URL to get the search parameters
-            const suppliedParams = new URLSearchParams(window.location.search);
-            // Get the value of the 'status' parameter
-            const statusParam = suppliedParams.get('status');
-            if (statusParam) {
-                loadStatus(statusParam);
-            } else {
-                const urlParam = suppliedParams.get('urls');
-                if (urlParam) {
-                    urls = urlParam.split(',').map(url => url.trim()); // Split comma-separated URLs
-                }
-            }
-            checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
-            checkboxParameters(suppliedParams, 'subcharts', subChartNames);
-            const noninter = suppliedParams.get('noninter');
-            if (!noninter) {
-                const everything = document.getElementById('everything');
-                everything.style.display = 'inline';
-            }
+function importData() {
+    var urls = {};
+    if (firstTime) {
+        importLocations();
+        firstTime = false;
+        files = {};
+        // Get the current URL
+        const currentURL = window.location.href;
+        // Parse the URL to get the search parameters
+        const suppliedParams = new URLSearchParams(window.location.search);
+        // Get the value of the 'status' parameter
+        const statusParam = suppliedParams.get('status');
+        if (statusParam) {
+            loadStatus(statusParam);
         } else {
-            const fileInput = document.getElementById('fileInput');
-            const urlInput = document.getElementById('urlInput');
-            files = fileInput.files; // Files is now a FileList object containing multiple files
-//console.log(files);
-            urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
-        }
-        if (files.length === 0 && urls.length === 0) {
-            alert('Please select files or enter URLs.');
-            return;
-        }
-        // Process files
-        if (files.length > 0) {
-            let filesProcessed = 0; // counter to track the number of files processed
-            let fL = files.length;
-//console.log(files.length);
-            for (let i = 0; i < files.length; i++) {
-                const filename = files[i].name;
-//console.log(filename);
-                const reader = new FileReader();
-
-                reader.onload = function (e) {
-                    const data = new Uint8Array(e.target.result);
-                    processExcelData(data,filename);
-                    filesProcessed++; // Increment the counter after processing each file
-                    // Check if all files have been processed
-//console.log(files.length,fL, filesProcessed);
-                    if (filesProcessed === fL) {
-//console.log('calling updateChart');
-                        updateChart(); // Call updateChart once all files have been processed
-3                    }
-                };
-                reader.readAsArrayBuffer(files[i]);
+            const urlParam = suppliedParams.get('urls');
+            if (urlParam) {
+                urls = urlParam.split(',').map(url => url.trim()); // Split comma-separated URLs
             }
-//            updateChart();
         }
+        checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
+        checkboxParameters(suppliedParams, 'subcharts', subChartNames);
+        const noninter = suppliedParams.get('noninter');
+        if (!noninter) {
+            const everything = document.getElementById('everything');
+            everything.style.display = 'inline';
+        }
+        console.log(suppliedParams);
+        const durlParam = suppliedParams.get('durl');
+        console.log(durlParam);
+        if (durlParam) {
+            var urlInputDD = document.getElementById('urlInputDD');
+            urlInputDD.value = durlParam;
+            importDredgeData();
+            dlat = suppliedParams.get('dlat');
+            dlon = suppliedParams.get('dlon');
+            drad = suppliedParams.get('drad');
+            if (dlat && dlon && drad) {
+                centreLat = document.getElementById('centreLatitude');
+                centreLon = document.getElementById('centreLongitude');
+                radius = document.getElementById('radius');
+                centreLat.value = dlat;
+                centreLon.value = dlon;
+                radius.value = drad;
+//                closeCEFASSearch();
+            }
+            importDredgeData();
+        }
+    } else {
+        const fileInput = document.getElementById('fileInput');
+        const urlInput = document.getElementById('urlInput');
+        files = fileInput.files; // Files is now a FileList object containing multiple files
+        //console.log(files);
+        urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+    }
+    if (files.length === 0 && urls.length === 0) {
+        alert('Please select files or enter URLs.');
+        return;
+    }
+    // Process files
+    if (files.length > 0) {
+        let filesProcessed = 0; // counter to track the number of files processed
+        let fL = files.length;
+        //console.log(files.length);
+        for (let i = 0; i < files.length; i++) {
+            const filename = files[i].name;
+            //console.log(filename);
+            const reader = new FileReader();
 
-        // Process URLs only if URLs are supplied
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                processExcelData(data, filename);
+                filesProcessed++; // Increment the counter after processing each file
+                // Check if all files have been processed
+                //console.log(files.length,fL, filesProcessed);
+                if (filesProcessed === fL) {
+                    //console.log('calling updateChart');
+                    updateChart(); // Call updateChart once all files have been processed
+                //    3
+                }
+            };
+            reader.readAsArrayBuffer(files[i]);
+        }
+        //            updateChart();
+    }
+
+// Process URLs only if URLs are supplied
 /*        if (urls.length > 0) {
             urls.forEach(url => {
                 // Check if the URL is a valid URL before fetching

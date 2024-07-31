@@ -175,12 +175,13 @@ CEFASsamplename = 'sample_reference';
 everything = {};
 
 function importDredgeData() {
-    urls = {};
+    var urls = {};
     const fileInputDD = document.getElementById('fileInputDD');
     const urlInputDD = document.getElementById('urlInputDD');
     files = fileInputDD.files; // Files is now a FileList object containing multiple files
     //console.log(files);
-    urls = urlInputDD.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+//    urls = urlInputDD.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+    url = urlInputDD.value;
     if (files.length === 0 && urls.length === 0) {
         alert('Please select files or enter URLs.');
         return;
@@ -203,11 +204,13 @@ function importDredgeData() {
             reader.readAsArrayBuffer(files[i]);
         }
     }
-    if (urls.length > 0) {
-        // Array to store all fetch promises
+//    if (urls.length > 0) {
+    if (url) {
+            // Array to store all fetch promises
         const fetchPromises = [];
 
-        urls.forEach(url => {
+//        urls.forEach(url => {
+console.log(url);
             // Check if the URL is a valid URL before fetching
             if (!/^https?:\/\//i.test(url)) {
                 console.error('Invalid URL:', url);
@@ -230,7 +233,22 @@ function importDredgeData() {
                         console.error('Error fetching the DD file:', error);
                     })
             );
+//        });
+        Promise.all(fetchPromises)
+        .then(() => {
+            centreLat = document.getElementById('centreLatitude');
+            centreLon = document.getElementById('centreLongitude');
+            radius = document.getElementById('radius');
+            centreLat.value = dlat;
+            centreLon.value = dlon;
+            radius.value = drad;
+            if (dlat && dlon && drad) {
+                closeCEFASSearch();
+            }
+    ;
+//console.log('there again');
         });
+
     }
     fileInputDD.value = '';
     urlInputDD.value = '';
@@ -247,7 +265,7 @@ function loadDredgeData(data) {
     df.forEach(row => {
         let mlaName = row[CEFASmla];
         if (mlaName && !uniqueMLAs[mlaName]) {
-            console.log('found a unique one ', mlaName);
+//console.log('found a unique one ', mlaName);
             uniqueMLAs[mlaName] = true;
             uniqueRows.push(row);
         }
@@ -372,7 +390,7 @@ function closeCEFASSearch() {
     finishDate = new Date(document.getElementById('finishDate').value);
     mlas = [];
     uniqueRows = CEFASUniqueRows;
-    console.log(uniqueRows);
+//console.log(uniqueRows);
     uniqueRows.forEach(row => {
         samplingDate = new Date(parseDates(row[CEFASsampledate])[0]);
         sampleLat = row[CEFASlatitude];
