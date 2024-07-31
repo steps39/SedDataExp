@@ -1,5 +1,6 @@
 CEFASdata = {};
 CEFASfile = {};
+CEFASfilename = '';
 CEFASUniqueRows = {};
 ddLookup = {};
 ddLookup.chemical = {};
@@ -212,14 +213,16 @@ function importDredgeData() {
                 console.error('Invalid URL:', url);
                 return;
             }
+            CEFASfilename = url;
 
             // Push each fetch promise into the array
             fetchPromises.push(
                 fetch(url)
                     .then(response => response.arrayBuffer())
                     .then(data => {
-                        var data = new Uint8Array(e.target.result);
-                        ret = loadDredgeData(data);
+//                        var data = new Uint8Array(e.target.result);
+//                        ret = loadDredgeData(data);
+                        ret = loadDredgeData(new Uint8Array(data));
                         CEFASdata = ret['df'];
                         CEFASUniqueRows = ret['uniqueRows'];
                     })
