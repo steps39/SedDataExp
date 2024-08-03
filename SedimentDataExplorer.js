@@ -525,13 +525,15 @@ function importData() {
         const durlParam = suppliedParams.get('durl');
         console.log(durlParam);
         if (durlParam) {
-            var urlInputDD = document.getElementById('urlInputDD');
+/*            var urlInputDD = document.getElementById('urlInputDD');
             urlInputDD.value = durlParam;
-            importDredgeData();
+            importDredgeData(durlParam);*/
             dlat = suppliedParams.get('dlat');
             dlon = suppliedParams.get('dlon');
             drad = suppliedParams.get('drad');
-            if (dlat && dlon && drad) {
+            dstart = suppliedParams.get('dstart');
+            dfinish = suppliedParams.get('dfinish');
+/*            if (dlat && dlon && drad) {
                 centreLat = document.getElementById('centreLatitude');
                 centreLon = document.getElementById('centreLongitude');
                 radius = document.getElementById('radius');
@@ -539,8 +541,8 @@ function importData() {
                 centreLon.value = dlon;
                 radius.value = drad;
 //                closeCEFASSearch();
-            }
-            importDredgeData();
+            }*/
+            importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish);
         }
     } else {
         const fileInput = document.getElementById('fileInput');

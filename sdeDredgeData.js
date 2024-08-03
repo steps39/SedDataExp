@@ -162,6 +162,7 @@ ddLookup.sheet['ni']="Trace metal data";
 ddLookup.sheet['pb']="Trace metal data";
 ddLookup.sheet['zn']="Trace metal data";
 
+ddCorrection = {'Trace metal data' : 1,'PAH data' : 1,'PCB data' : 0.001,'BDE data' : 0.001,'Organotins data' : 0.001,'Organochlorine data' : 0.001};
 
 CEFASconcentration='concentration';
 CEFASlatitude = 'lat';
@@ -174,15 +175,17 @@ CEFASsamplename = 'sample_reference';
 
 everything = {};
 
-function importDredgeData() {
-    var urls = {};
-    const fileInputDD = document.getElementById('fileInputDD');
-    const urlInputDD = document.getElementById('urlInputDD');
-    files = fileInputDD.files; // Files is now a FileList object containing multiple files
-    //console.log(files);
-//    urls = urlInputDD.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
-    url = urlInputDD.value;
-    if (files.length === 0 && urls.length === 0) {
+function importDredgeData(url,centreLat,centreLon,radius,startDate,finishDate) {
+//    var urls = {};
+    if (url === undefined) {
+        const fileInputDD = document.getElementById('fileInputDD');
+        const urlInputDD = document.getElementById('urlInputDD');
+        files = fileInputDD.files; // Files is now a FileList object containing multiple files
+        //console.log(files);
+        //    urls = urlInputDD.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+        url = urlInputDD.value;
+    }
+    if (files.length === 0 && url === undefined) {
         alert('Please select files or enter URLs.');
         return;
     }
@@ -205,7 +208,7 @@ function importDredgeData() {
         }
     }
 //    if (urls.length > 0) {
-    if (url) {
+    if (!(url  === undefined)) {
             // Array to store all fetch promises
         const fetchPromises = [];
 
@@ -233,22 +236,19 @@ console.log(url);
                         console.error('Error fetching the DD file:', error);
                     })
             );
-//        });
         Promise.all(fetchPromises)
         .then(() => {
-            centreLat = document.getElementById('centreLatitude');
-            centreLon = document.getElementById('centreLongitude');
-            radius = document.getElementById('radius');
-            centreLat.value = dlat;
-            centreLon.value = dlon;
-            radius.value = drad;
-            if (dlat && dlon && drad) {
-                closeCEFASSearch();
+//console.log(startDate,finishDate);
+            if (centreLat && centreLon && radius) {
+                if (!(startDate || finishDate)) {
+//console.log('settting invalid date');
+                    startDate = 'Invalid Date';
+                    finishDate = 'Invalid Date';
+                }
+                closeCEFASSearch(centreLat,centreLon,radius,startDate,finishDate);
             }
-    ;
 //console.log('there again');
         });
-
     }
     fileInputDD.value = '';
     urlInputDD.value = '';
@@ -330,7 +330,7 @@ df = sheetData;
             sheetName = ddLookup.sheet[chemicalAbr];
             chemicalName = ddLookup.chemical[chemicalAbr];
             sample = row[CEFASsamplename];
-            concentration = parseFloat(row[CEFASconcentration]);
+            concentration = parseFloat(row[CEFASconcentration]) * ddCorrection[sheetName];
             if (!(sheetName in meas)) {
                 meas[sheetName] = {};
                 meas[sheetName].chemicals = {};
@@ -378,16 +378,18 @@ function closeCEFASSelection() {
     processDDExcelData(CEFASdata,CEFASfile);
 }
 
-function closeCEFASSearch() {
+function closeCEFASSearch(centreLat,centreLon,radius,startDate,finishDate) {
     const isBetweenDates = (dateStart, dateEnd, date) =>
         date > dateStart && date < dateEnd;
     const sedDataModal = document.getElementById('sedDataModal');
     sedDataModal.style.display = 'none';
-    centreLat = parseFloat(document.getElementById('centreLatitude').value);
-    centreLon = parseFloat(document.getElementById('centreLongitude').value);
-    const radius = parseFloat(document.getElementById('radius').value);
-    startDate = new Date(document.getElementById('startDate').value);
-    finishDate = new Date(document.getElementById('finishDate').value);
+    if (!(centreLat && centreLon && radius)) {
+        centreLat = parseFloat(document.getElementById('centreLatitude').value);
+        centreLon = parseFloat(document.getElementById('centreLongitude').value);
+        radius = parseFloat(document.getElementById('radius').value);
+        startDate = new Date(document.getElementById('startDate').value);
+        finishDate = new Date(document.getElementById('finishDate').value);
+    }
     mlas = [];
     uniqueRows = CEFASUniqueRows;
 //console.log(uniqueRows);
@@ -397,9 +399,9 @@ function closeCEFASSearch() {
         sampleLon = row[CEFASlongitude];
         distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
         if (distance <= radius) {
-            console.log(startDate);
+//console.log(startDate);
             if(startDate.toString() === 'Invalid Date' || finishDate.toString() === 'Invalid Date'){
-                    console.log('Pushing Invalid Date');
+//console.log('Pushing Invalid Date');
                 mlas.push(row[CEFASmla]);
             } else {
                 if (isBetweenDates(startDate,finishDate,samplingDate)){
@@ -411,7 +413,7 @@ function closeCEFASSearch() {
 console.log(mlas);
     if (mlas.length > 0) {
         mlas.forEach(mlApplication => {
-            //console.log(mlApplication);
+//console.log(mlApplication);
             extractDataFromSheet(CEFASdata, mlApplication);
         });
         selectedSampleInfo = sampleInfo;
