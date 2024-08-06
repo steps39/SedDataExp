@@ -3,9 +3,44 @@ CEFASfile = {};
 CEFASfilename = '';
 CEFASUniqueRows = {};
 ddLookup = {};
-ddLookup.chemical = {};
-ddLookup.sheet = {};
-ddLookup.chemical['pcb101']="2,2',4,5,5'-Pentachlorobiphenyl";
+ddLookup.chemical = {'pcb101' : "2,2',4,5,5'-Pentachlorobiphenyl" , 'pcb105' : "2,3,3',4,4'-Pentachlorobiphenyl" , 'pcb110' : "2,3,3',4',6-Pentachlorobiphenyl" ,
+     'pcb118' : "2,3',4,4',5-Pentachlorobiphenyl" , 'pcb128' : "2,2',3,3',4,4'-Hexachlorobiphenyl" , 'pcb138' : "2,2',3,4,4',5'-Hexachlorobiphenyl" , 
+     'pcb141' : "2,2',3,4,5,5'-Hexachlorobiphenyl" , 'pcb149' : "2,2',3,4',5',6-Hexachlorobiphenyl" , 'pcb151' : "2,2',3,5,5',6-Hexachlorobiphenyl" ,
+     'pcb153' : "2,2',4,4',5,5'-Hexachlorobiphenyl" , 'pcb156' : "2,3,3',4,4',5-Hexachlorobiphenyl" , 'pcb158' : "2,3,3',4,4',6-Hexachlorobiphenyl" ,
+     'pcb170' : "2,2',3,3',4,4',5-Heptachlorobiphenyl" , 'pcb18' : "2,2',5- Trichlorobiphenyl" , 'pcb180' : "2,2',3,4,4',5,5'-Heptachlorobiphenyl" ,
+     'pcb183' : "2,2',3,4,4',5',6-Heptachlorobiphenyl" , 'pcb187' : "2,2',3,4',5,5',6-Heptachlorobiphenyl" , 'pcb194' : "2,2',3,3',4,4',5,5'-Octachlorobiphenyl" ,
+     'pcb28' : "2,4,4'-Trichlorobiphenyl" , 'pcb31' : "2,4',5-Trichlorobiphenyl" , 'pcb44' : "2,2',3,5'-Tetrachlorobiphenyl" ,
+     'pcb47' : "2,2',4,4'-Tetrachlorobiphenyl" , 'pcb49' : "2,2',4,5'-Tetrachlorobiphenyl" , 'pcb52' : "2,2',5,5'-Tetrachlorobiphenyl" ,
+     'pcb66' : "2,3',4,4'-Tetrachlorobiphenyl" , 'acenapth' : "Acenapthene" , 'acenapthylene' : "Acenapthylene" , 'anthracn' : "Anthracene" ,
+     'baa' : "Benz[a]anthracene" , 'bap' : "Benzo[a]pyrene" , 'bbf' : "Benzo[b]fluoranthene" , 'benzghip' : "Benzo[g,h,i]perylene" , 'bep' : "Benzo[e]pyrene" ,
+     'bkf' : "Benzo[k]fluoranthene" , 'c1n' : "C1-Napthalenes" , 'c1phen' : "C1-Phenanthrenes" , 'c2n' : "C2-Napthalenes" , 'c3n' : "C3-Napthalenes" ,
+     'chrysene' : "Chrysene" , 'dibenzah' : "Dibenz[a,h]anthracene" , 'flurant' : "Fluoranthene" , 'fluorene' : "Fluorene" , 'indypr' : "Indeno[123-c,d]pyrene" ,
+     'napth' : "Napthalene" , 'perylene' : "Perylene" , 'phenant' : "Phenanthrene" , 'pyrene' : "Pyrene" , 'thc' : "totalHC" ,
+     'ahch' : "alpha-hexachlorocyclohexane (AHCH)" , 'bhch' : "beta-hexachlorocyclohexane (BHCH)" , 'ghch' : "gamma-hexachlorocyclohexane (GHCH)" ,
+     'dieldrin' : "Dieldrin" , 'hcb' : "Hexachlorobenzene (HCB)" , 'dde' : "1,1-Dichloro-2,2-bis (p-chlorophenyl)ethylene (PPDDE)" ,
+     'ddt' : "Dichlorodiphenyltrichloroethane (PPDDT)" , 'tde' : "1,1-dichloro-2,2-bis (p-chlorophenyl)ethane (PPTDE)" ,
+     'bde100' : "2,2′,4,4′,6-penta-bromodiphenylether (BDE100)" , 'bde138' : "Hexabromodiphenylether (BDE138)" ,
+     'bde153' : "2,2′,4,4′,5,5′-hexa-bromodiphenylether (BDE153)" , 'bde154' : "2,2′,4,4′,5,6′-hexa-bromodiphenylether (BDE154)" ,
+     'bde17' : "2,2´,4-tri-bromodiphenylether (BDE17)" , 'bde183' : "2,2′,3,4,4′,5′,6-heptabromodiphenylether (BDE183)" ,
+     'bde28' : "2,4,4'-tribromodiphenylether (BDE28)" , 'bde47' : "2,2′,4,4′-Tetrabromodiphenylether (BDE47)" ,
+     'bde66' : "2,3',4,4'-Tetrabromodiphenylether (BDE66)" , 'bde85' : "2,2',3,4,4'-Pentabromodiphenylether (BDE85)" ,
+     'bde99' : "2,2',4,4',5-pentabromodiphenylether (BDE99)" , 'dbt' : "Dibutyltine (DBT)" , 'tbt' : "Tributyltin (TBT)" , 'as' : "Arsenic (As)" ,
+     'cd' : "Cadmium (Cd)" , 'cr' : "Chromium (Cr)" , 'cu' : "Copper (Cu)" , 'hg' : "Mercury (Hg)" , 'ni' : "Nickel (Ni)" , 'pb' : "Lead (Pb)" , 'zn' : "Zinc (Zn)" };
+     ddLookup.sheet = {'pcb101' : "PCB data" , 'pcb105' : "PCB data" , 'pcb110' : "PCB data" , 'pcb118' : "PCB data" , 'pcb128' : "PCB data" , 'pcb138' : "PCB data" ,
+        'pcb141' : "PCB data" , 'pcb149' : "PCB data" , 'pcb151' : "PCB data" , 'pcb153' : "PCB data" , 'pcb156' : "PCB data" , 'pcb158' : "PCB data" ,
+        'pcb170' : "PCB data" , 'pcb18' : "PCB data" , 'pcb180' : "PCB data" , 'pcb183' : "PCB data" , 'pcb187' : "PCB data" , 'pcb194' : "PCB data" ,
+        'pcb28' : "PCB data" , 'pcb31' : "PCB data" , 'pcb44' : "PCB data" , 'pcb47' : "PCB data" , 'pcb49' : "PCB data" , 'pcb52' : "PCB data" ,
+        'pcb66' : "PCB data" , 'acenapth' : "PAH data" , 'acenapthylene' : "PAH data" , 'anthracn' : "PAH data" , 'baa' : "PAH data" , 'bap' : "PAH data" ,
+        'bbf' : "PAH data" , 'benzghip' : "PAH data" , 'bep' : "PAH data" , 'bkf' : "PAH data" , 'c1n' : "PAH data" , 'c1phen' : "PAH data" , 'c2n' : "PAH data" ,
+        'c3n' : "PAH data" , 'chrysene' : "PAH data" , 'dibenzah' : "PAH data" , 'flurant' : "PAH data" , 'fluorene' : "PAH data" , 'indypr' : "PAH data" ,
+        'napth' : "PAH data" , 'perylene' : "PAH data" , 'phenant' : "PAH data" , 'pyrene' : "PAH data" , 'thc' : "PAH data" , 'ahch' : "Organochlorine data" ,
+        'bhch' : "Organochlorine data" , 'ghch' : "Organochlorine data" , 'dieldrin' : "Organochlorine data" , 'hcb' : "Organochlorine data" ,
+        'dde' : "Organochlorine data" , 'ddt' : "Organochlorine data" , 'tde' : "Organochlorine data" , 'bde100' : "BDE data" , 'bde138' : "BDE data" ,
+        'bde153' : "BDE data" , 'bde154' : "BDE data" , 'bde17' : "BDE data" , 'bde183' : "BDE data" , 'bde28' : "BDE data" , 'bde47' : "BDE data" ,
+        'bde66' : "BDE data" , 'bde85' : "BDE data" , 'bde99' : "BDE data" , 'dbt' : "Organotins data" , 'tbt' : "Organotins data" , 'as' : "Trace metal data" ,
+        'cd' : "Trace metal data" , 'cr' : "Trace metal data" , 'cu' : "Trace metal data" , 'hg' : "Trace metal data" , 'ni' : "Trace metal data" ,
+        'pb' : "Trace metal data" , 'zn' : "Trace metal data"};
+/*ddLookup.chemical['pcb101']="2,2',4,5,5'-Pentachlorobiphenyl";
 ddLookup.chemical['pcb105']="2,3,3',4,4'-Pentachlorobiphenyl";
 ddLookup.chemical['pcb110']="2,3,3',4',6-Pentachlorobiphenyl";
 ddLookup.chemical['pcb118']="2,3',4,4',5-Pentachlorobiphenyl";
@@ -67,7 +102,6 @@ ddLookup.chemical['bde153']="2,2′,4,4′,5,5′-hexa-bromodiphenylether (BDE15
 ddLookup.chemical['bde154']="2,2′,4,4′,5,6′-hexa-bromodiphenylether (BDE154)";
 ddLookup.chemical['bde17']="2,2´,4-tri-bromodiphenylether (BDE17)";
 ddLookup.chemical['bde183']="2,2′,3,4,4′,5′,6-heptabromodiphenylether (BDE183)";
-//ddLookup.chemical['BDE#209']="2,2',3,3',4,4',5,5',6,6'-decabrominateddiphenylether (BDE209)";
 ddLookup.chemical['bde28']="2,4,4'-tribromodiphenylether (BDE28)";
 ddLookup.chemical['bde47']="2,2′,4,4′-Tetrabromodiphenylether (BDE47)";
 ddLookup.chemical['bde66']="2,3',4,4'-Tetrabromodiphenylether (BDE66)";
@@ -82,8 +116,12 @@ ddLookup.chemical['cu']="Copper (Cu)";
 ddLookup.chemical['hg']="Mercury (Hg)";
 ddLookup.chemical['ni']="Nickel (Ni)";
 ddLookup.chemical['pb']="Lead (Pb)";
-ddLookup.chemical['zn']="Zinc (Zn)";
-ddLookup.sheet['pcb101']="PCB data";
+ddLookup.chemical['zn']="Zinc (Zn)";*/
+
+//ddLookup.chemical['BDE#209']="2,2',3,3',4,4',5,5',6,6'-decabrominateddiphenylether (BDE209)";
+//[A-Z]{3}\_[0-9]{4}\_[0-9]{5}
+
+/*ddLookup.sheet['pcb101']="PCB data";
 ddLookup.sheet['pcb105']="PCB data";
 ddLookup.sheet['pcb110']="PCB data";
 ddLookup.sheet['pcb118']="PCB data";
@@ -160,7 +198,7 @@ ddLookup.sheet['cu']="Trace metal data";
 ddLookup.sheet['hg']="Trace metal data";
 ddLookup.sheet['ni']="Trace metal data";
 ddLookup.sheet['pb']="Trace metal data";
-ddLookup.sheet['zn']="Trace metal data";
+ddLookup.sheet['zn']="Trace metal data";*/
 
 ddCorrection = {'Trace metal data' : 1,'PAH data' : 1,'PCB data' : 0.001,'BDE data' : 0.001,'Organotins data' : 0.001,'Organochlorine data' : 0.001};
 
@@ -175,7 +213,7 @@ CEFASsamplename = 'sample_reference';
 
 everything = {};
 
-function importDredgeData(url,centreLat,centreLon,radius,startDate,finishDate) {
+function importDredgeData(url,centreLat,centreLon,radius,startDate,finishDate,licences) {
 //    var urls = {};
     if (url === undefined) {
         const fileInputDD = document.getElementById('fileInputDD');
@@ -247,6 +285,9 @@ console.log(url);
                 }
                 closeCEFASSearch(centreLat,centreLon,radius,startDate,finishDate);
             }
+            if(licences) {
+                closeCEFASSelection(dlicences);
+            }
 //console.log('there again');
         });
     }
@@ -274,12 +315,17 @@ function loadDredgeData(data) {
     return {df,uniqueRows};
 }
 
-        function processDDExcelData(data, url) {
+function processDDExcelData(data, url, mlaInput) {
     console.log('processexceldata', url);
-sheetData = data;
-    const mlaInput = document.getElementById('mlApplications');
-    mlas = mlaInput.value.trim().split(',').map(mla => mla.trim()); // Split comma-separated URLs
-if (mlas.length > 0) {
+    sheetData = data;
+console.log(mlaInput);
+    if (mlaInput === undefined || mlaInput === null) {
+        mlaReturn = document.getElementById('mlApplications');
+        mlaInput = mlaReturn.value;
+    }
+console.log(mlaInput);
+    mlas = mlaInput.trim().split(',').map(mla => mla.trim()); // Split comma-separated URLs
+    if (mlas.length > 0) {
         mlas.forEach(mlApplication => {
             extractDataFromSheet(sheetData, mlApplication);
         });
@@ -307,10 +353,12 @@ df = sheetData;
     });
     //console.log(uniqueRows);
     sampleDate = parseDates(uniqueRows[0][CEFASsampledate]);
-    dateSampled = sampleDate + ' ' + uniqueRows[0][CEFASmla];
+    applicationNo = uniqueRows[0][CEFASmla];
+    dateSampled = sampleDate + ' d ' + applicationNo;
 //console.log(dateSampled);
     sampleInfo[dateSampled] = {};
     sampleInfo[dateSampled]['Date Sampled'] = sampleDate;
+    sampleInfo[dateSampled]['Application number'] = applicationNo;
     sampleInfo[dateSampled]['fileURL'] = CEFASfilename;
     sampleInfo[dateSampled].position = {};
     uniqueRows.forEach(row => {
@@ -372,10 +420,10 @@ function openCEFASSelection() {
     sedDataModal.style.display = 'block';
 }
 
-function closeCEFASSelection() {
+function closeCEFASSelection(licences) {
     const sedDataModal = document.getElementById('sedDataModal');
     sedDataModal.style.display = 'none';
-    processDDExcelData(CEFASdata,CEFASfile);
+    processDDExcelData(CEFASdata,CEFASfile,licences);
 }
 
 function closeCEFASSearch(centreLat,centreLon,radius,startDate,finishDate) {

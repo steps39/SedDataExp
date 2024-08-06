@@ -533,6 +533,7 @@ function importData() {
             drad = suppliedParams.get('drad');
             dstart = suppliedParams.get('dstart');
             dfinish = suppliedParams.get('dfinish');
+            dlicences = suppliedParams.get('dlics')
 /*            if (dlat && dlon && drad) {
                 centreLat = document.getElementById('centreLatitude');
                 centreLon = document.getElementById('centreLongitude');
@@ -542,7 +543,7 @@ function importData() {
                 radius.value = drad;
 //                closeCEFASSearch();
             }*/
-            importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish);
+            importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish,dlicences);
         }
     } else {
         const fileInput = document.getElementById('fileInput');
@@ -1147,23 +1148,33 @@ console.log(meas);
         sheetName = 'PAH data';
         sheetData = workbook.Sheets[sheetName];
         dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        newDateSampled = dateSampled;
         if (dateSampled.includes('SD: Missing')) {
-            dateSampled = dateAnalysed + 'ADMSD';
+            newDateSampled = dateAnalysed + 'ADMSD';
 //	            sampleMeasurements[dateSampled] = sampleMeasurements['holder'];
 //	            delete sampleMeasurements['holder'];
 //	            sampleInfo[dateSampled] = sampleInfo['holder'];
 //	            delete sampleInfo['holder'];
-            sampleMeasurements[dateSampled] = sampleMeasurements['SD: Missing'];
+            sampleMeasurements[newDateSampled] = sampleMeasurements['SD: Missing'];
             delete sampleMeasurements['SD: Missing'];
-            sampleInfo[dateSampled] = sampleInfo['SD: Missing'];
+            sampleInfo[newDateSampled] = sampleInfo['SD: Missing'];
             delete sampleInfo['SD: Missing'];
         } else if (dateSampled > dateAnalysed) {
+            newDateSampled = dateAnalysed + 'ADWSD';
             sampleMeasurements[dateAnalysed + 'ADWSD'] = sampleMeasurements[dateSampled];
             delete sampleMeasurements[dateSampled];
             sampleInfo[dateAnalysed + 'ADWSD'] = sampleInfo[dateSampled];
             delete sampleInfo[dateSampled];
-            dateSampled = dateAnalysed + 'ADWSD';
         }
+        //Add in application number
+        if (sampleInfo[dateSampled]['Application number']) {
+            newDateSampled = newDateSampled + ' f ' + sampleInfo[dateSampled]['Application number'];
+            sampleInfo[newDateSampled] = sampleInfo[dateSampled];
+            delete sampleInfo[dateSampled];
+            sampleMeasurements[newDateSampled] = sampleMeasurements[dateSampled];
+            delete sampleMeasurements[dateSampled];
+        }
+        dateSampled = newDateSampled;
         sheetName = 'PCB data';
         sheetData = workbook.Sheets[sheetName];
         dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
