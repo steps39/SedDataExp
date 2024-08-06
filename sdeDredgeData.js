@@ -259,6 +259,37 @@ console.log(url);
             }
             CEFASfilename = url;
 
+            function disableUserInteraction(fileName) {
+                const overlay = document.createElement('div');
+                overlay.id = 'loadingOverlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = 0;
+                overlay.style.left = 0;
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                overlay.style.zIndex = 1000;
+                overlay.style.display = 'flex';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.innerHTML = '<p style="color: white; font-size: 20px; text-align: center">Loading <br>' + fileName + '<br>...</p>';
+                document.body.appendChild(overlay);
+            }
+            
+            // Function to enable user interaction
+            function enableUserInteraction() {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+            
+            // Disable user interaction
+            disableUserInteraction(url);
+            
+            
+
+
             // Push each fetch promise into the array
             fetchPromises.push(
                 fetch(url)
@@ -288,7 +319,13 @@ console.log(url);
             if(licences) {
                 closeCEFASSelection(dlicences);
             }
+            enableUserInteraction();
 //console.log('there again');
+        })
+        .catch(error => {
+            console.error('Error in Promise.all:', error);
+            // Ensure user interaction is enabled in case of error
+            enableUserInteraction();
         });
     }
     fileInputDD.value = '';
