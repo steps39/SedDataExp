@@ -35,7 +35,8 @@
         instanceSheet[i] = null;
     }
     dataSheetNames = ['Physical Data','Trace metal data','PAH data','PCB data','BDE data','Organotins data','Organochlorine data'];
-    dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT','Organochlorine data': 'OC'};
+    dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT',
+        'Organochlorine data': 'OC'};
     dataSheetNamesCheckboxes = [];
     for (let i = 0; i < dataSheetNames.length; i++) {
         dataSheetNamesCheckboxes[i] = dataSheetNames[i].replace(/\s/g, '').toLowerCase();
@@ -111,8 +112,14 @@
     firstTime = true;
     
     const ccontainer = document.getElementById('radarPlots');
-radarPlotTypes = dataSheetNames;
+    radarPlotTypes = [];
+//    radarPlotTypes[0] = "None";;
+//    radarPlotTypes = join(radarPlotTypes,dataSheetNames);
+//let radarPlotTypes = dataSheetNames;
 radarPlotTypes[0] = "None";
+for (i = 1; i < dataSheetNames.length; i++) {
+    radarPlotTypes[i] = dataSheetNames[i];
+}
     radarPlotTypes.forEach((name, index) => {
         const radio = document.createElement('input');
         radio.type = 'radio';

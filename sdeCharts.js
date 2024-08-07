@@ -18,6 +18,7 @@ function updateChart(){
     lastInstanceNo = 0;
     blankSheets = {};
     setBlanksForCharting();
+console.log(sheetsToDisplay);
     for (sheetName in sheetsToDisplay) {
         if (sheetsToDisplay[sheetName] && chemicalTypeHasData(sheetName)) {
             lastInstanceNo = displayCharts(sheetName, lastInstanceNo);
