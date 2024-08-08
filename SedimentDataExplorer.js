@@ -1052,9 +1052,17 @@ console.log(dateSampled,sampleInfo[dateSampled]);
                 pattern = '[A-Z]{3}_[0-9]{4}\_[0-9]{5}';
                 fileURL = sampleInfo[dateSampled]['fileURL'];
 console.log(fileURL);
-                sampleInfo[dateSampled]['Application number'] = fileURL.match(pattern)[0];
-//                console.log(pattern.match(sampleInfo[dateSampled]['fileURL']));
-            }
+console.log(pattern);
+                matches = fileURL.match(pattern);
+                if (matches) {
+                    console.log('matches');
+                }
+                sampleInfo[dateSampled]['Application number'] = matches ? matches[0] : 'NAN';
+console.log(fileURL);
+//console.log(pattern.match(sampleInfo[dateSampled]['fileURL']));
+//                sampleInfo[dateSampled]['Application number'] = fileURL.match(pattern)[0];
+//                sampleInfo[dateSampled]['Application number'] = pattern.match(fileURL)[0];
+}
             newDateSampled = newDateSampled + ' f ' + sampleInfo[dateSampled]['Application number'];
             sampleInfo[newDateSampled] = sampleInfo[dateSampled];
             delete sampleInfo[dateSampled];
