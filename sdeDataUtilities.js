@@ -35,10 +35,13 @@ function pahPostProcess(newMeas) {
     if ('Acenapthene' in chemicals) {
         //If totalHC not read then set to zero
         if (!('totalHC' in sampleMeasurements[dateSampled][sheetName])) {
-            sampleMeasurements[dateSampled][sheetName].totalHC = {};
+            thc = {};
+//            sampleMeasurements[dateSampled][sheetName].totalHC = [];
             for(sample in sampleMeasurements[dateSampled][sheetName].chemicals['Acenapthene'].samples) {
-                totalHC[sample] = 0.0;
+                thc[sample] = 0.0;
+//                totalHC[sample] = 0.0;
             }
+            sampleMeasurements[dateSampled][sheetName].totalHC = thc;
         }
 
 //        mmeas = newMeas[sheetName];

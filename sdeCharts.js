@@ -221,6 +221,7 @@ function dataForCharting(sheetName) {
         }
     });
     unitTitle = blankSheets[ct]['Unit of measurement'];
+console.log(sheetName,measChart);
     return {unitTitle, measChart}
 }
 
@@ -622,7 +623,7 @@ function dataForScatterCharting(sheetName) {
         x: 15,
         y: 10
     }];*/
-//console.log('data ',scatterData);
+//console.log('data ',sheetName,scatterData);
     return {unitTitle, scatterData, chemicalData}
 }
 

@@ -46,7 +46,7 @@
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalHC','pahratios','ringfractions','eparatios','simpleratios','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
@@ -492,6 +492,8 @@ console.log('End of processExcelLocations');
                 }
                 // Check all the boxes set in url
                 for (let i = 0; i < sels.length; i++) {
+//console.log(i);
+//console.log(sels[i]);
                     const checkbox = document.getElementById(sels[i]);
                     checkbox.checked = true;
                 }

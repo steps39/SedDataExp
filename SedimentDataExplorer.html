@@ -65,6 +65,7 @@
             <button onclick="flipSampleSelections(true)">Select All</button>
             <button onclick="flipSampleSelections(false)">Select None</button>
             <button onclick="selectHighlighted()">Select Highlighted</button>
+            <button onclick="closeSampleSelection()">Confirm Selection</button>
             <br>
             <label for="centreLat">Centre latitude:</label>
             <input type="number" id="centreLat" placeholder="Leave blank for location">
@@ -81,7 +82,6 @@
             <input type="text" id="containsText">
             <button onclick="applySampleFilter()">Apply</button>
             <div id="sampleCheckboxes"></div>
-            <button onclick="closeSampleSelection()">Confirm Selection</button>
         </div>
 
         <div id="chemicalModal" style="display: none;">
@@ -124,8 +124,8 @@
             <label for="positionplace">Plot by position</label>
             <input type="checkbox" id="gorhamtest" checked>
             <label for="gorhamtest">PAH - Gorham Test Protocol</label>
-            <input type="checkbox" id="totalHC" checked>
-            <label for="totalHC">PAH - Total hydrocarbons & Total PAHs/THC</label>
+            <input type="checkbox" id="totalhc" checked>
+            <label for="totalhc">PAH - Total hydrocarbons & Total PAHs/THC</label>
             <input type="checkbox" id="pahratios" checked>
             <label for="pahratios">PAH - Ratios</label>
             <input type="checkbox" id="ringfractions" checked>
