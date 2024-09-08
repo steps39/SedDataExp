@@ -90,9 +90,9 @@ function sampleMap(meas) {
                     const popupStatic = '<p style="height:200px; width:200px">static content</p>';
 //                    let popup = marker.getPopup();
                     let chart_div = document.getElementById("c_radar_" + dateSampled + ": " + sample);
-                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
+//  just bodge to allow display of position                  const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
 //                    popup.setContent(chart_div);
-//                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
 //                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map);
 //const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}<br>${popupStatic}`);
 /*						const marker = L.circleMarker([lat, lon],
