@@ -92,7 +92,9 @@ function sampleMap(meas) {
                     let chart_div = document.getElementById("c_radar_" + dateSampled + ": " + sample);
 //  just bodge to allow display of position                  const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
 //                    popup.setContent(chart_div);
-                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+//const marker = L.marker([lat, lon], { icon: currentIcon }, {title: `${dateSampled}: ${sample}`}, {riseOnHover: true} ).
+const marker = L.marker([lat, lon], { icon: currentIcon }).
+addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`).bindTooltip(`${dateSampled}: ${sample}`);
 //                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map);
 //const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}<br>${popupStatic}`);
 /*						const marker = L.circleMarker([lat, lon],
@@ -149,6 +151,10 @@ console.log(popup);
                     // Create a highlight for each sample
                     //console.log(sampleNo,lat,lon);
                     highlightMarkers[sampleNo] = new L.marker(new L.LatLng(lat, lon), { icon: highlightIcon });
+//                    addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+highlightMarkers[sampleNo].bindTooltip(`${dateSampled}: ${sample}`);
+
+
                     // Add a click event listener to the highlight marker
                     highlightMarkers[sampleNo].on('click', function () {
                         // Mark not just the clicked position but any things which are in the same place
