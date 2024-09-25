@@ -501,7 +501,14 @@ console.log('End of processExcelLocations');
         }
     }
 
-
+    function cleanChemicalString(chemical) {
+        return chemical
+            .replace(/[\r]/g, '')                 // Remove \r
+            .replace(/[\n]/g, '')                 // Remove \n
+            .replace(/\s*-\s*/g, '-')               // Remove spaces around dashes
+            .replace(/\s+/g, ' ')                   // Replace multiple spaces with a single space
+            .trim();                                // Remove spaces at the beginning and end of the string
+    }
 
 function importData() {
     var urls = {};
@@ -737,12 +744,22 @@ function importData() {
                             startCol = c;
                             for (let col = startCol + 1; col < df[startRow].length; col++) {
                                 if(!(sheetName === 'PCB data')) {
-                                    chemical = df[startRow - 1][col];
+                                    rawChemical = df[startRow - 1][col];
                                 } else {
-                                    chemical = df[startRow - 2][col];
+                                    rawChemical = df[startRow - 2][col];
                                     congener = df[startRow - 1][col];
                                 }
-                                if (chemical !== null && chemical !== undefined) {
+                                if (rawChemical !== null && rawChemical !== undefined) {
+                                    // Need to tidy name coming from template
+                                    // In BDE seem to have variations some with \n or \r\n
+//if(sheetName === 'BDE data') {
+//    console.log('r ',rawChemical);
+//}
+                                    chemical = cleanChemicalString(rawChemical);
+
+//if(sheetName === 'BDE data') {
+//    console.log('c ',chemical);
+//}
                                     if (!meas.chemicals){
                                         meas.chemicals = {};
                                         meas.total = {};
@@ -800,7 +817,7 @@ function importData() {
                                                     sample = df[row][startCol];
                                                 }
                                                 if (!(sample == undefined || sample == null)) {
-                                                    const concentration = df[row][col+corec];
+                                                    const concentration = parseFloat(df[row][col+corec]);
                                                     if(sample.includes('detection')) {
                                                         meas[sample] = concentration;
                                                         //.push(parseFloat(concentration) || 0);
@@ -809,7 +826,11 @@ function importData() {
                                                             meas.totalHC = {};
                                                             meas.totalHCUnit = hydrocarbon;
                                                         }
-                                                        meas.totalHC[sample] = parseFloat(concentration);
+                                                        if(isNaN(concentration)) {
+                                                            meas.totalHC[sample] = 0.0;
+                                                        } else {
+                                                            meas.totalHC[sample] = concentration;
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1353,7 +1374,12 @@ function filenameDisplay() {
         positions = Object.keys(selectedSampleInfo[dateSampled].position);
         infos = '';
         for (dataType in selectedSampleMeasurements[dateSampled]) {
-            infos += dataSheetAbr[dataType] + ' ';
+console.log(dataType,dateSampled);
+            if (dataType === 'Physical Data') {
+                infos += `${dataSheetAbr[dataType]} `;
+            } else {
+                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals).length}x${dataSheetAbr[dataType]}s `;
+            }
         }
 //        infos = 'PAH BDE OC OT PCB Phys TM';
         textElement1 = document.createTextNode(`${dateSampled} has ${positions.length} samples with ${infos}:`);

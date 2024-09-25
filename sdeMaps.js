@@ -292,7 +292,7 @@ function parseCoordinate(input) {
     return null;
 }
 
-function parseCoordinates(latitude, longitude) {
+/* function parseCoordinates(latitude, longitude) {
 //console.log('parse coordinates');
 //console.log(latitude,longitude);
     // Check to see if only latitude in which case UK National Grid Reference System is being used
@@ -317,12 +317,86 @@ function parseCoordinates(latitude, longitude) {
         return null;
     }
 
-    // Handle coordinates in digital degrees with N/S and E/W
+    // Crude check of whether easting and northing
+    if (latitude > 360) {
+        // Use proj4js library to convert British National Grid to latitude and longitude
+        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
+        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
+
+        return { latitude: point[1], longitude: point[0] };
+    } else {
+        return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
+    }
+
+    // Handle coordinates in degrees digital degrees with N/S and E/W
     const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
     const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
     if (digitalDegreesMatch) {
         const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
         const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
+        return { latitude: latValue, longitude: lonValue };
+    }
+
+    // Handle coordinates in digital minutes with N/S and E/W
+    const digitalMinutesRegex = /^([-+]?\d[\°]?\s*\d+(\.\d+)?)[\’]?\s*([NSEW])([-+]?\d[\°]?\s*\d+(\.\d+)?)[\’]?\s*([NSEW])$/i;
+console.log(latitude,longitude);
+    const digitalMinutesMatch = `${latitude} ${longitude}`.match(digitalMinutesRegex);
+console.log(digitalMinutesMatch);
+    if (digitalMinutesMatch) {
+        const latValue = (parseInt(digitalMinutesMatch[1]) + parseFloat(digitalMinutesMatch[2])/60) * (digitalMinutesMatch[4].toUpperCase() === 'S' ? -1 : 1);
+        const lonValue = (parseInt(digitalMinutesMatch[5]) + parseFloat(digitalMinutesMatch[6])/60) * (digitalMinutesMatch[8].toUpperCase() === 'W' ? -1 : 1);
+console.log(latValue,lonValue);
+        return { latitude: latValue, longitude: lonValue };
+    }
+
+    // If the input doesn't match any recognized format, return null or handle accordingly
+    return null;
+}
+*/
+
+function parseCoordinates(latitude, longitude) {
+    // If only latitude is provided, handle UK National Grid Reference System (as in your original logic)
+    if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
+        const en = os.Transform.fromGridRef(latitude);
+        if (en.ea === undefined || en.ea === null) {
+            console.log('Looks like this is an invalid grid reference ', latitude);
+            return null;
+        }
+        const latlong = os.Transform.toLatLng(en);
+        if (latlong === undefined || latlong == null) {
+            return null;
+        }
+        return { latitude: latlong.lat, longitude: latlong.lng };
+    }
+
+    // Handle undefined/null inputs
+    if ((latitude == undefined || latitude == null) && (longitude == undefined || longitude == null)) {
+        return null;
+    }
+
+    // Crude check for easting and northing (British National Grid)
+    if (latitude > 360) {
+        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
+        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
+        return { latitude: point[1], longitude: point[0] };
+    }
+
+    // Handle digital degrees with direction (N/S and E/W)
+    const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
+    const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
+    if (digitalDegreesMatch) {
+        const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
+        const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
+        return { latitude: latValue, longitude: lonValue };
+    }
+
+    // Handle degree digital minutes with direction (N/S and E/W)
+    const digitalMinutesRegex = /^(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*$/i;
+    const digitalMinutesMatch = `${latitude} ${longitude}`.match(digitalMinutesRegex);
+//console.log(digitalMinutesMatch);
+    if (digitalMinutesMatch) {
+        const latValue = (parseInt(digitalMinutesMatch[1]) + parseFloat(digitalMinutesMatch[2])/60) * (digitalMinutesMatch[3].toUpperCase() === 'S' ? -1 : 1);
+        const lonValue = (parseInt(digitalMinutesMatch[4]) + parseFloat(digitalMinutesMatch[5])/60) * (digitalMinutesMatch[6].toUpperCase() === 'W' ? -1 : 1);
         return { latitude: latValue, longitude: lonValue };
     }
 
@@ -337,7 +411,7 @@ function parseCoordinates(latitude, longitude) {
         return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
     }
 
-    // If the input doesn't match any recognized format, return null or handle accordingly
+    // If no valid format matched, return null
     return null;
 }
 

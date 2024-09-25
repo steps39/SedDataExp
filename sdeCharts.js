@@ -135,7 +135,7 @@ function displayCharts(sheetName, instanceNo) {
             selectedSums = sumsForGorhamCharting();
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
         }
-        if (sheetName === 'PAH data' && subsToDisplay['totalHC']) {
+        if (sheetName === 'PAH data' && subsToDisplay['totalhc']) {
             instanceNo += 1;
             retData = sumsForTotalHCCharting();
             unitTitle = retData['unitTitle'];
@@ -191,13 +191,19 @@ function dataForCharting(sheetName) {
        datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
              (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
+//        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null )) {
+/*            //Populate chemicals as data could be missing some chemicals
+            //Needed to cope with CEFAS data where chemicals can be missed out
+            expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === ct);
+            for (let i = 0; i < expectedChemicals.length; i++) {
+                c = expectedChemicals[i];*/
             for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
                 }
                 const allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
-               allSamples.forEach(s => {
+                allSamples.forEach(s => {
                     if (selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == undefined || selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == null) {
                         measChart[c][ds + ': ' + s] = 0.0;
                     } else {

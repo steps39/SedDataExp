@@ -4,29 +4,30 @@ CEFASfilename = '';
 CEFASUniqueRows = {};
 ddLookup = {};
 ddLookup.chemical = {'pcb101' : "2,2',4,5,5'-Pentachlorobiphenyl" , 'pcb105' : "2,3,3',4,4'-Pentachlorobiphenyl" , 'pcb110' : "2,3,3',4',6-Pentachlorobiphenyl" ,
-     'pcb118' : "2,3',4,4',5-Pentachlorobiphenyl" , 'pcb128' : "2,2',3,3',4,4'-Hexachlorobiphenyl" , 'pcb138' : "2,2',3,4,4',5'-Hexachlorobiphenyl" , 
-     'pcb141' : "2,2',3,4,5,5'-Hexachlorobiphenyl" , 'pcb149' : "2,2',3,4',5',6-Hexachlorobiphenyl" , 'pcb151' : "2,2',3,5,5',6-Hexachlorobiphenyl" ,
-     'pcb153' : "2,2',4,4',5,5'-Hexachlorobiphenyl" , 'pcb156' : "2,3,3',4,4',5-Hexachlorobiphenyl" , 'pcb158' : "2,3,3',4,4',6-Hexachlorobiphenyl" ,
-     'pcb170' : "2,2',3,3',4,4',5-Heptachlorobiphenyl" , 'pcb18' : "2,2',5- Trichlorobiphenyl" , 'pcb180' : "2,2',3,4,4',5,5'-Heptachlorobiphenyl" ,
-     'pcb183' : "2,2',3,4,4',5',6-Heptachlorobiphenyl" , 'pcb187' : "2,2',3,4',5,5',6-Heptachlorobiphenyl" , 'pcb194' : "2,2',3,3',4,4',5,5'-Octachlorobiphenyl" ,
-     'pcb28' : "2,4,4'-Trichlorobiphenyl" , 'pcb31' : "2,4',5-Trichlorobiphenyl" , 'pcb44' : "2,2',3,5'-Tetrachlorobiphenyl" ,
-     'pcb47' : "2,2',4,4'-Tetrachlorobiphenyl" , 'pcb49' : "2,2',4,5'-Tetrachlorobiphenyl" , 'pcb52' : "2,2',5,5'-Tetrachlorobiphenyl" ,
-     'pcb66' : "2,3',4,4'-Tetrachlorobiphenyl" , 'acenapth' : "Acenapthene" , 'acenapthylene' : "Acenapthylene" , 'anthracn' : "Anthracene" ,
-     'baa' : "Benz[a]anthracene" , 'bap' : "Benzo[a]pyrene" , 'bbf' : "Benzo[b]fluoranthene" , 'benzghip' : "Benzo[g,h,i]perylene" , 'bep' : "Benzo[e]pyrene" ,
-     'bkf' : "Benzo[k]fluoranthene" , 'c1n' : "C1-Napthalenes" , 'c1phen' : "C1-Phenanthrenes" , 'c2n' : "C2-Napthalenes" , 'c3n' : "C3-Napthalenes" ,
-     'chrysene' : "Chrysene" , 'dibenzah' : "Dibenz[a,h]anthracene" , 'flurant' : "Fluoranthene" , 'fluorene' : "Fluorene" , 'indypr' : "Indeno[123-c,d]pyrene" ,
-     'napth' : "Napthalene" , 'perylene' : "Perylene" , 'phenant' : "Phenanthrene" , 'pyrene' : "Pyrene" , 'thc' : "totalHC" ,
-     'ahch' : "alpha-hexachlorocyclohexane (AHCH)" , 'bhch' : "beta-hexachlorocyclohexane (BHCH)" , 'ghch' : "gamma-hexachlorocyclohexane (GHCH)" ,
-     'dieldrin' : "Dieldrin" , 'hcb' : "Hexachlorobenzene (HCB)" , 'dde' : "1,1-Dichloro-2,2-bis(p-chlorophenyl) ethylene (PPDDE)" ,
-     'ddt' : "Dichlorodiphenyltrichloroethane (PPDDT)" , 'tde' : "1,1-dichloro-2,2-bis(p-chlorophenyl)ethane (PPTDE)" ,
-     'bde100' : "2,2′,4,4′,6-penta-bromodiphenylether (BDE100)" , 'bde138' : "Hexabromodiphenylether (BDE138)" ,
-     'bde153' : "2,2′,4,4′,5,5′-hexa-bromodiphenylether (BDE153)" , 'bde154' : "2,2′,4,4′,5,6′-hexa-bromodiphenylether (BDE154)" ,
-     'bde17' : "2,2´,4-tri-bromodiphenylether (BDE17)" , 'bde183' : "2,2′,3,4,4′,5′,6-heptabromodiphenylether (BDE183)" ,
-     'bde28' : "2,4,4'-tribromodiphenylether (BDE28)" , 'bde47' : "2,2′,4,4′-Tetrabromodiphenylether (BDE47)" ,
-     'bde66' : "2,3',4,4'-Tetrabromodiphenylether (BDE66)" , 'bde85' : "2,2',3,4,4'-Pentabromodiphenylether (BDE85)" ,
-     'bde99' : "2,2',4,4',5-pentabromodiphenylether (BDE99)" , 'dbt' : "Dibutyltine (DBT)" , 'tbt' : "Tributyltin (TBT)" , 'as' : "Arsenic (As)" ,
-     'cd' : "Cadmium (Cd)" , 'cr' : "Chromium (Cr)" , 'cu' : "Copper (Cu)" , 'hg' : "Mercury (Hg)" , 'ni' : "Nickel (Ni)" , 'pb' : "Lead (Pb)" , 'zn' : "Zinc (Zn)" };
-     ddLookup.sheet = {'pcb101' : "PCB data" , 'pcb105' : "PCB data" , 'pcb110' : "PCB data" , 'pcb118' : "PCB data" , 'pcb128' : "PCB data" , 'pcb138' : "PCB data" ,
+    'pcb118' : "2,3',4,4',5-Pentachlorobiphenyl" , 'pcb128' : "2,2',3,3',4,4'-Hexachlorobiphenyl" , 'pcb138' : "2,2',3,4,4',5'-Hexachlorobiphenyl" , 
+    'pcb141' : "2,2',3,4,5,5'-Hexachlorobiphenyl" , 'pcb149' : "2,2',3,4',5',6-Hexachlorobiphenyl" , 'pcb151' : "2,2',3,5,5',6-Hexachlorobiphenyl" ,
+    'pcb153' : "2,2',4,4',5,5'-Hexachlorobiphenyl" , 'pcb156' : "2,3,3',4,4',5-Hexachlorobiphenyl" , 'pcb158' : "2,3,3',4,4',6-Hexachlorobiphenyl" ,
+    'pcb170' : "2,2',3,3',4,4',5-Heptachlorobiphenyl" , 'pcb18' : "2,2',5- Trichlorobiphenyl" , 'pcb180' : "2,2',3,4,4',5,5'-Heptachlorobiphenyl" ,
+    'pcb183' : "2,2',3,4,4',5',6-Heptachlorobiphenyl" , 'pcb187' : "2,2',3,4',5,5',6-Heptachlorobiphenyl" , 'pcb194' : "2,2',3,3',4,4',5,5'-Octachlorobiphenyl" ,
+    'pcb28' : "2,4,4'-Trichlorobiphenyl" , 'pcb31' : "2,4',5-Trichlorobiphenyl" , 'pcb44' : "2,2',3,5'-Tetrachlorobiphenyl" ,
+    'pcb47' : "2,2',4,4'-Tetrachlorobiphenyl" , 'pcb49' : "2,2',4,5'-Tetrachlorobiphenyl" , 'pcb52' : "2,2',5,5'-Tetrachlorobiphenyl" ,
+    'pcb66' : "2,3',4,4'-Tetrachlorobiphenyl" , 'acenapth' : "Acenapthene" , 'acenapthylene' : "Acenapthylene" , 'anthracn' : "Anthracene" ,
+    'baa' : "Benz[a]anthracene" , 'bap' : "Benzo[a]pyrene" , 'bbf' : "Benzo[b]fluoranthene" , 'benzghip' : "Benzo[g,h,i]perylene" , 'bep' : "Benzo[e]pyrene" ,
+    'bkf' : "Benzo[k]fluoranthene" , 'c1n' : "C1-Napthalenes" , 'c1phen' : "C1-Phenanthrenes" , 'c2n' : "C2-Napthalenes" , 'c3n' : "C3-Napthalenes" ,
+    'chrysene' : "Chrysene" , 'dibenzah' : "Dibenz[a,h]anthracene" , 'flurant' : "Fluoranthene" , 'fluorene' : "Fluorene" , 'indypr' : "Indeno[123-c,d]pyrene" ,
+    'napth' : "Napthalene" , 'perylene' : "Perylene" , 'phenant' : "Phenanthrene" , 'pyrene' : "Pyrene" , 'thc' : "totalHC" ,
+    'ahch' : "alpha-hexachlorocyclohexane (AHCH)" , 'bhch' : "beta-hexachlorocyclohexane (BHCH)" , 'ghch' : "gamma-hexachlorocyclohexane (GHCH)" ,
+    'dieldrin' : "Dieldrin" , 'hcb' : "Hexachlorobenzene (HCB)" , 'dde' : "1,1-Dichloro-2,2-bis(p-chlorophenyl) ethylene (PPDDE)" ,
+    'ddt' : "Dichlorodiphenyltrichloroethane (PPDDT)" , 'tde' : "1,1-dichloro-2,2-bis(p-chlorophenyl)ethane (PPTDE)" ,
+    'bde100' : "2,2′,4,4′,6-penta-bromodiphenyl ether (BDE100)" , 'bde138' : "Hexabromodiphenyl ether (BDE138) " ,
+    'bde153' : "2,2′,4,4′,5,5′-hexa-bromodiphenyl ether (BDE153)" , 'bde154' : "2,2′,4,4′,5,6′-hexa-bromodiphenyl ether (BDE154)" ,
+    'bde17' : "2,2´,4-tri-bromodiphenylether (BDE17)" , 'bde183' : "2,2′,3,4,4′,5′,6-heptabromodiphenyl ether (BDE183)" ,
+    'bde28' : "2,4,4'-tribromodiphenyl ether (BDE28)" , 'bde47' : "2,2′,4,4′-Tetrabromodiphenyl ether (BDE47)" ,
+    'bde66' : "2,3',4,4'-Tetrabromodiphenyl ether (BDE66)" , 'bde85' : "2,2',3,4,4'-Pentabromodiphenyl ether (BDE85)" ,
+    'bde99' : "2,2',4,4',5-pentabromodiphenyl ether (BDE99)", 'bde209' : "2,2',3,3',4,4',5,5',6,6'-decabrominated diphenyl ether (BDE 209)" ,
+    'dbt' : "Dibutyltine (DBT)" , 'tbt' : "Tributyltin (TBT)" , 'as' : "Arsenic (As)" , 'cd' : "Cadmium (Cd)" , 'cr' : "Chromium (Cr)" , 'cu' : "Copper (Cu)" ,
+    'hg' : "Mercury (Hg)" , 'ni' : "Nickel (Ni)" , 'pb' : "Lead (Pb)" , 'zn' : "Zinc (Zn)" };
+ddLookup.sheet = {'pcb101' : "PCB data" , 'pcb105' : "PCB data" , 'pcb110' : "PCB data" , 'pcb118' : "PCB data" , 'pcb128' : "PCB data" , 'pcb138' : "PCB data" ,
         'pcb141' : "PCB data" , 'pcb149' : "PCB data" , 'pcb151' : "PCB data" , 'pcb153' : "PCB data" , 'pcb156' : "PCB data" , 'pcb158' : "PCB data" ,
         'pcb170' : "PCB data" , 'pcb18' : "PCB data" , 'pcb180' : "PCB data" , 'pcb183' : "PCB data" , 'pcb187' : "PCB data" , 'pcb194' : "PCB data" ,
         'pcb28' : "PCB data" , 'pcb31' : "PCB data" , 'pcb44' : "PCB data" , 'pcb47' : "PCB data" , 'pcb49' : "PCB data" , 'pcb52' : "PCB data" ,
@@ -37,10 +38,11 @@ ddLookup.chemical = {'pcb101' : "2,2',4,5,5'-Pentachlorobiphenyl" , 'pcb105' : "
         'bhch' : "Organochlorine data" , 'ghch' : "Organochlorine data" , 'dieldrin' : "Organochlorine data" , 'hcb' : "Organochlorine data" ,
         'dde' : "Organochlorine data" , 'ddt' : "Organochlorine data" , 'tde' : "Organochlorine data" , 'bde100' : "BDE data" , 'bde138' : "BDE data" ,
         'bde153' : "BDE data" , 'bde154' : "BDE data" , 'bde17' : "BDE data" , 'bde183' : "BDE data" , 'bde28' : "BDE data" , 'bde47' : "BDE data" ,
-        'bde66' : "BDE data" , 'bde85' : "BDE data" , 'bde99' : "BDE data" , 'dbt' : "Organotins data" , 'tbt' : "Organotins data" , 'as' : "Trace metal data" ,
-        'cd' : "Trace metal data" , 'cr' : "Trace metal data" , 'cu' : "Trace metal data" , 'hg' : "Trace metal data" , 'ni' : "Trace metal data" ,
-        'pb' : "Trace metal data" , 'zn' : "Trace metal data"};
+        'bde66' : "BDE data" , 'bde85' : "BDE data" , 'bde99' : "BDE data" , 'bde209' : "BDE data", 'dbt' : "Organotins data" , 'tbt' : "Organotins data" ,
+        'as' : "Trace metal data" , 'cd' : "Trace metal data" , 'cr' : "Trace metal data" , 'cu' : "Trace metal data" , 'hg' : "Trace metal data" ,
+        'ni' : "Trace metal data" , 'pb' : "Trace metal data" , 'zn' : "Trace metal data"};
 
+//BDE209 missing from original dataset
 //ddLookup.chemical['BDE#209']="2,2',3,3',4,4',5,5',6,6'-decabrominateddiphenylether (BDE209)";
 //[A-Z]{3}\_[0-9]{4}\_[0-9]{5}
 //ddLookup.sheet['BDE#209']="BDE data";
@@ -258,10 +260,21 @@ df = sheetData;
             chemicalName = ddLookup.chemical[chemicalAbr];
             sample = row[CEFASsamplename];
             concentration = parseFloat(row[CEFASconcentration]) * ddCorrection[sheetName];
+            if (concentration === undefined) {
+                concentration = 0.0;
+            }
             if (!(sheetName in meas)) {
                 meas[sheetName] = {};
                 meas[sheetName].chemicals = {};
                 meas[sheetName].total = {};
+                //Populate chemicals as data could be missing some chemicals
+//                for ddLookup.chemical
+//                ddLookup.sheetName
+                expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === sheetName);
+                for (let i = 0; i < expectedChemicals.length; i++) {
+                    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]] = {};
+                    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]].samples = {};
+                }
             }
             if (chemicalName === 'totalHC') {
                 if(!('totalHC' in meas[sheetName])) {
@@ -281,7 +294,16 @@ df = sheetData;
             }
         }
     });
-    sampleMeasurements[dateSampled] = meas;
+if (sheetName == 'BDE data') {
+    console.log(meas);
+}
+expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === sheetName);
+for (let i = 0; i < expectedChemicals.length; i++) {
+    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]] = {};
+    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]].samples = {};
+}
+
+sampleMeasurements[dateSampled] = meas;
     for (const sheetName in meas) {
         if (sheetName === 'PAH data') {
             pahPostProcess(meas[sheetName]);
