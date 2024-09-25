@@ -127,6 +127,46 @@ function getSelectedChemicalSampleInfo(selectedChemicals) {
     return selectedSamps;
 }
 
+function openDatasetSelection(sampleMeasurements) {
+    const sampleModal = document.getElementById('datasetModal');
+    sampleModal.style.display = 'block';
+
+}
+
+function applyDatasetFilter() {
+    const sampleModal = document.getElementById('datasetModal');
+    sampleModal.style.display = 'none';
+    sheetsToSelect = [];
+    for (i = 0; i < dataSheetNames.length; i++) {
+        sheetName = dataSheetNames[i];
+        sheetsToSelect[dataSheetNames[i]] = document.getElementById(dataSheetNamesCheckboxes[i]+'set').checked ? true : false; // Check the checkbox state
+    }
+    datasetsToKeep = [];
+    for (const dateSelected in sampleInfo) {
+        datasetsToKeep[dateSelected] = true;
+        for (sheetName in sheetsToSelect) {
+            if (sheetsToSelect[sheetName]) {
+                if (!(sheetName in sampleMeasurements[dateSelected])) {
+                    datasetsToKeep[dateSelected] = false;
+                    break;
+                }
+                keepInfo = sampleInfo[dateSelected];
+                keepSample = sampleMeasurements[dateSelected]
+            }
+        }
+    }
+    selectedSampleInfo = {};
+    selectedSampleMeasurements = {};
+    for (dateSelected in datasetsToKeep) {
+        if (datasetsToKeep[dateSelected]) {
+            selectedSampleInfo[dateSelected] = sampleInfo[dateSelected];
+            selectedSampleMeasurements[dateSelected] = sampleMeasurements[dateSelected];
+        }
+    }
+    updateChart();
+}
+    
+
 function openSampleSelection(sampleMeasurements) {
     const sampleModal = document.getElementById('sampleModal');
     sampleModal.style.display = 'block';
@@ -193,14 +233,81 @@ function selectHighlighted(selection) {
 }
 
 function applySampleFilter() {
+    let sheetsToSelect = [];
+    selectBySheet = false;
+    for (i = 0; i < dataSheetNames.length; i++) {
+        sheetName = dataSheetNames[i];
+        sheetsToSelect[dataSheetNames[i]] = document.getElementById(dataSheetNamesCheckboxes[i]+'sample').checked ? true : false; // Check the checkbox state
+        if (sheetsToSelect[dataSheetNames[i]]) {
+            selectBySheet = true;
+        }
+    }
+    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+    const checkboxesIn = document.querySelectorAll('input[name="sample"]:checked');
+    if (selectBySheet) {
+        index = 0;
+        samplesToKeep = {};
+//        for (const sheetName in sheetsToSelect) {
+//            for (const dateSelected in selectedSampleMeasurements) {
+        for (const dateSelected in selectedSampleMeasurements) {
+            for (const sample in sampleInfo[dateSelected].position) {
+                samplesToKeep[dateSelected + ': ' + sample] = true;
+            }
+            for (const sheetName in sheetsToSelect) {
+//console.log('Should I check for',sheetName);
+                if (sheetsToSelect[sheetName]) {
+//console.log('I should check for',sheetName);
+                    if (sheetName in selectedSampleMeasurements[dateSelected]) {
+//console.log(dateSelected,'has',sheetName,'so setting all false');
+                            for (const sample in sampleInfo[dateSelected].position) {
+                                samplesToKeep[dateSelected + ': ' + sample] = false;
+                            }
+                            for (const chemical in selectedSampleMeasurements[dateSelected][sheetName].chemicals) {
+                                for (const sample in selectedSampleMeasurements[dateSelected][sheetName].chemicals[chemical].samples) {
+//console.log(dateSelected,sheetName,chemical);
+/*                                    if (sample === 'CSA 2.00') {
+        index += 1;
+        console.log(index,sample,chemical);
+    }*/
+                                    if (!samplesToKeep[dateSelected + ': ' + sample]) {
+                                        if (selectedSampleMeasurements[dateSelected][sheetName].chemicals[chemical].samples[sample] > 0) {
+//console.log('keeping',dateSelected,sample);
+                                            samplesToKeep[dateSelected + ': ' + sample] = true;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            if (!(sheetName === 'Physical Data')) {
+                                for (const sample in sampleInfo[dateSelected].position) {
+                                    console.log(dateSelected,'has no',sheetName,'so setting all false');
+                                                                    samplesToKeep[dateSelected + ': ' + sample] = false;
+                            }
+                        }
+                            }
+                }
+
+            }
+        }
+//console.log(samplesToKeep);
+        for (const sampleName in samplesToKeep) {
+            if(samplesToKeep[sampleName]) {
+//console.log('keeping ',sampleName);
+                    const checkName = `sample_${sampleName}`;
+                    const checkbox = document.getElementById(checkName);
+                    checkbox.checked = true;
+            }
+        }
+    }
+//console.log(checkboxes);
     const containsText = document.getElementById('containsText').value.toLowerCase();
     const minDepth = parseFloat(document.getElementById('minDepth').value);
     const maxDepth = parseFloat(document.getElementById('maxDepth').value);
     centreLat = parseFloat(document.getElementById('centreLat').value);
     centreLon = parseFloat(document.getElementById('centreLon').value);
     const centreDist = parseFloat(document.getElementById('centreDist').value);
-    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
-    const checkboxesIn = document.querySelectorAll('input[name="sample"]:checked');
+//    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+//    const checkboxesIn = document.querySelectorAll('input[name="sample"]:checked');
     checkboxes.forEach(checkbox => {
         if (containsText.length > 0) {
             if (checkbox.nextSibling.textContent.toLowerCase().includes(containsText)) {

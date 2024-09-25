@@ -886,10 +886,10 @@ function importData() {
             if(!totalSum>0 && !(sheetName === 'Physical Data')) {
                 return 'No data for ' + sheetName;
             }
-console.log(dateSampled, sheetName, 'meas ', meas);
+//console.log(dateSampled, sheetName, 'meas ', meas);
             sampleMeasurements[dateSampled][sheetName] = meas;
             const sums = {};
-console.log(meas);
+//console.log(meas);
 //for (const sheetName in meas) {
     if (sheetName === 'PAH data') {
         pahPostProcess(meas);
@@ -938,16 +938,16 @@ console.log(meas);
 //					dateSampled = 'SD Missing';
             }
             if (dateRow > 0) {
-console.log('here',dateRow);
+//console.log('here',dateRow);
                 applicant = df[dateRow-3][4];
                 applicationNumber = df[dateRow-2][4];
                 applicationTitle = df[dateRow-1][4];
-console.log(df[dateRow][4]);
-console.log(df);
+//console.log(df[dateRow][4]);
+//console.log(df);
                 dateSampled = parseDates(df[dateRow][4])[0];
-console.log(dateSampled);
+//console.log(dateSampled);
             } else {
-console.log('there');
+//console.log('there');
                 applicant = df[14][4];
                 applicationNumber = df[15][4];
                 applicationTitle = df[16][4];
@@ -1046,7 +1046,7 @@ console.log('there');
                 dateSampled = 'Missing';
 console.log('This is test');
             }*/
-console.log('end of function',dateSampled);
+//console.log('end of function',dateSampled);
             return dateSampled;
         }
 
@@ -1062,26 +1062,26 @@ console.log('end of function',dateSampled);
         sheetData = workbook.Sheets[sheetName];
         dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
         newDateSampled = dateSampled;
-console.log(dateSampled,dateAnalysed);
+//console.log(dateSampled,dateAnalysed);
         if (dateSampled.includes('Missing')) {
             newDateSampled = dateAnalysed + 'ADMSD';
         } else if (dateSampled > dateAnalysed) {
             newDateSampled = dateAnalysed + 'ADBSD';
         }
         //Add in application number
-console.log(dateSampled,sampleInfo[dateSampled]);
+//console.log(dateSampled,sampleInfo[dateSampled]);
         if ('Application number' in sampleInfo[dateSampled]) {
             if(!sampleInfo[dateSampled]['Application number']) {
                 pattern = '[A-Z]{3}_[0-9]{4}\_[0-9]{5}';
                 fileURL = sampleInfo[dateSampled]['fileURL'];
-console.log(fileURL);
-console.log(pattern);
+//console.log(fileURL);
+//console.log(pattern);
                 matches = fileURL.match(pattern);
-                if (matches) {
+/*                if (matches) {
                     console.log('matches');
-                }
+                }*/
                 sampleInfo[dateSampled]['Application number'] = matches ? matches[0] : 'NAN';
-console.log(fileURL);
+//console.log(fileURL);
 //console.log(pattern.match(sampleInfo[dateSampled]['fileURL']));
 //                sampleInfo[dateSampled]['Application number'] = fileURL.match(pattern)[0];
 //                sampleInfo[dateSampled]['Application number'] = pattern.match(fileURL)[0];
@@ -1374,7 +1374,7 @@ function filenameDisplay() {
         positions = Object.keys(selectedSampleInfo[dateSampled].position);
         infos = '';
         for (dataType in selectedSampleMeasurements[dateSampled]) {
-console.log(dataType,dateSampled);
+//console.log(dataType,dateSampled);
             if (dataType === 'Physical Data') {
                 infos += `${dataSheetAbr[dataType]} `;
             } else {

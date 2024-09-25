@@ -19,7 +19,7 @@ ddLookup.chemical = {'pcb101' : "2,2',4,5,5'-Pentachlorobiphenyl" , 'pcb105' : "
     'ahch' : "alpha-hexachlorocyclohexane (AHCH)" , 'bhch' : "beta-hexachlorocyclohexane (BHCH)" , 'ghch' : "gamma-hexachlorocyclohexane (GHCH)" ,
     'dieldrin' : "Dieldrin" , 'hcb' : "Hexachlorobenzene (HCB)" , 'dde' : "1,1-Dichloro-2,2-bis(p-chlorophenyl) ethylene (PPDDE)" ,
     'ddt' : "Dichlorodiphenyltrichloroethane (PPDDT)" , 'tde' : "1,1-dichloro-2,2-bis(p-chlorophenyl)ethane (PPTDE)" ,
-    'bde100' : "2,2′,4,4′,6-penta-bromodiphenyl ether (BDE100)" , 'bde138' : "Hexabromodiphenyl ether (BDE138) " ,
+    'bde100' : "2,2′,4,4′,6-penta-bromodiphenyl ether (BDE100)" , 'bde138' : "Hexabromodiphenyl ether (BDE138)" ,
     'bde153' : "2,2′,4,4′,5,5′-hexa-bromodiphenyl ether (BDE153)" , 'bde154' : "2,2′,4,4′,5,6′-hexa-bromodiphenyl ether (BDE154)" ,
     'bde17' : "2,2´,4-tri-bromodiphenylether (BDE17)" , 'bde183' : "2,2′,3,4,4′,5′,6-heptabromodiphenyl ether (BDE183)" ,
     'bde28' : "2,4,4'-tribromodiphenyl ether (BDE28)" , 'bde47' : "2,2′,4,4′-Tetrabromodiphenyl ether (BDE47)" ,

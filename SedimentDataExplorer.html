@@ -56,9 +56,30 @@
 
         <br>
         Selection tools -
+        <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
         <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
         <button onclick="openChemicalSelection()">Select Chemicals</button>
         <button onclick="clearSelections()">Clear Selections</button>
+
+        <div id="datasetModal" style="display: none;">
+            Must have -
+            <input type="checkbox" id="tracemetaldataset">
+            <label for="tracemetaldataset">Trace metal data</label>
+            <input type="checkbox" id="pahdataset">
+            <label for="pahdataset">PAH data</label>
+            <input type="checkbox" id="pcbdataset">
+            <label for="pcbdataset">PCB data</label>
+            <input type="checkbox" id="bdedataset">
+            <label for="bdedataset">BDE data</label>
+            <input type="checkbox" id="organotinsdataset">
+            <label for="organotinsdataset">Organotins data</label>
+            <input type="checkbox" id="organochlorinedataset">
+            <label for="organochlorinedataset">Organochlorine data</label>
+            <input type="checkbox" id="physicaldataset">
+            <label for="physicaldataset">Physical data</label>
+            <br>
+            <button onclick="applyDatasetFilter()">Apply Dataset Selection</button>
+        </div>
 
         <div id="sampleModal" style="display: none;">
             <h2>Select Samples</h2>
@@ -66,6 +87,22 @@
             <button onclick="flipSampleSelections(false)">Select None</button>
             <button onclick="selectHighlighted()">Select Highlighted</button>
             <button onclick="closeSampleSelection()">Confirm Selection</button>
+            <br>
+            Must have non-zero - 
+            <input type="checkbox" id="tracemetaldatasample">
+            <label for="tracemetaldatasample">Trace metal data</label>
+            <input type="checkbox" id="pahdatasample">
+            <label for="pahdatasample">PAH data</label>
+            <input type="checkbox" id="pcbdatasample">
+            <label for="pcbdatasample">PCB data</label>
+            <input type="checkbox" id="bdedatasample">
+            <label for="bdedatasample">BDE data</label>
+            <input type="checkbox" id="organotinsdatasample">
+            <label for="organotinsdatasample">Organotins data</label>
+            <input type="checkbox" id="organochlorinedatasample">
+            <label for="organochlorinedatasample">Organochlorine data</label>
+            <input type="checkbox" id="physicaldatasample">
+            <label for="physicaldatasample">Physical data</label>
             <br>
             <label for="centreLat">Centre latitude:</label>
             <input type="number" id="centreLat" placeholder="Leave blank for location">

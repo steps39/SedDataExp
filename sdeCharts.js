@@ -18,7 +18,7 @@ function updateChart(){
     lastInstanceNo = 0;
     blankSheets = {};
     setBlanksForCharting();
-console.log(sheetsToDisplay);
+//console.log(sheetsToDisplay);
     for (sheetName in sheetsToDisplay) {
         if (sheetsToDisplay[sheetName] && chemicalTypeHasData(sheetName)) {
             lastInstanceNo = displayCharts(sheetName, lastInstanceNo);
@@ -30,8 +30,8 @@ console.log(sheetsToDisplay);
         selectedMeas = retData['measChart'];
         createRadarPlot(selectedMeas, radarPlot);
     }
-console.log('lastInstanceNo ',lastInstanceNo);			
-console.log(selectedMeas);
+//console.log('lastInstanceNo ',lastInstanceNo);			
+//console.log(selectedMeas);
     sampleMap(selectedMeas);
     filenameDisplay();
 }
@@ -227,7 +227,7 @@ function dataForCharting(sheetName) {
         }
     });
     unitTitle = blankSheets[ct]['Unit of measurement'];
-console.log(sheetName,measChart);
+//console.log(sheetName,measChart);
     return {unitTitle, measChart}
 }
 
@@ -314,7 +314,7 @@ function sumsForTotalHCCharting() {
     if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
         (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
 //    if ('PAH data' in selectedSampleMeasurements[ds]) {
-console.log(ds,allSamples);
+//console.log(ds,allSamples);
             allSamples.forEach(s => {
 //                if (!(selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null)) {
                 if (s in selectedSampleMeasurements[ds]['PAH data'].totalHC) {
