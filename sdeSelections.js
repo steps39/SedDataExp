@@ -280,7 +280,7 @@ function applySampleFilter() {
                         } else {
                             if (!(sheetName === 'Physical Data')) {
                                 for (const sample in sampleInfo[dateSelected].position) {
-                                    console.log(dateSelected,'has no',sheetName,'so setting all false');
+//console.log(dateSelected,'has no',sheetName,'so setting all false');
                                                                     samplesToKeep[dateSelected + ': ' + sample] = false;
                             }
                         }

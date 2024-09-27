@@ -220,11 +220,10 @@ console.log(mlaInput);
 
     
 function extractDataFromSheet(sheetData, mlApplication) {
-df = sheetData;
+    df = sheetData;
     testDD = df.filter(row => row[CEFASmla] && row[CEFASmla].includes(mlApplication));
     let uniqueSamples = {};
     let uniqueRows = [];
-
     testDD.forEach(row => {
         let sampleName = row[CEFASsamplename];
         if (sampleName && !uniqueSamples[sampleName]) {
@@ -236,30 +235,37 @@ df = sheetData;
     sampleDate = parseDates(uniqueRows[0][CEFASsampledate]);
     applicationNo = uniqueRows[0][CEFASmla];
     dateSampled = sampleDate + ' d ' + applicationNo;
-//console.log(dateSampled);
+    //console.log(dateSampled);
     sampleInfo[dateSampled] = {};
     sampleInfo[dateSampled]['Date Sampled'] = sampleDate;
     sampleInfo[dateSampled]['Application number'] = applicationNo;
     sampleInfo[dateSampled]['fileURL'] = CEFASfilename;
     sampleInfo[dateSampled].position = {};
     uniqueRows.forEach(row => {
-        sampleInfo[dateSampled].position[row[CEFASsamplename]] = { 'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],
-             'Sampling depth (m)': row[CEFASdepth] };
+        sampleInfo[dateSampled].position[row[CEFASsamplename]] = {
+            'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],
+            'Sampling depth (m)': row[CEFASdepth]
+        };
     });
+    let meas = {};
     if (!(dateSampled in sampleMeasurements)) {
         meas = {};
     } else {
         meas = sampleMeasurements[dateSampled];
     };
     everything = testDD;
-    //meas = {};
     testDD.forEach(row => {
-        chemicalAbr = row[CEFASchemical].trim();
+        let chemicalAbr = row[CEFASchemical].trim();
+        let sheetName = '';
         if (chemicalAbr in ddLookup.sheet) {
-            sheetName = ddLookup.sheet[chemicalAbr];
-            chemicalName = ddLookup.chemical[chemicalAbr];
-            sample = row[CEFASsamplename];
-            concentration = parseFloat(row[CEFASconcentration]) * ddCorrection[sheetName];
+            let chemicalName = ddLookup.chemical[chemicalAbr];
+            let sample = row[CEFASsamplename];
+            if (chemicalName === 'totalHC') {
+                sheetName = 'PAH data';
+            } else {
+                sheetName = ddLookup.sheet[chemicalAbr];
+            }
+            let concentration = parseFloat(row[CEFASconcentration]) * ddCorrection[sheetName];
             if (concentration === undefined) {
                 concentration = 0.0;
             }
@@ -268,8 +274,6 @@ df = sheetData;
                 meas[sheetName].chemicals = {};
                 meas[sheetName].total = {};
                 //Populate chemicals as data could be missing some chemicals
-//                for ddLookup.chemical
-//                ddLookup.sheetName
                 expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === sheetName);
                 for (let i = 0; i < expectedChemicals.length; i++) {
                     meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]] = {};
@@ -277,7 +281,7 @@ df = sheetData;
                 }
             }
             if (chemicalName === 'totalHC') {
-                if(!('totalHC' in meas[sheetName])) {
+                if (!('totalHC' in meas[sheetName])) {
                     meas[sheetName].totalHC = {};
                 }
                 meas[sheetName].totalHC[sample] = concentration;
@@ -294,22 +298,15 @@ df = sheetData;
             }
         }
     });
-if (sheetName == 'BDE data') {
-    console.log(meas);
-}
-expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === sheetName);
-for (let i = 0; i < expectedChemicals.length; i++) {
-    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]] = {};
-    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]].samples = {};
-}
-
-sampleMeasurements[dateSampled] = meas;
+    sampleMeasurements[dateSampled] = meas;
     for (const sheetName in meas) {
         if (sheetName === 'PAH data') {
-            pahPostProcess(meas[sheetName]);
+//console.log(meas[sheetName]);
+            pahPostProcess(meas[sheetName], dateSampled);
+//console.log(sampleMeasurements[dateSampled][sheetName]);
         }
         if (sheetName === 'PCB data') {
-            pcbPostProcess(meas[sheetName]);
+            pcbPostProcess(meas[sheetName], dateSampled);
         }
     }
     // Read in date of analysis

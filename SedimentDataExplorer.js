@@ -892,10 +892,10 @@ function importData() {
 //console.log(meas);
 //for (const sheetName in meas) {
     if (sheetName === 'PAH data') {
-        pahPostProcess(meas);
+        pahPostProcess(meas,dateSampled);
     }
     if (sheetName === 'PCB data') {
-        pcbPostProcess(meas);
+        pcbPostProcess(meas,dateSampled);
     }
 //}
        return dateAnalysed;

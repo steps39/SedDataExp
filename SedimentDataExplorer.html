@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Sediment Template Data Explorer</title>
+    <title>Sediment Data Explorer</title>
     <style>
         .checkbox-container {
             display: inline-block;
@@ -15,7 +15,7 @@
 
 <body>
     <div id="everything" style="display: none;">
-        <h1>Sediment Template Data Explorer - v0.20240925</h1>
+        <h1>Sediment Data Explorer - v0.20240926</h1>
         MMO Templates -
         <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
         <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
@@ -36,7 +36,7 @@
             <input type="text" id="urlInputDD" placeholder="URL" onchange="importDredgeData()">
             <!-- Would accept comma-separated URLs -->
              <br>
-            <input type="text" id="mlApplications" placeholder="MLA ids comma-separated" onchange="closeCEFASSelection()">
+            <input type="text" id="mlApplications" placeholder="MLA ids comma-separated">
             <button onclick="closeCEFASSelection()">Finish CEFAS Selection</button>
             <br>
             <label for="centreLatitude">Centre Latitude:</label>

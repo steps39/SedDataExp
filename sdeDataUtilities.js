@@ -1,4 +1,4 @@
-function pcbPostProcess(newMeas) {
+function pcbPostProcess(newMeas,dateSampled) {
     sheetName = 'PCB data';
 //console.log(newMeas);
     mmeas = newMeas;
@@ -29,7 +29,7 @@ function pcbPostProcess(newMeas) {
     sampleMeasurements[dateSampled][sheetName].congenerTest = sums;
 }
 
-function pahPostProcess(newMeas) {
+function pahPostProcess(newMeas,dateSampled) {
     sheetName = 'PAH data';
     const chemicals = sampleMeasurements[dateSampled][sheetName].chemicals;
     if ('Acenapthene' in chemicals) {
