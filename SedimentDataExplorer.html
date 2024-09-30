@@ -86,7 +86,7 @@
             <button onclick="flipSampleSelections(true)">Select All</button>
             <button onclick="flipSampleSelections(false)">Select None</button>
             <button onclick="selectHighlighted()">Select Highlighted</button>
-            <button onclick="closeSampleSelection()">Confirm Selection</button>
+            <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
             <br>
             Must have non-zero - 
             <input type="checkbox" id="tracemetaldatasample">
@@ -119,6 +119,7 @@
             <input type="text" id="containsText">
             <button onclick="applySampleFilter()">Apply</button>
             <div id="sampleCheckboxes"></div>
+            <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
         </div>
 
         <div id="chemicalModal" style="display: none;">
