@@ -181,30 +181,37 @@ function loadDredgeData(data) {
     //everything = workbook;        
     sheetData = workbook.Sheets['Dredge Contaminant Seabed Data '];
     let uniqueRows = [];
+    let uniqueDatasets = [];
     let uniqueMLAs = [];
+    let noMLAs = 0;
     const df = XLSX.utils.sheet_to_json(sheetData, { cellText: true });
     console.log(df);
     df.forEach(row => {
-        let mlaName = row[CEFASmla];
-        if (mlaName && !uniqueMLAs[mlaName]) {
-//console.log('found a unique one ', mlaName);
-            uniqueMLAs[mlaName] = true;
+        let mlaLicense = row[CEFASmla];
+        let mlaDate = row[CEFASsampledate];
+        let mlaName = mlaLicense + mlaDate;
+        if (mlaName && !uniqueDatasets[mlaName]) {
+            uniqueDatasets[mlaName] = true;
+            if (mlaLicense && !uniqueMLAs[mlaLicense]) {
+                uniqueMLAs[mlaLicense] = true;
+                noMLAs += 1;
+            }
             uniqueRows.push(row);
         }
     });
-    sedDredgeDataDisplay(uniqueRows.length);
+    sedDredgeDataDisplay(noMLAs,uniqueRows.length);
     return {df,uniqueRows};
 }
 
 function processDDExcelData(data, url, mlaInput) {
     console.log('processexceldata', url);
     sheetData = data;
-console.log(mlaInput);
+//console.log(mlaInput);
     if (mlaInput === undefined || mlaInput === null) {
         mlaReturn = document.getElementById('mlApplications');
         mlaInput = mlaReturn.value;
     }
-console.log(mlaInput);
+//console.log(mlaInput);
     mlas = mlaInput.trim().split(',').map(mla => mla.trim()); // Split comma-separated URLs
     if (mlas.length > 0) {
         mlas.forEach(mlApplication => {
@@ -215,102 +222,113 @@ console.log(mlaInput);
     selectedSampleInfo = sampleInfo;
     selectedSampleMeasurements = sampleMeasurements;
     updateChart();
-
 }
-
     
 function extractDataFromSheet(sheetData, mlApplication) {
     df = sheetData;
-    testDD = df.filter(row => row[CEFASmla] && row[CEFASmla].includes(mlApplication));
+    testAll = df.filter(row => row[CEFASmla] && row[CEFASmla].includes(mlApplication));
+    console.log(testAll);
+    console.log('length testAll', testAll.length);
     let uniqueSamples = {};
     let uniqueRows = [];
-    testDD.forEach(row => {
-        let sampleName = row[CEFASsamplename];
-        if (sampleName && !uniqueSamples[sampleName]) {
-            uniqueSamples[sampleName] = true;
-            uniqueRows.push(row);
+    let testBits = {};
+    testAll.forEach(row => {
+        let sampleDate = parseDates(row[CEFASsampledate]);
+        let applicationNo = row[CEFASmla];
+        let dateSampled = sampleDate + ' d ' + applicationNo;
+        if (!(dateSampled in testBits)) {
+            testBits[dateSampled] = [];
         }
+        testBits[dateSampled].push(row);
     });
-    //console.log(uniqueRows);
-    sampleDate = parseDates(uniqueRows[0][CEFASsampledate]);
-    applicationNo = uniqueRows[0][CEFASmla];
-    dateSampled = sampleDate + ' d ' + applicationNo;
-    //console.log(dateSampled);
-    sampleInfo[dateSampled] = {};
-    sampleInfo[dateSampled]['Date Sampled'] = sampleDate;
-    sampleInfo[dateSampled]['Application number'] = applicationNo;
-    sampleInfo[dateSampled]['fileURL'] = CEFASfilename;
-    sampleInfo[dateSampled].position = {};
-    uniqueRows.forEach(row => {
-        sampleInfo[dateSampled].position[row[CEFASsamplename]] = {
-            'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],
-            'Sampling depth (m)': row[CEFASdepth]
+    console.log(testBits);
+    for (dateSampled in testBits) {
+        testDD = testBits[dateSampled];
+        testDD.forEach(row => {
+            let sampleName = row[CEFASsamplename];
+            if (sampleName && !uniqueSamples[sampleName]) {
+                uniqueSamples[sampleName] = true;
+                uniqueRows.push(row);
+            }
+        });
+        sampleDate = parseDates(uniqueRows[0][CEFASsampledate]);
+        applicationNo = uniqueRows[0][CEFASmla];
+        console.log(dateSampled);
+        sampleInfo[dateSampled] = {};
+        sampleInfo[dateSampled]['Date Sampled'] = sampleDate;
+        sampleInfo[dateSampled]['Application number'] = applicationNo;
+        sampleInfo[dateSampled]['fileURL'] = CEFASfilename;
+        sampleInfo[dateSampled].position = {};
+        uniqueRows.forEach(row => {
+            sampleInfo[dateSampled].position[row[CEFASsamplename]] = {
+                'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],
+                'Sampling depth (m)': row[CEFASdepth]
+            };
+        });
+        let meas = {};
+        if (!(dateSampled in sampleMeasurements)) {
+            meas = {};
+        } else {
+            meas = sampleMeasurements[dateSampled];
         };
-    });
-    let meas = {};
-    if (!(dateSampled in sampleMeasurements)) {
-        meas = {};
-    } else {
-        meas = sampleMeasurements[dateSampled];
-    };
-    everything = testDD;
-    testDD.forEach(row => {
-        let chemicalAbr = row[CEFASchemical].trim();
-        let sheetName = '';
-        if (chemicalAbr in ddLookup.sheet) {
-            let chemicalName = ddLookup.chemical[chemicalAbr];
-            let sample = row[CEFASsamplename];
-            if (chemicalName === 'totalHC') {
-                sheetName = 'PAH data';
-            } else {
-                sheetName = ddLookup.sheet[chemicalAbr];
-            }
-            let concentration = parseFloat(row[CEFASconcentration]) * ddCorrection[sheetName];
-            if (concentration === undefined) {
-                concentration = 0.0;
-            }
-            if (!(sheetName in meas)) {
-                meas[sheetName] = {};
-                meas[sheetName].chemicals = {};
-                meas[sheetName].total = {};
-                //Populate chemicals as data could be missing some chemicals
-                expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === sheetName);
-                for (let i = 0; i < expectedChemicals.length; i++) {
-                    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]] = {};
-                    meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]].samples = {};
+        everything = testDD;
+        testDD.forEach(row => {
+            let chemicalAbr = row[CEFASchemical].trim();
+            let sheetName = '';
+            if (chemicalAbr in ddLookup.sheet) {
+                let chemicalName = ddLookup.chemical[chemicalAbr];
+                let sample = row[CEFASsamplename];
+                if (chemicalName === 'totalHC') {
+                    sheetName = 'PAH data';
+                } else {
+                    sheetName = ddLookup.sheet[chemicalAbr];
+                }
+                let concentration = parseFloat(row[CEFASconcentration]) * ddCorrection[sheetName];
+                if (concentration === undefined) {
+                    concentration = 0.0;
+                }
+                if (!(sheetName in meas)) {
+                    meas[sheetName] = {};
+                    meas[sheetName].chemicals = {};
+                    meas[sheetName].total = {};
+                    //Populate chemicals as data could be missing some chemicals
+                    expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === sheetName);
+
+                    for (let i = 0; i < expectedChemicals.length; i++) {
+                        meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]] = {};
+                        meas[sheetName].chemicals[ddLookup.chemical[expectedChemicals[i]]].samples = {};
+                    }
+                }
+                if (chemicalName === 'totalHC') {
+                    if (!('totalHC' in meas[sheetName])) {
+                        meas[sheetName].totalHC = {};
+                    }
+                    meas[sheetName].totalHC[sample] = concentration;
+                } else {
+                    if (!(chemicalName in meas[sheetName].chemicals)) {
+                        meas[sheetName].chemicals[chemicalName] = {};
+                        meas[sheetName].chemicals[chemicalName].samples = {};
+                    }
+                    if (!(sample in meas[sheetName].total)) {
+                        meas[sheetName].total[sample] = 0;
+                    }
+                    meas[sheetName].chemicals[chemicalName].samples[sample] = concentration;
+                    meas[sheetName].total[sample] += concentration;
                 }
             }
-            if (chemicalName === 'totalHC') {
-                if (!('totalHC' in meas[sheetName])) {
-                    meas[sheetName].totalHC = {};
-                }
-                meas[sheetName].totalHC[sample] = concentration;
-            } else {
-                if (!(chemicalName in meas[sheetName].chemicals)) {
-                    meas[sheetName].chemicals[chemicalName] = {};
-                    meas[sheetName].chemicals[chemicalName].samples = {};
-                }
-                if (!(sample in meas[sheetName].total)) {
-                    meas[sheetName].total[sample] = 0;
-                }
-                meas[sheetName].chemicals[chemicalName].samples[sample] = concentration;
-                meas[sheetName].total[sample] += concentration;
-            }
-        }
-    });
-    sampleMeasurements[dateSampled] = meas;
-    for (const sheetName in meas) {
-        if (sheetName === 'PAH data') {
+        });
+        sampleMeasurements[dateSampled] = meas;
+        for (const sheetName in meas) {
+            if (sheetName === 'PAH data') {
 //console.log(meas[sheetName]);
-            pahPostProcess(meas[sheetName], dateSampled);
+                pahPostProcess(meas[sheetName], dateSampled);
 //console.log(sampleMeasurements[dateSampled][sheetName]);
-        }
-        if (sheetName === 'PCB data') {
-            pcbPostProcess(meas[sheetName], dateSampled);
+            }
+            if (sheetName === 'PCB data') {
+                pcbPostProcess(meas[sheetName], dateSampled);
+            }
         }
     }
-    // Read in date of analysis
-    //        console.log('df ', df);
 }
 
 function openCEFASSelection() {
@@ -368,14 +386,18 @@ console.log(mlas);
     }
 }
 
-function sedDredgeDataDisplay(noMLAs) {
+function sedDredgeDataDisplay(noMLAs,noDatasets) {
     const sedDDDisplayDiv = document.getElementById("sedDredgeData");
     // blank it each time
     sedDDDisplayDiv.innerHTML = "";
     var countNode = document.createTextNode(`${noMLAs} marine applications available`);
     sedDDDisplayDiv.appendChild(countNode);
-        // Add a line break for better readability
-        sedDDDisplayDiv.appendChild(document.createElement("br"));
+    // Add a line break for better readability
+    sedDDDisplayDiv.appendChild(document.createElement("br"));
+    var countNode = document.createTextNode(`${noDatasets} marine datasets available`);
+    sedDDDisplayDiv.appendChild(countNode);
+    // Add a line break for better readability
+    sedDDDisplayDiv.appendChild(document.createElement("br"));
     sedDDDisplayDiv.style.display = 'block';
 }
 
