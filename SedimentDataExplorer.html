@@ -134,6 +134,24 @@
             <button onclick="closeChemicalSelection()">Confirm Selection</button>
         </div>
 
+        <br>
+        <button onclick="openDatasetLabels()">Enter alternate labels for datasets</button>
+        <button onclick="openSampleLabels()">Enter alternate labels for samples</button>
+
+        <div id="datasetLabels" style="display: none;">
+            <form id="datasetLabelsForm"></form>
+            <br>
+            <button onclick="updateDatasetLabels()">Confirm Labels and Close</button>
+            <button onclick="closeDatasetLabels()">Cancel</button>
+        </div>
+
+        <div id="sampleLabels" style="display: none;">
+            <form id="sampleLabelsForm"></form>
+            <br>
+            <button onclick="updateSampleLabels()">Confirm Labels and Close</button>
+            <button onclick="closeSampleLabels()">Cancel</button>
+        </div>
+
         <div>
             Sheetanmes -
             <input type="checkbox" id="tracemetaldata" checked>
@@ -153,6 +171,7 @@
         </div>
 
         <div>
+            <div>
             Chart types -
             <input type="checkbox" id="samplegroup" checked>
             <label for="samplegroup">Group by sample</label>
@@ -160,6 +179,9 @@
             <label for="chemicalgroup">Group by chemical</label>
             <input type="checkbox" id="positionplace" checked>
             <label for="positionplace">Plot by position</label>
+            </div>
+            <div>
+            PAH specific
             <input type="checkbox" id="gorhamtest" checked>
             <label for="gorhamtest">PAH - Gorham Test Protocol</label>
             <input type="checkbox" id="totalhc" checked>
@@ -172,10 +194,27 @@
             <label for="eparatios">PAH - EPA Ratios</label>
             <input type="checkbox" id="simpleratios" checked>
             <label for="simpleratios">PAH - Simple Ratios</label>
+            </div>
+            <div>
+            Other data options
             <input type="checkbox" id="congenertest" checked>
             <label for="congenertest">PCB - Congener test</label>
 <!--            <input type="checkbox" id="scaleType">
             <label for="scaleType">Logarithmic Scale</label> -->
+            </div>
+        </div>
+
+        <div>
+            Sample sorting for charts
+            <input type="radio" name="sorting" value="normal" checked> Date of sampling
+            <input type="radio" name="sorting" value="datelongitude"> Date of sampling then longitude
+            <input type="radio" name="sorting" value="datelatitude"> Date of sampling then latitude
+            <input type="radio" name="sorting" value="longitude"> Longitude
+            <input type="radio" name="sorting" value="latitude"> Latitude
+            <input type="radio" name="sorting" value="totalarea"> Total surface area of particles
+            <input type="radio" name="sorting" value="silt"> Weight fraction silt and clay
+            <input type="radio" name="sorting" value="sand"> Weight fraction of sand
+            <input type="radio" name="sorting" value="gravel"> Weight fraction of gravel
         </div>
 
         <div>

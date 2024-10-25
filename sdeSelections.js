@@ -1,8 +1,136 @@
+/*<div id="datasetLabels" style="display: none;">
+<form id="datasetLabels">
+</form>
+<button onclick="updateDatasetLabels()">Confirm Labels and Close</button>
+<button onclick="closeDatasetLabels()">Cancel</button>
+</div>
+
+<div id="sampleLabels" style="display: none;">
+<form id="sampleLabels">
+</form>
+<button onclick="updateSampleLabels()">Confirm Labels and Close</button>
+<button onclick="closeSampleLabels()">Cancel</button>
+</div>*/
+
+function openDatasetLabels() {
+    const datasetLabels = document.getElementById('datasetLabels');
+    datasetLabels.style.display = 'block';
+    let form = document.getElementById('datasetLabelsForm');
+    form.innerHTML = '';
+    let index = 0;
+    for (dataset in selectedSampleInfo) {
+        // Create a label
+        let label = document.createElement('label');
+        label.setAttribute('for', `dataset-${index}`);
+        label.textContent = `Enter alternate name for ${dataset}: `;
+
+        // Create an input field
+        let input = document.createElement('input');
+        input.type = 'text';
+        input.id = `dataset-${index}`;
+        input.name = `dataset-${index}`;
+        input.placeholder = `Alternate name for ${dataset}`;
+
+        // Append the label and input to the form
+        form.appendChild(label);
+        form.appendChild(input);
+
+        // Add a line break for spacing
+        form.appendChild(document.createElement('br'));
+        index += 1;
+    }
+}
+
+function updateDatasetLabels() {
+    let form = document.getElementById('datasetLabelsForm');
+    let formData = new FormData(form); // Collect form data
+//    let result = {};
+    let index = 0;
+
+    // Iterate through form entries and collect values
+    for (dataset in selectedSampleInfo) {
+        let altName = formData.get(`dataset-${index}`);
+//console.log(`dataset-${index}`);
+console.log('altName ',altName);
+        if (!(altName === '')) {
+//            result[dataset] = altName;
+            selectedSampleInfo[dataset].label = altName;
+        }
+        index += 1;
+    }
+    closeDatasetLabels();
+//    console.log(result); // Log the result to the console
+}
+
+function closeDatasetLabels() {
+    const datasetLabels = document.getElementById('datasetLabels');
+    datasetLabels.style.display = 'none';
+}
+
+function openSampleLabels() {
+    const sampleLabels = document.getElementById('sampleLabels');
+    sampleLabels.style.display = 'block';
+    let form = document.getElementById('sampleLabelsForm');
+    form.innerHTML = '';
+    let index = 0;
+    for (dataset in selectedSampleInfo) {
+        for (sample in selectedSampleInfo[dataset].position) {
+            // Create a label
+            let label = document.createElement('label');
+            label.setAttribute('for', `sample-${index}`);
+            label.textContent = `Enter alternate name for ${sample}: `;
+
+            // Create an input field
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.id = `sample-${index}`;
+            input.name = `sample-${index}`;
+            input.placeholder = `Alternate name for ${sample}`;
+
+            // Append the label and input to the form
+            form.appendChild(label);
+            form.appendChild(input);
+
+            // Add a line break for spacing
+            form.appendChild(document.createElement('br'));
+            index += 1;
+        }
+    }
+}
+
+function updateSampleLabels() {
+    let form = document.getElementById('sampleLabelsForm');
+    let formData = new FormData(form); // Collect form data
+//    let result = {};
+    let index = 0;
+
+    // Iterate through form entries and collect values
+    for (dataset in selectedSampleInfo) {
+        for (sample in selectedSampleInfo[dataset].position) {
+            let altName = formData.get(`sample-${index}`);
+//console.log(`sample-${index}`);
+//console.log('altName ',altName);
+            if (!(altName === '')) {
+//                result[sample] = altName;
+                selectedSampleInfo[dataset].position[sample].label = altName;
+            }
+            index += 1;
+        }
+    }
+    closeSampleLabels();
+//    console.log(result); // Log the result to the console
+}
+
+function closeSampleLabels() {
+    const sampleLabels = document.getElementById('sampleLabels');
+    sampleLabels.style.display = 'none';
+}
+
 function openChemicalSelection(sampleMeasurements) {
     const chemicalModal = document.getElementById('chemicalModal');
     chemicalModal.style.display = 'block';
 
-    const sampleCheckboxes = document.getElementById('chemicalCheckboxes');
+    const chemicalCheckboxes = document.getElementById('chemicalCheckboxes');
     chemicalCheckboxes.innerHTML = '';
 
     const datesSampled = Object.keys(selectedSampleMeasurements);
@@ -250,7 +378,8 @@ function applySampleFilter() {
 //        for (const sheetName in sheetsToSelect) {
 //            for (const dateSelected in selectedSampleMeasurements) {
         for (const dateSelected in selectedSampleMeasurements) {
-            for (const sample in sampleInfo[dateSelected].position) {
+            for (const sample in selectedSampleInfo[dateSelected].position) {
+//a            for (const sample in sampleInfo[dateSelected].position) {
                 samplesToKeep[dateSelected + ': ' + sample] = true;
             }
             for (const sheetName in sheetsToSelect) {
@@ -259,7 +388,8 @@ function applySampleFilter() {
 //console.log('I should check for',sheetName);
                     if (sheetName in selectedSampleMeasurements[dateSelected]) {
 //console.log(dateSelected,'has',sheetName,'so setting all false');
-                            for (const sample in sampleInfo[dateSelected].position) {
+                        for (const sample in selectedSampleInfo[dateSelected].position) {
+//a                        for (const sample in sampleInfo[dateSelected].position) {
                                 samplesToKeep[dateSelected + ': ' + sample] = false;
                             }
                             for (const chemical in selectedSampleMeasurements[dateSelected][sheetName].chemicals) {
@@ -279,7 +409,8 @@ function applySampleFilter() {
                             }
                         } else {
                             if (!(sheetName === 'Physical Data')) {
-                                for (const sample in sampleInfo[dateSelected].position) {
+                                for (const sample in selectedSampleInfo[dateSelected].position) {
+//a                                for (const sample in sampleInfo[dateSelected].position) {
 //console.log(dateSelected,'has no',sheetName,'so setting all false');
                                                                     samplesToKeep[dateSelected + ': ' + sample] = false;
                             }
@@ -321,11 +452,16 @@ function applySampleFilter() {
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
         });
-        for (const dateSelected in sampleInfo) {
+        for (const dateSelected in selectedSampleInfo) {
+            for (const sample in selectedSampleInfo[dateSelected].position) {
+                const minSample = selectedSampleInfo[dateSelected].position[sample]['Sampling depth (m)'].minDepth;
+                if (minDepth <= minSample) {
+                    const maxSample = selectedSampleInfo[dateSelected].position[sample]['Sampling depth (m)'].maxDepth;
+/*a        for (const dateSelected in sampleInfo) {
             for (const sample in sampleInfo[dateSelected].position) {
                 const minSample = sampleInfo[dateSelected].position[sample]['Sampling depth (m)'].minDepth;
                 if (minDepth <= minSample) {
-                    const maxSample = sampleInfo[dateSelected].position[sample]['Sampling depth (m)'].maxDepth;
+                    const maxSample = sampleInfo[dateSelected].position[sample]['Sampling depth (m)'].maxDepth;*/
                     if (maxDepth >= maxSample) {
                         const checkName = `sample_${dateSelected + ': ' + sample}`;
                         const checkbox = document.getElementById(checkName);
@@ -344,11 +480,16 @@ function applySampleFilter() {
                 .filter(checkbox => checkbox.checked)
                 .map(checkbox => checkbox.value);
             if (selectedSamples.length === 1) {
-                for (const dateSampled in sampleInfo) {
+                for (const dateSampled in selectedSampleInfo) {
+                    for (const sample in selectedSampleInfo[dateSampled].position) {
+                        if (selectedSamples.includes(dateSampled + ': ' + sample)) {
+                            centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
+                            centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+/*a                for (const dateSampled in sampleInfo) {
                     for (const sample in sampleInfo[dateSampled].position) {
                         if (selectedSamples.includes(dateSampled + ': ' + sample)) {
                             centreLat = sampleInfo[dateSampled].position[sample]['Position latitude'];
-                            centreLon = sampleInfo[dateSampled].position[sample]['Position longitude'];
+                            centreLon = sampleInfo[dateSampled].position[sample]['Position longitude'];*/
                         }
                     }
                 }
@@ -359,10 +500,14 @@ function applySampleFilter() {
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
         });
-        for (const dateSelected in sampleInfo) {
+        for (const dateSelected in selectedSampleInfo) {
+            for (const sample in selectedSampleInfo[dateSelected].position) {
+                const sampleLat = selectedSampleInfo[dateSelected].position[sample]['Position latitude'];
+                const sampleLon = selectedSampleInfo[dateSelected].position[sample]['Position longitude'];
+/*a        for (const dateSelected in sampleInfo) {
             for (const sample in sampleInfo[dateSelected].position) {
                 const sampleLat = sampleInfo[dateSelected].position[sample]['Position latitude'];
-                const sampleLon = sampleInfo[dateSelected].position[sample]['Position longitude'];
+                const sampleLon = sampleInfo[dateSelected].position[sample]['Position longitude'];*/
                 distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
                 if (distance <= centreDist) {
                     const checkName = `sample_${dateSelected + ': ' + sample}`;
@@ -439,6 +584,10 @@ function getselectedSampleMeasurements(selectedSamples) {
                             //console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
                             selectedMeas[dateSampled][chemicalType].samples[sample] = {};
                             selectedMeas[dateSampled][chemicalType].samples[sample].psd = sampleMeasurements[dateSampled][chemicalType].samples[sample].psd;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].psdAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].psdAreas;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].splitAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].splitAreas;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].splitWeights = sampleMeasurements[dateSampled][chemicalType].samples[sample].splitWeights;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].totalArea = sampleMeasurements[dateSampled][chemicalType].samples[sample].totalArea;
                         }
                     }
                 }
@@ -538,7 +687,24 @@ function getselectedSampleMeasurements(selectedSamples) {
 
 function getSelectedSamples(selectedSamples) {
     selectedSamps = {};
-    for (const dateSampled in sampleInfo) {
+    for (const dateSampled in selectedSampleInfo) {
+        for (const sample in selectedSampleInfo[dateSampled].position) {
+            if (selectedSamples.includes(dateSampled + ': ' + sample)) {
+                // console.log('a point ' + dateSampled + ': ' + sample);
+                if (!selectedSamps[dateSampled]) {
+                    selectedSamps[dateSampled] = {};
+                    selectedSamps[dateSampled]['Date sampled'] = selectedSampleInfo[dateSampled]['Date sampled'];
+                    selectedSamps[dateSampled].fileURL = selectedSampleInfo[dateSampled].fileURL;
+                    selectedSamps[dateSampled].Applicant = selectedSampleInfo[dateSampled].Applicant;
+                    selectedSamps[dateSampled]['Application number'] = selectedSampleInfo[dateSampled]['Application number'];
+                    selectedSamps[dateSampled]['Application title'] = selectedSampleInfo[dateSampled]['Application title'];
+                    selectedSamps[dateSampled]['label'] = selectedSampleInfo[dateSampled]['label'];
+                }
+                if (!selectedSamps[dateSampled].position) {
+                    selectedSamps[dateSampled].position = {};
+                }
+                selectedSamps[dateSampled].position[sample] = sampleInfo[dateSampled].position[sample];
+/*a    for (const dateSampled in sampleInfo) {
         for (const sample in sampleInfo[dateSampled].position) {
             if (selectedSamples.includes(dateSampled + ': ' + sample)) {
                 // console.log('a point ' + dateSampled + ': ' + sample);
@@ -553,7 +719,7 @@ function getSelectedSamples(selectedSamples) {
                 if (!selectedSamps[dateSampled].position) {
                     selectedSamps[dateSampled].position = {};
                 }
-                selectedSamps[dateSampled].position[sample] = sampleInfo[dateSampled].position[sample];
+                selectedSamps[dateSampled].position[sample] = sampleInfo[dateSampled].position[sample];*/
             }
         }
     }

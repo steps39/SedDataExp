@@ -1,3 +1,178 @@
+// Extend the Array prototype to include a custom sortSamples method
+Array.prototype.sortSamples = function(ds) {
+    // Use the built-in sort method on the array
+    return this.sort((a, b) => {
+
+        // Sorting by latitude
+        if (xAxisSort === 'latitude') {
+            const latitudeA = selectedSampleInfo[ds].position[a]['Position latitude'];
+            const latitudeB = selectedSampleInfo[ds].position[b]['Position latitude'];
+            return latitudeA - latitudeB;
+        }
+        
+        // Sorting by longitude
+        if (xAxisSort === 'longitude') {
+            const latitudeA = selectedSampleInfo[ds].position[a]['Position longitude'];
+            const latitudeB = selectedSampleInfo[ds].position[b]['Position longitude'];
+            return latitudeA - latitudeB;
+        }
+        
+        // Sorting by totalArea
+        if (xAxisSort === 'totalarea') {
+            const totalAreaA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].totalArea;
+            const totalAreaB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].totalArea;
+            return totalAreaA - totalAreaB;
+        }
+
+        // Sorting by gravel
+        if (xAxisSort === 'gravel') {
+            const gravelA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].splitWeights['Gravel'];
+            const gravelB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].splitWeights['Gravel'];
+            return gravelA - gravelB;
+        }
+
+        // Sorting by silt
+        if (xAxisSort === 'silt') {
+            const siltA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].splitWeights['Silt and Clay'];
+            const siltB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].splitWeights['Silt and Clay'];
+            return siltA - siltB;
+        }
+
+        // Sorting by sand
+        if (xAxisSort === 'sand') {
+            const splitWeightsA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].splitWeights['Silt and Clay'];
+            const splitWeightsB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].splitWeights['Silt and Clay'];
+            const sandA = splitWeightsA['Fine and Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
+                          splitWeightsA['Very Coarse and Coarse Sand'];
+            const sandB = splitWeightsB['Fine and Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
+            splitWeightsB['Very Coarse and Coarse Sand'];
+            return sandA - sandB;
+        }
+
+        // Default case if no valid sort key is provided
+        return 0;
+    });
+};
+
+// Extend the Array prototype to include a custom sortSamples method
+Array.prototype.sortComplexSamples = function() {
+    // Use the built-in sort method on the array
+
+    return this.sort((a, b) => {
+console.log(a,b);
+        const partsA = a.split(": ");
+        const partsB = b.split(": ");
+console.log(partsA);
+console.log(partsB);
+        // Sorting by latitude
+        if (xAxisSort === 'latitude') {
+            const latitudeA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
+            const latitudeB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
+            return latitudeA - latitudeB;
+        }
+        
+        // Sorting by longitude
+        if (xAxisSort === 'longitude') {
+            const latitudeA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
+            const latitudeB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
+            return latitudeA - latitudeB;
+        }
+        
+        // Sorting by totalArea
+        if (xAxisSort === 'totalArea') {
+            const totalAreaA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
+            const totalAreaB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
+            return totalAreaA - totalAreaB;
+        }
+
+        // Sorting by datelatitude
+        if (partsA[0] === partsB[0]) {
+            if (xAxisSort === 'datelatitude') {
+                const latitudeA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
+                const latitudeB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
+                return latitudeA - latitudeB;
+            }
+        } else {
+            if (partsA[0] > partsB[0]) {
+                return 1
+            } else {
+                return -1
+            }
+        }
+        
+        // Sorting by datelongitude
+        if (partsA[0] === partsB[0]) {
+            if (xAxisSort === 'datelongitude') {
+                const longitudeA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
+                const longitudeB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
+                return longitudeA - longitudeB;
+            }
+        } else {
+            if (partsA[0] > partsB[0]) {
+                return 1
+            } else {
+                return -1
+            }
+        }
+        
+        // Default case if no valid sort key is provided
+        return 0;
+    });
+};
+
+// Define ranges for different materials
+let ranges = {
+    'Gravel': [0, 9],
+    'Very Coarse And Coarse Sand': [10, 13],
+    'Medium Sand': [14, 15],
+    'Fine And Very Fine Sand': [16, 19],
+    'Silt And Clay': [20, 41]
+  };
+
+// Function to calculate sum of a range
+function sumInRange(psd, range) {
+    let sum = 0;
+    for (let i = range[0]; i <= range[1]; i++) {
+        if (i < psd.length) {
+            sum += psd[i];
+        }
+    }
+    return sum;
+}
+
+function psdSplit(psd) {
+    let split = {};
+    // Calculate sums for each category
+    split['Gravel'] = sumInRange(psd, ranges['Gravel']);
+    split['Very Coarse And Coarse Sand'] = sumInRange(psd, ranges['Very Coarse And Coarse Sand']);
+    split['Medium Sand'] = sumInRange(psd, ranges['Medium Sand']);
+    split['Fine And Very Fine Sand'] = sumInRange(psd, ranges['Fine And Very Fine Sand']);
+    split['Silt And Clay'] = sumInRange(psd, ranges['Silt And Clay']);
+    return split
+}
+
+function psdPostProcess(currentPsd, sizes) {
+    ptsSizes = null;
+    ptsAreas = null;
+    ptsVolumes = null;
+    splitWeights = {};
+    splitAreas = {};
+    ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize));
+    ptsAreas = ptsSizes.map(size => Math.PI * size * size / 4);
+    ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
+    areas = [];
+    totalArea = 0;
+    for (i = 0; i < ptsSizes.length; i++) {
+        //                    noPts = currentPsd[i] / volumes[i];
+        currentArea = ptsAreas[i] * currentPsd[i] / ptsVolumes[i];
+        areas[i] = currentArea;
+        totalArea += currentArea;
+    }
+    splitWeights = psdSplit(currentPsd);
+    splitAreas = psdSplit(areas);
+    return { areas, splitWeights, splitAreas, totalArea }
+}
+
 function pcbPostProcess(newMeas,dateSampled) {
     sheetName = 'PCB data';
 //console.log(newMeas);

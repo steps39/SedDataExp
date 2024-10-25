@@ -259,6 +259,7 @@ function extractDataFromSheet(sheetData, mlApplication) {
         sampleInfo[dateSampled]['Application number'] = applicationNo;
         sampleInfo[dateSampled]['fileURL'] = CEFASfilename;
         sampleInfo[dateSampled].position = {};
+        sampleInfo[dateSampled].label = dateSampled;
         uniqueRows.forEach(row => {
             sampleInfo[dateSampled].position[row[CEFASsamplename]] = {
                 'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],

@@ -9,7 +9,7 @@ To use the Sediment Data Explorer, follow these steps:
 2. Import Data:
 * Import Sediment Chemistry Data:
    * Option 1: Using Files: Click the "Choose Files" button next to the "Select sediment data files" label and select the Excel (.xlsx) files containing your sediment chemistry data.
-   * Option 2: Using URLs: Enter the URLs of the Excel (.xlsx) files separated by commas in the text box next to the "Or enter URLs" label and click the "Import Data" button. The source code assumes that the URLs link directly to Excel files and does not provide instructions for handling web pages or other content types. You may need to check if this assumption is valid and modify your approach accordingly.
+   * Option 2: Using URLs: Enter the URLs of the Excel (.xlsx) files separated by commas in the text box next to the "Or enter URLs" label and click the "Import Data" button. The source code assumes that the URLs link directly to Excel files.
 * Import Location Data (Optional):
    * Option 1: Using Files: Click the "Choose Files" button next to the "Select location data file" label and select the Excel (.xlsx) file containing your sampling location data. This file should have a specific format: column 1 should contain the sample name, column 2 should have the latitude in decimal degrees, and column 3 should have the longitude in decimal degrees.
    * Option 2: Using URLs: Enter the URLs of the location files separated by commas in the text box next to the "Or enter URLs" label and click the "Import Locations" button.

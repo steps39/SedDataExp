@@ -28,6 +28,7 @@
     let ylinlog = [];
     let stacked = [];
     let largeSize = [];
+    let xAxisSort = 'normal';
     let highlightMarkers = {};
     for (i = 1; i < noInstances; i++) {
         chartInstance[i] = null;
@@ -52,6 +53,7 @@
         subName = subChartNames[i];
         subsToDisplay[sheetName] = true;
     }
+    sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'latitude', 'longitude', 'totalarea', 'silt', 'sand', 'gravel'];
     calcSheetNames = ['Physical Stats','PSA Charts','Metals calcs','PAH calcs','PCB calcs','BDE calcs','Organotin calcs','Organochlorine calcs'];
     let map; // Declare map as a global variable
     let fred;
@@ -243,9 +245,37 @@ for (i = 1; i < dataSheetNames.length; i++) {
                 sampleMeasurements = jsonData.sampleMeasurements;
                 selectedSampleInfo = jsonData.selectedSampleInfo;
                 selectedSampleMeasurements = jsonData.selectedSampleMeasurements;
+                for (dateSampled in sampleMeasurements) {
+                    if ('Physical Data' in sampleMeasurements[dateSampled]) {
+                        for (sample in sampleMeasurements[dateSampled]['Physical Data'].samples) {
+                            if (!('totalArea' in sampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
+                                currentPsd = sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
+                                retData = psdPostProcess(currentPsd, sampleMeasurements[dateSampled]['Physical Data'].sizes);
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
+                            }
+                        }
+                    }
+                }
+                for (dateSampled in selectedSampleMeasurements) {
+                    if ('Physical Data' in selectedSampleMeasurements[dateSampled]) {
+                        for (sample in selectedSampleMeasurements[dateSampled]['Physical Data'].samples) {
+                            if (!('totalArea' in selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
+                                currentPsd = selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
+                                retData = psdPostProcess(currentPsd, selectedSampleMeasurements[dateSampled]['Physical Data'].sizes);
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
+                            }
+                        }
+                    }
+                }
+
                 updateChart();
             };
-    
             reader.readAsText(file);
         }
     }
@@ -492,8 +522,8 @@ console.log('End of processExcelLocations');
                 }
                 // Check all the boxes set in url
                 for (let i = 0; i < sels.length; i++) {
-//console.log(i);
-//console.log(sels[i]);
+console.log(i);
+console.log(sels[i]);
                     const checkbox = document.getElementById(sels[i]);
                     checkbox.checked = true;
                 }
@@ -560,6 +590,19 @@ function importData() {
 //                closeCEFASSearch();
             }*/
             importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish,dlicences);
+        }
+        const sortParam = suppliedParams.get('sort');
+        console.log(durlParam);
+        if (sortParam) {
+            xAxisSort = sortParam;
+/*            switch (sortParam) {
+                case 'normal': xAxisSort = 'normal'; break
+                case 'latitude': xAxisSort = 'latitude'; break
+                case 'longitude': xAxisSort = 'longitude'; break
+                case 'datelatitude': xAxisSort = 'latitude'; break
+                case 'datelongitude': xAxisSort = 'longitude'; break
+                case 'totalarea': xAxisSort = 'totalarea'; break
+            }*/
         }
     } else {
         const fileInput = document.getElementById('fileInput');
@@ -661,176 +704,175 @@ function importData() {
         urlInput.value = '';
     }
 
-    function processExcelData(data, url) {
-// console.log('processexceldata',url);
-        const workbook = XLSX.read(data, { type: 'array' });
+function processExcelData(data, url) {
+    // console.log('processexceldata',url);
+    const workbook = XLSX.read(data, { type: 'array' });
 
-        function extractDataFromSheet(sheetName, sheetData, dateSampled) {
+    function extractDataFromSheet(sheetName, sheetData, dateSampled) {
         if (sheetData === null || sheetData == undefined) {
             return null;
         }
-//console.log('ext data ',sheetData);
-            const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
-//                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
-            let startRow = -1;
-            let startCol = -1;
-            let measurementUnit = 'Not set';
-            let totalSum = 0;
-            meas = {};
-            // Read in date of analysis
-//console.log('df ', df);
-            if (df[18][1] === 'Date of analysis:') {
-                row = 18;
+        //console.log('ext data ',sheetData);
+        const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
+        //                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
+        let startRow = -1;
+        let startCol = -1;
+        let measurementUnit = 'Not set';
+        let totalSum = 0;
+        meas = {};
+        // Read in date of analysis
+        //console.log('df ', df);
+        if (df[18][1] === 'Date of analysis:') {
+            row = 18;
+            column = 2;
+        } else {
+            if (df[17][1] === 'Date of analysis:') {
+                row = 17;
                 column = 2;
             } else {
-                if (df[17][1] === 'Date of analysis:') {
-                    row = 17;
-                    column = 2;
+                if (df[18][2] === 'Date of analysis:') {
+                    row = 18;
+                    column = 3;
                 } else {
-                    if (df[18][2] === 'Date of analysis:') {
-                        row = 18;
+                    if (df[17][2] === 'Date of analysis:') {
+                        row = 17;
                         column = 3;
                     } else {
-                        if (df[17][2] === 'Date of analysis:') {
-                            row = 17;
-                            column = 3;
-                        } else {
-                            row = null;
-                            dataAnalysed = 'AD: missing';
-                            contractor = 'Not listed';
-                        }
+                        row = null;
+                        dataAnalysed = 'AD: missing';
+                        contractor = 'Not listed';
                     }
                 }
             }
-                    dateAnalysed = 'AD: missing';
-                    contractor = 'Not listed';
-            for (let cc = 0; cc < 30; cc++) {
-                for (let r = 0; r < 30; r++) {
-                    const cellValue = df[r][cc];
-//console.log(sheetName,r,cc);
-                    if (typeof cellValue === 'string' && cellValue.includes('Date of analysis')) {
-                        dateAnalysed = parseDates(df[r][cc + 1])[0];
-                        contractor = df[r - 1][cc + 1];
-                        break;
-                    }
+        }
+        dateAnalysed = 'AD: missing';
+        contractor = 'Not listed';
+        for (let cc = 0; cc < 30; cc++) {
+            for (let r = 0; r < 30; r++) {
+                const cellValue = df[r][cc];
+                //console.log(sheetName,r,cc);
+                if (typeof cellValue === 'string' && cellValue.includes('Date of analysis')) {
+                    dateAnalysed = parseDates(df[r][cc + 1])[0];
+                    contractor = df[r - 1][cc + 1];
+                    break;
                 }
             }
-            
-            for (let r = 0; r < df.length; r++) {
-                for (let cc = 0; cc < df[r].length; cc++) {
-                    const cellValue = df[r][cc];
-                    if (typeof cellValue === 'string' && cellValue.includes('Dredge Area')) {
-                        c = cc - 1;
-                        measurementUnit = df[r][c+4];
-                        corec = 0;
-                        extraValue = df[r][c];
-                        if (typeof extraValue === 'string' && extraValue.includes('Laboratory sample number')) {
-//console.log('Lab sampl numb');
-                            corec = 0;
-                            measurementUnit = df[r][c+4];
-                        } else {
-//console.log('No Lab sampl numb');
-                            corec = 0;
-                            measurementUnit = df[r][c+3];
-                        }
-                    //}
-//console.log('unit ',measurementUnit);
-                    if (!(sheetName === 'Physical Data')) {
-                            if(!(sheetName === 'PCB data')) {
-                                startRow = r + 2;
-                            } else {
-                                startRow = r + 3;
-                            }
-                            startCol = c;
-                            for (let col = startCol + 1; col < df[startRow].length; col++) {
-                                if(!(sheetName === 'PCB data')) {
-                                    rawChemical = df[startRow - 1][col];
-                                } else {
-                                    rawChemical = df[startRow - 2][col];
-                                    congener = df[startRow - 1][col];
-                                }
-                                if (rawChemical !== null && rawChemical !== undefined) {
-                                    // Need to tidy name coming from template
-                                    // In BDE seem to have variations some with \n or \r\n
-//if(sheetName === 'BDE data') {
-//    console.log('r ',rawChemical);
-//}
-                                    chemical = cleanChemicalString(rawChemical);
+        }
 
-//if(sheetName === 'BDE data') {
-//    console.log('c ',chemical);
-//}
-                                    if (!meas.chemicals){
-                                        meas.chemicals = {};
-                                        meas.total = {};
-                                        if(sheetName === 'PCB data') {
-                                            meas.congeners = {};
-                                        }
-                                    }
-                                    if (!meas.chemicals[chemical]) {
-                                        meas.chemicals[chemical] = {};
-                                        if(sheetName === 'PCB data') {
-                                            meas.congeners[chemical] = congener;
-                                        }
-                                    }
-                                    for (let row = startRow; row < df.length; row++) {
-                                        sample = df[row][startCol+2]; //bodge to pick up sample id
-                                        // If sample id not present then use Laboratory sample number instead
-                                        if (sample == undefined || sample == null) {
-                                            sample = df[row][startCol];
-                                        }
-                                        if (!(sample == undefined || sample == null)) {
-//console.log(sample);
-                                            let concentration = df[row][col+corec];
-                            if(isNaN(concentration)) {
-                                concentration = 0.0;
+        for (let r = 0; r < df.length; r++) {
+            for (let cc = 0; cc < df[r].length; cc++) {
+                const cellValue = df[r][cc];
+                if (typeof cellValue === 'string' && cellValue.includes('Dredge Area')) {
+                    c = cc - 1;
+                    measurementUnit = df[r][c + 4];
+                    corec = 0;
+                    extraValue = df[r][c];
+                    if (typeof extraValue === 'string' && extraValue.includes('Laboratory sample number')) {
+                        //console.log('Lab sampl numb');
+                        corec = 0;
+                        measurementUnit = df[r][c + 4];
+                    } else {
+                        //console.log('No Lab sampl numb');
+                        corec = 0;
+                        measurementUnit = df[r][c + 3];
+                    }
+                    //}
+                    //console.log('unit ',measurementUnit);
+                    if (!(sheetName === 'Physical Data')) {
+                        if (!(sheetName === 'PCB data')) {
+                            startRow = r + 2;
+                        } else {
+                            startRow = r + 3;
+                        }
+                        startCol = c;
+                        for (let col = startCol + 1; col < df[startRow].length; col++) {
+                            if (!(sheetName === 'PCB data')) {
+                                rawChemical = df[startRow - 1][col];
+                            } else {
+                                rawChemical = df[startRow - 2][col];
+                                congener = df[startRow - 1][col];
                             }
-                                            if(sample.includes('detection')) {
-                                                meas.chemicals[chemical][sample] = concentration;
-                                                //.push(parseFloat(concentration) || 0);
-                                            } else {
-                                                if (!meas.chemicals[chemical].samples) {
-                                                    meas.chemicals[chemical].samples = {};
-                                                }
-                                                if (!meas.chemicals[chemical].samples[sample]) {
-                                                    meas.chemicals[chemical].samples[sample] = {};
-                                                }
-                                                if (!meas.total[sample]) {
-                                                    meas.total[sample] = 0;
-                                                }
-                                                if (concentration !== null && concentration !== undefined) {
-                                                    meas.chemicals[chemical].samples[sample]= parseFloat(concentration);
-                                                    meas.total[sample] += parseFloat(concentration) || 0;
-                                                    totalSum += parseFloat(concentration) || 0;
-                                                }
-                                            }	
+                            if (rawChemical !== null && rawChemical !== undefined) {
+                                // Need to tidy name coming from template
+                                // In BDE seem to have variations some with \n or \r\n
+                                //if(sheetName === 'BDE data') {
+                                //    console.log('r ',rawChemical);
+                                //}
+                                chemical = cleanChemicalString(rawChemical);
+
+                                //if(sheetName === 'BDE data') {
+                                //    console.log('c ',chemical);
+                                //}
+                                if (!meas.chemicals) {
+                                    meas.chemicals = {};
+                                    meas.total = {};
+                                    if (sheetName === 'PCB data') {
+                                        meas.congeners = {};
+                                    }
+                                }
+                                if (!meas.chemicals[chemical]) {
+                                    meas.chemicals[chemical] = {};
+                                    if (sheetName === 'PCB data') {
+                                        meas.congeners[chemical] = congener;
+                                    }
+                                }
+                                for (let row = startRow; row < df.length; row++) {
+                                    sample = df[row][startCol + 2]; //bodge to pick up sample id
+                                    // If sample id not present then use Laboratory sample number instead
+                                    if (sample == undefined || sample == null) {
+                                        sample = df[row][startCol];
+                                    }
+                                    if (!(sample == undefined || sample == null)) {
+                                        //console.log(sample);
+                                        let concentration = df[row][col + corec];
+                                        if (isNaN(concentration)) {
+                                            concentration = 0.0;
+                                        }
+                                        if (sample.includes('detection')) {
+                                            meas.chemicals[chemical][sample] = concentration;
+                                            //.push(parseFloat(concentration) || 0);
+                                        } else {
+                                            if (!meas.chemicals[chemical].samples) {
+                                                meas.chemicals[chemical].samples = {};
+                                            }
+                                            if (!meas.chemicals[chemical].samples[sample]) {
+                                                meas.chemicals[chemical].samples[sample] = {};
+                                            }
+                                            if (!meas.total[sample]) {
+                                                meas.total[sample] = 0;
+                                            }
+                                            if (concentration !== null && concentration !== undefined) {
+                                                meas.chemicals[chemical].samples[sample] = parseFloat(concentration);
+                                                meas.total[sample] += parseFloat(concentration) || 0;
+                                                totalSum += parseFloat(concentration) || 0;
+                                            }
                                         }
                                     }
-                                } else if (sheetName === 'PAH data') {
-                                    hydrocarbon = df[startRow - 2][col];
-                                    if (hydrocarbon !== null && hydrocarbon !== undefined) {
-                                        if (hydrocarbon === 'Total hydrocarbon content (mg/kg)') {
-                                            for (let row = startRow; row < df.length; row++) {
-                                                sample = df[row][startCol+2]; //bodge to pick up sample id
-                                                // If sample id not present then use Laboratory sample number instead
-                                                if (sample == undefined || sample == null) {
-                                                    sample = df[row][startCol];
-                                                }
-                                                if (!(sample == undefined || sample == null)) {
-                                                    const concentration = parseFloat(df[row][col+corec]);
-                                                    if(sample.includes('detection')) {
-                                                        meas[sample] = concentration;
-                                                        //.push(parseFloat(concentration) || 0);
+                                }
+                            } else if (sheetName === 'PAH data') {
+                                hydrocarbon = df[startRow - 2][col];
+                                if (hydrocarbon !== null && hydrocarbon !== undefined) {
+                                    if (hydrocarbon === 'Total hydrocarbon content (mg/kg)') {
+                                        for (let row = startRow; row < df.length; row++) {
+                                            sample = df[row][startCol + 2]; //bodge to pick up sample id
+                                            // If sample id not present then use Laboratory sample number instead
+                                            if (sample == undefined || sample == null) {
+                                                sample = df[row][startCol];
+                                            }
+                                            if (!(sample == undefined || sample == null)) {
+                                                const concentration = parseFloat(df[row][col + corec]);
+                                                if (sample.includes('detection')) {
+                                                    meas[sample] = concentration;
+                                                    //.push(parseFloat(concentration) || 0);
+                                                } else {
+                                                    if (!meas.totalHC) {
+                                                        meas.totalHC = {};
+                                                        meas.totalHCUnit = hydrocarbon;
+                                                    }
+                                                    if (isNaN(concentration)) {
+                                                        meas.totalHC[sample] = 0.0;
                                                     } else {
-                                                        if (!meas.totalHC) {
-                                                            meas.totalHC = {};
-                                                            meas.totalHCUnit = hydrocarbon;
-                                                        }
-                                                        if(isNaN(concentration)) {
-                                                            meas.totalHC[sample] = 0.0;
-                                                        } else {
-                                                            meas.totalHC[sample] = concentration;
-                                                        }
+                                                        meas.totalHC[sample] = concentration;
                                                     }
                                                 }
                                             }
@@ -838,217 +880,227 @@ function importData() {
                                     }
                                 }
                             }
-                        } else {
-                            measurementUnit = df[r][c+7];
-                            meas.samples = {};
-                            meas.sizes = [];
-                            startRow = r + 3;
-                            startCol = c;
-                            for (let col = startCol + 7; col < df[startRow - 1].length; col++) {
-                                meas.sizes.push(parseFloat(df[startRow - 2][col]) || 0);
-                                for (let row = startRow; row < 38; row++) {
-                                    sample = df[row][startCol+2]; //bodge to pick up sample id
-                                    // If sample id not present then use Laboratory sample number instead
-                                    if (sample == undefined || sample == null) {
-                                        sample = df[row][startCol];
-                                    }
-                                    if (!(sample == undefined || sample == null)) {
-//console.log(sheetName, col, row, sample);
-                                        if (!meas.samples) {
-                                            meas.samples = {}
-                                        }
-                                        if (!meas.samples[sample]) {
-                                            meas.samples[sample] = {};
-                                            meas.samples[sample].psd = [];
-                                            meas.samples[sample]['Visual Appearance'] = df[row][startCol+3];
-                                            meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol+5];
-                                            meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol+6];
-                                        }
-                                            
-//console.log(sample);
-                                       meas.samples[sample].psd.push(parseFloat(df[row][col]) || 0);
-//console.log('meas.psd ',df[row][col]);
-                                    }
-                                }
-                                }
-//console.log(sheetName, ' in else ','meas ', meas);
-                            }
-                        break;
-                    }
-                }
-                if (startRow !== -1 && startCol !== -1) {
-                    break;
-                }
-            }
-            meas['Date analysed'] = dateAnalysed;
-            meas['Unit of measurement'] = measurementUnit;
-            meas['Laboratory/contractor'] = contractor;
-            if(!totalSum>0 && !(sheetName === 'Physical Data')) {
-                return 'No data for ' + sheetName;
-            }
-//console.log(dateSampled, sheetName, 'meas ', meas);
-            sampleMeasurements[dateSampled][sheetName] = meas;
-            const sums = {};
-//console.log(meas);
-//for (const sheetName in meas) {
-    if (sheetName === 'PAH data') {
-        pahPostProcess(meas,dateSampled);
-    }
-    if (sheetName === 'PCB data') {
-        pcbPostProcess(meas,dateSampled);
-    }
-//}
-       return dateAnalysed;
-        }
-
-        function extractApplicationDataFromSheet(sheetName, sheetData, url) {
-//console.log('extractappdata',url);
-//            dateSampled = 'SD Missing';
-            const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
-//                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
-
-//console.log(sheetName);  //Output each cell value to console
-//console.log(df.length);
-            let startRow = -1;
-            let startCol = -1;
-
-                     // This code should have found Applicant: but doesn't so bodged above
-/*                        if (typeof cellValue === 'string' && cellValue.includes('Applicant:')) {
-                        console.log('found applicant');
-                        const applicant = df[r][c+1];
-                        const applicationNumber = df[r+1][c+1];
-                        const applicationTitle = df[r+2][c+1];
-                        const dateSampled = df[r+3][c+1];
-                        const samplingLocation = df[r+4][c+1];
-                    }
-*/
-
-
-/*                // This relies on template first page not changing at all
-             const applicant = df[14][4];
-            const applicationNumber = df[15][4];
-            const applicationTitle = df[16][4];*/
-            for (i = 16; 19; i++) {
-                dateRow = i;
-//console.log('df[dateRow][2]',dateRow,df[dateRow][2]);                
-                if (df[dateRow][2].includes('Date sampled:')) {
-                    break;
-                }
-                dateRow = 0;
-//					dateSampled = 'SD Missing';
-            }
-            if (dateRow > 0) {
-//console.log('here',dateRow);
-                applicant = df[dateRow-3][4];
-                applicationNumber = df[dateRow-2][4];
-                applicationTitle = df[dateRow-1][4];
-//console.log(df[dateRow][4]);
-//console.log(df);
-                dateSampled = parseDates(df[dateRow][4])[0];
-//console.log(dateSampled);
-            } else {
-//console.log('there');
-                applicant = df[14][4];
-                applicationNumber = df[15][4];
-                applicationTitle = df[16][4];
-                dateSampled = 'Missing';
-                dateRow = 17;
-            }
-            sampleInfo[dateSampled] = {};
-            sampleInfo[dateSampled]['Applicant'] = applicant;
-            sampleInfo[dateSampled]['Application number'] = applicationNumber;
-            sampleInfo[dateSampled]['Application title'] = applicationTitle;
-            sampleInfo[dateSampled]['Date sampled'] = dateSampled;
-            sampleInfo[dateSampled]['fileURL'] = url;
-//console.log('extractapplicationdatafromsheet ', dateSampled,url);
-            sampleInfo[dateSampled].position = {};
-            sampleMeasurements[dateSampled] = {};
-
-            const samplingLocation = df[dateRow + 1][4];
-            for (let c = 0; c < df.length; c++) {
-                
-                //Bodge as didn't read enough of columns when set by length alone
-//                    for (let r = 0; r < df[c].length; r++) {
-                if (df[c].length < 40 ) {
-                    cdepth = 40;
-                } else {
-                    cdepth = df[c].length;
-                }
-                for (let r = 0; r < cdepth; r++) {
-                    const cellValue = df[r][c];
-// console.log(c,r,cellValue);
-//                        if (typeof cellValue === 'string' && cellValue.includes('Excluded sample (MMO use)')) {
-                    if (typeof cellValue === 'string' && cellValue.includes('Sample location (decimal degrees, WGS84)')) {
-//console.log('Sample Location');
-                        const extraValue = df[r][c-1]
-//console.log(extraValue);
-                        if (typeof extraValue === 'string' && extraValue.includes('Excluded sample (MMO use)')) {
-                            startRow = r + 2;
-                            startCol = c-2;
-                            samCol = startCol;
-                            excCol = startCol + 1;
-                            latCol = startCol + 2;
-                            lonCol = startCol + 3;
-                            namCol = startCol + 4;
-                            depCol = startCol + 5;
-                            dreCol = startCol + 6;
-                        } else {
-                            startRow = r + 2;
-                            startCol = c-1;
-                            samCol = startCol;
-                            excCol = startCol + 6; // not present here
-                            dreCol = startCol + 5;
-                            latCol = startCol + 1;
-                            lonCol = startCol + 2;
-                            namCol = startCol + 3;
-                            depCol = startCol + 4;
                         }
-
-                        for (let row = startRow; row < df.length; row++) {
-                            const sample = df[row][samCol]; //bodge to pick up sample id
-                               if (!(sample == undefined || sample == null)) {
-                                sInfo = {};
-                                sInfo['Excluded sample (MMO use)'] = df[row][excCol];
-                                sInfo['Dredge area'] = df[row][dreCol];
-                                point = parseCoordinates(df[row][latCol],df[row][lonCol]);
-//console.log(df[row][latCol],df[row][lonCol]);
-//console.log(point);
-                                if (point === null || point === undefined) {
-                                    // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
-                                    if (namedLocations[sample] !== null && namedLocations[sample] !== undefined) {
-                                        point = {};
-                                        point['latitude'] = namedLocations[sample].latitude;
-                                        point['longitude'] = namedLocations[sample].longitude;
-                                    } else {
-//console.log('lat and long undefined does not match', sample);
-                                        point = {};
-                                        point['latitude'] = undefined;
-                                        point['longitude'] = undefined;
-                                       }
+                    } else {
+                        measurementUnit = df[r][c + 7];
+                        meas.samples = {};
+                        meas.sizes = [];
+                        startRow = r + 3;
+                        startCol = c;
+                        for (let col = startCol + 7; col < df[startRow - 1].length; col++) {
+                            meas.sizes.push(parseFloat(df[startRow - 2][col]) || 0);
+                            for (let row = startRow; row < 38; row++) {
+                                sample = df[row][startCol + 2]; //bodge to pick up sample id
+                                // If sample id not present then use Laboratory sample number instead
+                                if (sample == undefined || sample == null) {
+                                    sample = df[row][startCol];
                                 }
-                                sInfo['Position latitude'] = point['latitude'];
-                                sInfo['Position longitude'] = point['longitude'];
-                                sInfo['Location name (as per sampling plan)'] = df[row][namCol];
-                                sInfo['Sampling depth (m)'] = processDepth(df[row][depCol]);
-                                sInfo['Sampling location']= samplingLocation;
-                                sampleInfo[dateSampled].position[sample] = sInfo;
-                             }
-                         }
-                         break;
+                                if (!(sample == undefined || sample == null)) {
+                                    //console.log(sheetName, col, row, sample);
+                                    if (!meas.samples) {
+                                        meas.samples = {}
+                                    }
+                                    if (!meas.samples[sample]) {
+                                        meas.samples[sample] = {};
+                                        meas.samples[sample].psd = [];
+                                        meas.samples[sample]['Visual Appearance'] = df[row][startCol + 3];
+                                        meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol + 5];
+                                        meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol + 6];
+                                    }
+
+                                    //console.log(sample);
+                                    meas.samples[sample].psd.push(parseFloat(df[row][col]) || 0);
+                                    //console.log('meas.psd ',df[row][col]);
+                                }
+                            }
+                        }
+                        for (sample in meas.samples) {
+                            currentPsd = meas.samples[sample].psd;
+                            retData = psdPostProcess(currentPsd,meas.sizes);
+                            meas.samples[sample].psdAreas = retData['areas'];
+                            meas.samples[sample].splitWeights = retData['splitWeights'];
+                            meas.samples[sample].splitAreas = retData['splitAreas'];
+                            meas.samples[sample].totalArea = retData['totalArea'];
+                        }
                     }
-                }
-                if (startRow !== -1 && startCol !== -1) {
-// console.log('Breaking up');
-                       break;
+                    break;
                 }
             }
-/*            if (dateSampled === 'Missing'){
-                dateSampled = 'Missing';
-console.log('This is test');
-            }*/
-//console.log('end of function',dateSampled);
-            return dateSampled;
+            if (startRow !== -1 && startCol !== -1) {
+                break;
+            }
         }
+        meas['Date analysed'] = dateAnalysed;
+        meas['Unit of measurement'] = measurementUnit;
+        meas['Laboratory/contractor'] = contractor;
+        if (!totalSum > 0 && !(sheetName === 'Physical Data')) {
+            return 'No data for ' + sheetName;
+        }
+        //console.log(dateSampled, sheetName, 'meas ', meas);
+        sampleMeasurements[dateSampled][sheetName] = meas;
+        const sums = {};
+        //console.log(meas);
+        //for (const sheetName in meas) {
+        if (sheetName === 'PAH data') {
+            pahPostProcess(meas, dateSampled);
+        }
+        if (sheetName === 'PCB data') {
+            pcbPostProcess(meas, dateSampled);
+        }
+        //}
+        return dateAnalysed;
+    }
+
+    function extractApplicationDataFromSheet(sheetName, sheetData, url) {
+        //console.log('extractappdata',url);
+        //            dateSampled = 'SD Missing';
+        const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
+        //                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
+
+        //console.log(sheetName);  //Output each cell value to console
+        //console.log(df.length);
+        let startRow = -1;
+        let startCol = -1;
+
+        // This code should have found Applicant: but doesn't so bodged above
+        /*                        if (typeof cellValue === 'string' && cellValue.includes('Applicant:')) {
+                                console.log('found applicant');
+                                const applicant = df[r][c+1];
+                                const applicationNumber = df[r+1][c+1];
+                                const applicationTitle = df[r+2][c+1];
+                                const dateSampled = df[r+3][c+1];
+                                const samplingLocation = df[r+4][c+1];
+                            }
+        */
+
+
+        /*                // This relies on template first page not changing at all
+                     const applicant = df[14][4];
+                    const applicationNumber = df[15][4];
+                    const applicationTitle = df[16][4];*/
+        for (i = 16; 19; i++) {
+            dateRow = i;
+            //console.log('df[dateRow][2]',dateRow,df[dateRow][2]);                
+            if (df[dateRow][2].includes('Date sampled:')) {
+                break;
+            }
+            dateRow = 0;
+            //					dateSampled = 'SD Missing';
+        }
+        if (dateRow > 0) {
+            //console.log('here',dateRow);
+            applicant = df[dateRow - 3][4];
+            applicationNumber = df[dateRow - 2][4];
+            applicationTitle = df[dateRow - 1][4];
+            //console.log(df[dateRow][4]);
+            //console.log(df);
+            dateSampled = parseDates(df[dateRow][4])[0];
+            //console.log(dateSampled);
+        } else {
+            //console.log('there');
+            applicant = df[14][4];
+            applicationNumber = df[15][4];
+            applicationTitle = df[16][4];
+            dateSampled = 'Missing';
+            dateRow = 17;
+        }
+        sampleInfo[dateSampled] = {};
+        sampleInfo[dateSampled]['Applicant'] = applicant;
+        sampleInfo[dateSampled]['Application number'] = applicationNumber;
+        sampleInfo[dateSampled]['Application title'] = applicationTitle;
+        sampleInfo[dateSampled]['Date sampled'] = dateSampled;
+        sampleInfo[dateSampled]['fileURL'] = url;
+        //console.log('extractapplicationdatafromsheet ', dateSampled,url);
+        sampleInfo[dateSampled].position = {};
+        sampleInfo[dateSampled].label = dateSampled;
+        sampleMeasurements[dateSampled] = {};
+
+        const samplingLocation = df[dateRow + 1][4];
+        for (let c = 0; c < df.length; c++) {
+
+            //Bodge as didn't read enough of columns when set by length alone
+            //                    for (let r = 0; r < df[c].length; r++) {
+            if (df[c].length < 40) {
+                cdepth = 40;
+            } else {
+                cdepth = df[c].length;
+            }
+            for (let r = 0; r < cdepth; r++) {
+                const cellValue = df[r][c];
+                // console.log(c,r,cellValue);
+                //                        if (typeof cellValue === 'string' && cellValue.includes('Excluded sample (MMO use)')) {
+                if (typeof cellValue === 'string' && cellValue.includes('Sample location (decimal degrees, WGS84)')) {
+                    //console.log('Sample Location');
+                    const extraValue = df[r][c - 1]
+                    //console.log(extraValue);
+                    if (typeof extraValue === 'string' && extraValue.includes('Excluded sample (MMO use)')) {
+                        startRow = r + 2;
+                        startCol = c - 2;
+                        samCol = startCol;
+                        excCol = startCol + 1;
+                        latCol = startCol + 2;
+                        lonCol = startCol + 3;
+                        namCol = startCol + 4;
+                        depCol = startCol + 5;
+                        dreCol = startCol + 6;
+                    } else {
+                        startRow = r + 2;
+                        startCol = c - 1;
+                        samCol = startCol;
+                        excCol = startCol + 6; // not present here
+                        dreCol = startCol + 5;
+                        latCol = startCol + 1;
+                        lonCol = startCol + 2;
+                        namCol = startCol + 3;
+                        depCol = startCol + 4;
+                    }
+
+                    for (let row = startRow; row < df.length; row++) {
+                        const sample = df[row][samCol]; //bodge to pick up sample id
+                        if (!(sample == undefined || sample == null)) {
+                            sInfo = {};
+                            sInfo['Excluded sample (MMO use)'] = df[row][excCol];
+                            sInfo['Dredge area'] = df[row][dreCol];
+                            point = parseCoordinates(df[row][latCol], df[row][lonCol]);
+                            //console.log(df[row][latCol],df[row][lonCol]);
+                            //console.log(point);
+                            if (point === null || point === undefined) {
+                                // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
+                                if (namedLocations[sample] !== null && namedLocations[sample] !== undefined) {
+                                    point = {};
+                                    point['latitude'] = namedLocations[sample].latitude;
+                                    point['longitude'] = namedLocations[sample].longitude;
+                                } else {
+                                    //console.log('lat and long undefined does not match', sample);
+                                    point = {};
+                                    point['latitude'] = undefined;
+                                    point['longitude'] = undefined;
+                                }
+                            }
+                            sInfo['Position latitude'] = point['latitude'];
+                            sInfo['Position longitude'] = point['longitude'];
+                            sInfo['Location name (as per sampling plan)'] = df[row][namCol];
+                            sInfo['Sampling depth (m)'] = processDepth(df[row][depCol]);
+                            sInfo['Sampling location'] = samplingLocation;
+                            sInfo['label'] = sample;
+                            sampleInfo[dateSampled].position[sample] = sInfo;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (startRow !== -1 && startCol !== -1) {
+                // console.log('Breaking up');
+                break;
+            }
+        }
+        /*            if (dateSampled === 'Missing'){
+                        dateSampled = 'Missing';
+        console.log('This is test');
+                    }*/
+        //console.log('end of function',dateSampled);
+        return dateSampled;
+    }
 
 
 //                workbook.SheetNames.forEach(sheetName => {
