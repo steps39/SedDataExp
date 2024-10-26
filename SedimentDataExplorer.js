@@ -53,7 +53,7 @@
         subName = subChartNames[i];
         subsToDisplay[sheetName] = true;
     }
-    sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'latitude', 'longitude', 'totalarea', 'silt', 'sand', 'gravel'];
+    sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel'];
     calcSheetNames = ['Physical Stats','PSA Charts','Metals calcs','PAH calcs','PCB calcs','BDE calcs','Organotin calcs','Organochlorine calcs'];
     let map; // Declare map as a global variable
     let fred;
@@ -595,6 +595,10 @@ function importData() {
         console.log(durlParam);
         if (sortParam) {
             xAxisSort = sortParam;
+//            xAxisSortRadio = document.querySelector('input[name="sorting"][xAxisSort]');
+//            xAxisSortRadio = document.querySelector('input[name="sorting"]');
+            xAxisSortRadio = document.getElementById(xAxisSort);
+            xAxisSortRadio.checked = true;
 /*            switch (sortParam) {
                 case 'normal': xAxisSort = 'normal'; break
                 case 'latitude': xAxisSort = 'latitude'; break

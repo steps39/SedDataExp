@@ -15,7 +15,7 @@
 
 <body>
     <div id="everything" style="display: none;">
-        <h1>Sediment Data Explorer - v0.20240926</h1>
+        <h1>Sediment Data Explorer - v0.20241026</h1>
         MMO Templates -
         <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
         <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
@@ -206,15 +206,17 @@
 
         <div>
             Sample sorting for charts
-            <input type="radio" name="sorting" value="normal" checked> Date of sampling
-            <input type="radio" name="sorting" value="datelongitude"> Date of sampling then longitude
-            <input type="radio" name="sorting" value="datelatitude"> Date of sampling then latitude
-            <input type="radio" name="sorting" value="longitude"> Longitude
-            <input type="radio" name="sorting" value="latitude"> Latitude
-            <input type="radio" name="sorting" value="totalarea"> Total surface area of particles
-            <input type="radio" name="sorting" value="silt"> Weight fraction silt and clay
-            <input type="radio" name="sorting" value="sand"> Weight fraction of sand
-            <input type="radio" name="sorting" value="gravel"> Weight fraction of gravel
+            <input type="radio" name="sorting" id="longitude" value="longitude"> Longitude
+            <input type="radio" name="sorting" id="latitude" value="latitude"> Latitude
+            <input type="radio" name="sorting" id="totalarea" value="totalarea"> Total surface area of particles
+            <input type="radio" name="sorting" id="silt" value="silt"> Weight fraction silt and clay
+            <input type="radio" name="sorting" id="siltsand" value="siltsand"> Weight fraction of silt, clay and fine sand
+            <input type="radio" name="sorting" id="sand" value="sand"> Weight fraction of sand
+            <input type="radio" name="sorting" id="gravel" value="gravel"> Weight fraction of gravel
+            <input type="radio" name="sorting" id="normal" value="normal" checked> Date of sampling
+            <input type="radio" name="sorting" id="datalongitude" value="datelongitude"> Date of sampling then longitude
+            <input type="radio" name="sorting" id="datelatitude" value="datelatitude"> Date of sampling then latitude
+            <input type="radio" name="sorting" id="datetotalarea" value="datetotalarea"> Date of sampling then total area
         </div>
 
         <div>

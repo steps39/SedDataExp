@@ -24,30 +24,6 @@ Array.prototype.sortSamples = function(ds) {
             return totalAreaA - totalAreaB;
         }
 
-        // Sorting by gravel
-        if (xAxisSort === 'gravel') {
-            const gravelA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].splitWeights['Gravel'];
-            const gravelB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].splitWeights['Gravel'];
-            return gravelA - gravelB;
-        }
-
-        // Sorting by silt
-        if (xAxisSort === 'silt') {
-            const siltA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].splitWeights['Silt and Clay'];
-            const siltB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].splitWeights['Silt and Clay'];
-            return siltA - siltB;
-        }
-
-        // Sorting by sand
-        if (xAxisSort === 'sand') {
-            const splitWeightsA = selectedSampleMeasurements[ds]['Physical Data'].samples[a].splitWeights['Silt and Clay'];
-            const splitWeightsB = selectedSampleMeasurements[ds]['Physical Data'].samples[b].splitWeights['Silt and Clay'];
-            const sandA = splitWeightsA['Fine and Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
-                          splitWeightsA['Very Coarse and Coarse Sand'];
-            const sandB = splitWeightsB['Fine and Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
-            splitWeightsB['Very Coarse and Coarse Sand'];
-            return sandA - sandB;
-        }
 
         // Default case if no valid sort key is provided
         return 0;
@@ -59,11 +35,12 @@ Array.prototype.sortComplexSamples = function() {
     // Use the built-in sort method on the array
 
     return this.sort((a, b) => {
-console.log(a,b);
+//console.log(a,b);
         const partsA = a.split(": ");
         const partsB = b.split(": ");
-console.log(partsA);
-console.log(partsB);
+        selectedSampleInfo[partsA[0]].position[partsA[1]]
+//console.log(partsA);
+//console.log(partsB);
         // Sorting by latitude
         if (xAxisSort === 'latitude') {
             const latitudeA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
@@ -79,10 +56,46 @@ console.log(partsB);
         }
         
         // Sorting by totalArea
-        if (xAxisSort === 'totalArea') {
+        if (xAxisSort === 'totalarea') {
             const totalAreaA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
             const totalAreaB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
             return totalAreaA - totalAreaB;
+        }
+
+        // Sorting by gravel
+        if (xAxisSort === 'gravel') {
+            const gravelA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Gravel'];
+            const gravelB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Gravel'];
+            return gravelA - gravelB;
+        }
+
+        // Sorting by silt
+        if (xAxisSort === 'silt') {
+            const siltA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Silt And Clay'];
+            const siltB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Silt And Clay'];
+            return siltA - siltB;
+        }
+
+        // Sorting by sand
+        if (xAxisSort === 'sand') {
+            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
+            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
+            const sandA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
+                          splitWeightsA['Very Coarse And Coarse Sand'];
+            const sandB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
+                          splitWeightsB['Very Coarse And Coarse Sand'];
+            return sandA - sandB;
+        }
+
+        // Sorting by sand
+        if (xAxisSort === 'slitsand') {
+            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
+            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
+            const sandA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
+                          splitWeightsA['Very Coarse And Coarse Sand'] + splitWeightsA['Silt And Clay'];
+            const sandB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
+                          splitWeightsB['Very Coarse And Coarse Sand'] + splitWeightsB['Silt And Clay'];
+            return sandA - sandB;
         }
 
         // Sorting by datelatitude
@@ -106,6 +119,21 @@ console.log(partsB);
                 const longitudeA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
                 const longitudeB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
                 return longitudeA - longitudeB;
+            }
+        } else {
+            if (partsA[0] > partsB[0]) {
+                return 1
+            } else {
+                return -1
+            }
+        }
+        
+        // Sorting by datetototalarea
+        if (partsA[0] === partsB[0]) {
+            if (xAxisSort === 'datetotalarea') {
+                const totalAreaA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
+                const totalAreaB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
+                return totalAreaA - totalAreaB;
             }
         } else {
             if (partsA[0] > partsB[0]) {

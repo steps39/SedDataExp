@@ -194,13 +194,16 @@ console.log(parts);
         if (sheetName === 'PAH data' && subsToDisplay['gorhamtest']) {
             instanceNo += 1;
             selectedSums = sumsForGorhamCharting();
+console.log(selectedSums);
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
+//            retData = null;
         }
         if (sheetName === 'PAH data' && subsToDisplay['totalhc']) {
             instanceNo += 1;
             retData = sumsForTotalHCCharting();
             unitTitle = retData['unitTitle'];
             selectedSums = retData['measChart'];
+console.log(Object.keys(selectedSums));
             displayTotalHC(selectedSums, sheetName, instanceNo, unitTitle);
         }
         if (sheetName === 'PAH data' && subsToDisplay['pahratios']) {
@@ -243,10 +246,10 @@ console.log(parts);
 }
 
 function dataForCharting(sheetName) {
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    ct = sheetName;
-    unitTitle = blankSheets[ct]['Unit of measurement'];
-    measChart = {};
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let ct = sheetName;
+    let unitTitle = blankSheets[ct]['Unit of measurement'];
+    let measChart = {};
     //			for (const ds in selected) {
     datesSampled.sort();
     datesSampled.forEach(ds => {
@@ -262,7 +265,7 @@ function dataForCharting(sheetName) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
                 }
-                const allSamples = Object.keys(selectedSampleInfo[ds].position);
+                let allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.sortSamples(ds, 'totalArea');
                 //                allSamples.sort((a, b) => selectedSampleInfo[ds].position[a]['Position latitude'] - selectedSampleInfo[ds].position[a]['Position latitude']);
@@ -283,7 +286,7 @@ function dataForCharting(sheetName) {
                     measChart[c] = {};
                 }
                 //               for (const s in selectedSampleInfo[ds].position) {
-                const allSamples = Object.keys(selectedSampleInfo[ds].position);
+                let allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
                     measChart[c][ds + ': ' + s] = 0.0;
@@ -302,10 +305,12 @@ console.log(measChart);
 }
 
 function measChartSort(measChart) {
-    allChemicals = Object.keys(measChart);
-    allSamples = Object.keys(measChart[allChemicals[0]]);
-    allSamples.sortComplexSamples('totalArea');
-    sortedChart = {};
+    let sortedChart = {};
+    let allChemicals = Object.keys(measChart);
+    let allSamples = Object.keys(measChart[allChemicals[0]]);
+//console.log(allChemicals);
+//console.log(allSamples);
+    allSamples.sortComplexSamples();
     for (c in measChart) {
         sortedChart[c] = {};
         allSamples.forEach(sample => {
@@ -315,9 +320,20 @@ function measChartSort(measChart) {
     return sortedChart
 }
 
+function propertyChartSort(measChart) {
+    let allSamples = Object.keys(measChart);
+//console.log(allSamples);
+    allSamples.sortComplexSamples();
+    let sortedChart = {};
+        allSamples.forEach(sample => {
+            sortedChart[sample] = measChart[sample];
+        });
+    return sortedChart
+}
+
 function sumsForCongenerCharting() {
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    measChart = {};
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let measChart = {};
 //			for (const ds in selected) {
     datesSampled.sort();
        datesSampled.forEach (ds => {
@@ -345,13 +361,18 @@ testOne = selectedSampleMeasurements[ds];
             });
         }
     });
+console.log(measChart);
+    if (!(xAxisSort === 'normal')) {
+        measChart = propertyChartSort(measChart);
+console.log(measChart);
+    }
     return measChart
 }
 
 function sumsForGorhamCharting() {
     ct = 'PAH data';
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    measChart = {};
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let measChart = {};
     datesSampled.sort();
     datesSampled.forEach(ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
@@ -385,16 +406,17 @@ allSamples.sortSamples(ds,'totalArea');
     });
 console.log(measChart);
     if (!(xAxisSort === 'normal')) {
-        measChart = measChartSort(measChart);
+        measChart = propertyChartSort(measChart);
+console.log(measChart);
     }
     return measChart
 }
 
 function sumsForTotalHCCharting() {
     ct = 'PAH data';
-    const datesSampled = Object.keys(selectedSampleMeasurements);
+    let datesSampled = Object.keys(selectedSampleMeasurements);
     unitTitle = blankSheets[ct]['totalHCUnit'];
-    measChart = {};
+    let measChart = {};
     sampleNo = -1;
     datesSampled.sort();
     datesSampled.forEach(ds => {
@@ -444,8 +466,15 @@ function sumsForTotalHCCharting() {
             });
         }
     });
-//console.log(measChart);
-    return { unitTitle, measChart }
+console.log(measChart);
+console.log(xAxisSort);
+    if (!(xAxisSort === 'normal')) {
+console.log(measChart);
+        measChart = propertyChartSort(measChart);
+console.log(Object.keys(measChart));
+    }
+console.log(measChart);
+return { unitTitle, measChart }
 }
 
 function ratiosForPAHs() {
@@ -491,22 +520,25 @@ function ratiosForPAHs() {
         }
     });
 //console.log('ratios',measChart);
-    return {unitTitle, measChart}
+if (!(xAxisSort === 'normal')) {
+    measChart = propertyChartSort(measChart);
+}
+return {unitTitle, measChart}
 }
 
 function simpleRatiosForPAHs() {
     ct = 'PAH data';
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    unitTitle = 'Ratio';
-    measChart = {};
-    sampleNo = -1;
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let unitTitle = 'Ratio';
+    let measChart = {};
+    let sampleNo = -1;
     datesSampled.sort();
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
 //        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
-            const simpleRatios = sampleMeasurements[ds]['PAH data'].simpleRatios;
-            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            let simpleRatios = sampleMeasurements[ds]['PAH data'].simpleRatios;
+            let allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
             allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = simpleRatios[s];
@@ -537,28 +569,31 @@ function simpleRatiosForPAHs() {
         }
     });
 //console.log('ratios',measChart);
-    return {unitTitle, measChart}
+if (!(xAxisSort === 'normal')) {
+    measChart = propertyChartSort(measChart);
+}
+return {unitTitle, measChart}
 }
 
 function epaRatiosForPAHs() {
     ct = 'PAH data';
-        const datesSampled = Object.keys(selectedSampleMeasurements);
-        unitTitle = 'Fraction';
-        measChart = {};
-        sampleNo = -1;
+        let datesSampled = Object.keys(selectedSampleMeasurements);
+        let unitTitle = 'Fraction';
+        let measChart = {};
+        let sampleNo = -1;
         datesSampled.sort();
         datesSampled.forEach (ds => {
             if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
                 (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
 //                if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
     //            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
-                const ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
-                const allSamples = Object.keys(selectedSampleInfo[ds].position);
+                let ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
+                let allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
-                    const rs = ringSums[s];
-                    const total = rs['Total EPA PAHs'];
-                    const m = {};
+                    let  rs = ringSums[s];
+                    let  total = rs['Total EPA PAHs'];
+                    let  m = {};
                     m['LPAHs/Total'] = rs['LPAHs'] / total;
                     m['HPAHs/Total'] = rs['HPAHs'] / total;
                     measChart[ds + ': ' + s] = m;
@@ -566,7 +601,7 @@ function epaRatiosForPAHs() {
         //console.log(sampleNo,ds,s);
                 });
             } else {
-                const allSamples = Object.keys(selectedSampleInfo[ds].position);
+                let  allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
                     const m = {};
@@ -579,28 +614,31 @@ function epaRatiosForPAHs() {
             }
         });
 //console.log('ratios',measChart);
-        return {unitTitle, measChart}
+if (!(xAxisSort === 'normal')) {
+    measChart = propertyChartSort(measChart);
+}
+    return {unitTitle, measChart}
     }
 
     function ringFractionsForPAHs() {
     ct = 'PAH data';
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    unitTitle = 'Fraction per ring size';
-    measChart = {};
-    sampleNo = -1;
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let unitTitle = 'Fraction per ring size';
+    let measChart = {};
+    let sampleNo = -1;
     datesSampled.sort();
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
 //        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
 //            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
-            const ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
-            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            let  ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
+            let  allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
             allSamples.forEach(s => {
-                const rs = ringSums[s];
-                const total = rs['Total all rings'];
-                const m = {};
+                let  rs = ringSums[s];
+                let  total = rs['Total all rings'];
+                let  m = {};
                 m['2rings/tot'] = rs['Sum of 2 rings'] / total;
                 m['3rings/tot'] = rs['Sum of 3 rings'] / total;
                 m['4rings/tot'] = rs['Sum of 4 rings'] / total;
@@ -611,10 +649,10 @@ function epaRatiosForPAHs() {
 //console.log(sampleNo,ds,s);
             });
         } else {
-            const allSamples = Object.keys(selectedSampleInfo[ds].position);
+            let allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
             allSamples.forEach(s => {
-                const m = {};
+                let  m = {};
                 m['2rings/tot'] = 0;
                 m['3rings/tot'] = 0;
                 m['4rings/tot'] = 0;
@@ -627,11 +665,14 @@ function epaRatiosForPAHs() {
         }
     });
 //console.log('ratios',measChart);
-    return {unitTitle, measChart}
+if (!(xAxisSort === 'normal')) {
+    measChart = propertyChartSort(measChart);
+}
+return {unitTitle, measChart}
 }
 
 function setBlanksForCharting() {
-    const datesSampled = Object.keys(selectedSampleMeasurements);
+    let  datesSampled = Object.keys(selectedSampleMeasurements);
     // Have to deal with samples without measurements set everything to zero
     for (const ds in selectedSampleMeasurements) {
         for (const ct in selectedSampleMeasurements[ds]) {
@@ -646,17 +687,17 @@ function setBlanksForCharting() {
 }
 
 function dataForPSDCharting(sheetName) {
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    ct = sheetName;
+    let  datesSampled = Object.keys(selectedSampleMeasurements);
+    let ct = sheetName;
 //			unitTitle = selected[datesSampled[0]][ct]['Unit of measurement'];
-    unitTitle = blankSheets[ct]['Unit of measurement'];
-    measChart = {};
-    measChartArea = {};
-    ptsSizes = null;
-    ptsAreas = null;
-    ptsVolumes = null;
-    splitWeights = {};
-    splitAreas = {};
+    let unitTitle = blankSheets[ct]['Unit of measurement'];
+    let measChart = {};
+    let measChartArea = {};
+    let ptsSizes = null;
+    let ptsAreas = null;
+    let ptsVolumes = null;
+    let splitWeights = {};
+    let splitAreas = {};
 //			for (const ds in selected) {
     datesSampled.sort();
        datesSampled.forEach (ds => {
@@ -702,12 +743,12 @@ function dataForPSDCharting(sheetName) {
 }
 
 function dataForScatterCharting(sheetName) {
-    const datesSampled = Object.keys(selectedSampleMeasurements);
-    ct = sheetName;
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let ct = sheetName;
 //			unitTitle = selected[datesSampled[0]][ct]['Unit of measurement'];
-    unitTitle = blankSheets[ct]['Unit of measurement'];
-    scatterData = [];
-    chemicalData = {};
+    let unitTitle = blankSheets[ct]['Unit of measurement'];
+    let scatterData = [];
+    let chemicalData = {};
 //			for (const ds in selected) {
 //    datesSampled.sort();
     i = 0;
@@ -716,7 +757,7 @@ function dataForScatterCharting(sheetName) {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {        
 //        if (!(selectedSampleMeasurements[ds][ct] === undefined)) {
-            const allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
+            let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
             for (const s in selectedSampleMeasurements[ds][ct].chemicals[allChemicals[0]].samples) {
                 scatterData[i] = ({
                     x: sampleInfo[ds].position[s]['Position longitude'],
@@ -794,12 +835,12 @@ function OldcolorGradient(fraction, rgbColor1, rgbColor2) {
     var colorEnd = rgbColor2;
     var percent = fraction;
 //console.log(percent,rgbColor1,rgbColor2,colorStart,colorEnd);
-    rs = colorStart.red * colorStart.red;
-    gs = colorStart.green * colorStart.green;
-    bs = colorStart.blue * colorStart.blue;
-    re = colorEnd.red * colorEnd.red;
-    ge = colorEnd.green * colorEnd.green;
-    be = colorEnd.blue * colorEnd.blue;
+    let rs = colorStart.red * colorStart.red;
+    let gs = colorStart.green * colorStart.green;
+    let bs = colorStart.blue * colorStart.blue;
+    let re = colorEnd.red * colorEnd.red;
+    let ge = colorEnd.green * colorEnd.green;
+    let be = colorEnd.blue * colorEnd.blue;
 //console.log(rs,gs,bs,re,ge,be);
     var gradient = {
         red : Math.floor(Math.sqrt(rs * (1 - percent) + re * percent),10),
@@ -1276,7 +1317,6 @@ function displayAnySampleChart(meas, all, datasets, instanceNo, title, yTitle, s
 }
 
 function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLegend) {
-//console.log(all);
     legends[instanceNo] = showLegend;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
@@ -1568,8 +1608,11 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
     };
 
     const samples = Object.keys(sums);
+samples.forEach(sample => console.log(sample));
     const lmwSumData = samples.map(sample => sums[sample].lmwSum);
+console.log(lmwSumData);
     const hmwSumData = samples.map(sample => sums[sample].hmwSum);
+console.log(hmwSumData);
             datasets = [
                 {
                     label: 'LMW Sums',
@@ -1621,6 +1664,7 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
 }
 
 
+
 function displayPAHRatios(ratios, sheetName, instanceNo, unitTitle) {
     createCanvas(instanceNo);
     const convas = document.getElementById("chart" + instanceNo);
@@ -1629,8 +1673,9 @@ function displayPAHRatios(ratios, sheetName, instanceNo, unitTitle) {
     instanceSheet[instanceNo] = sheetName;
     const allSamples = Object.keys(ratios);
     const allRatios = Object.keys(ratios[allSamples[0]]); // Assuming all samples have the same chemicals
-    const datasets = allRatios.map((ratio, index) => {
-        const data = allSamples.map(sample => ratios[sample][ratio]); // Using the first concentration value for simplicity
+//    const datasets = allRatios.map((ratio, index) => {
+    const datasets = allRatios.map(ratio => {
+            const data = allSamples.map(sample => ratios[sample][ratio]); // Using the first concentration value for simplicity
         return {
             label: ratio,
             data: data,
@@ -1805,6 +1850,7 @@ function displayTotalHC(sums, sheetName, instanceNo, unitTitle) {
     instanceType[instanceNo] = 'totalHC';
     instanceSheet[instanceNo] = sheetName;
     const samples = Object.keys(sums);
+samples.forEach(sample => console.log(sample));
     const totalHC = samples.map(sample => sums[sample].totalHC);
     const fractionPAH = samples.map(sample => sums[sample].fractionPAH);
     const datasets = [
@@ -1825,12 +1871,12 @@ function displayTotalHC(sums, sheetName, instanceNo, unitTitle) {
             yAxisID: 'y1',
         },
     ];
-displayAnySampleChart(sums, samples,datasets,instanceNo,sheetName + ': Total hydrocarbon & Total PAH',unitTitle,true);
-y1Title = 'Total PAH';
-chartInstance[instanceNo].options.plugins.legend.display = true;
-legends[instanceNo] = true;
-  // Update the chart
-  chartInstance[instanceNo].update();
+    displayAnySampleChart(sums, samples, datasets, instanceNo, sheetName + ': Total hydrocarbon & Total PAH', unitTitle, true);
+//    y1Title = 'Total PAH';
+    chartInstance[instanceNo].options.plugins.legend.display = true;
+    legends[instanceNo] = true;
+    // Update the chart
+    chartInstance[instanceNo].update();
 }
 
 
