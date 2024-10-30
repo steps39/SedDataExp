@@ -38,7 +38,7 @@ function updateChart(){
 }
 
 function displayPsdSplits(sums, sheetName, instanceNo, unitTitle, subTitle) {
-    console.log(sums);
+//    console.log(sums);
     createCanvas(instanceNo);
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
@@ -78,12 +78,18 @@ function displayCharts(sheetName, instanceNo) {
         selectedMeasArea = retData['measChartArea'];
         splitWeights = retData['splitWeights'];
         splitAreas = retData['splitAreas'];
+        cumWeights = retData['cumWeights'];
+        cumAreas = retData['cumAreas'];
 //console.log(sizes);	            
 //console.log('selectedMeas ', selectedMeas);
         instanceNo += 1;
         displayPSDChart(sizes, selectedMeas, sheetName, instanceNo, unitTitle, 'Weight');
         instanceNo += 1;
         displayPSDChart(sizes, selectedMeasArea, sheetName, instanceNo, unitTitle, 'Area');
+        instanceNo += 1;
+        displayPSDChart(sizes, cumWeights, sheetName, instanceNo, unitTitle, 'Cumlative by Weight');
+        instanceNo += 1;
+        displayPSDChart(sizes, cumAreas, sheetName, instanceNo, unitTitle, 'Cumulative by Area');
         instanceNo += 1;
         displayPsdSplits(splitWeights, sheetName, instanceNo, unitTitle, 'Weight');
         instanceNo += 1;
@@ -114,22 +120,12 @@ function displayCharts(sheetName, instanceNo) {
         if (subsToDisplay['chemicalgroup']) {
             instanceNo += 1;
             displayChemicalChart(selectedMeas, sheetName, instanceNo, unitTitle);
-/*            selectedMeasArea = {};
-console.log(selectedMeas);
-            for (chemical in selectedMeas) {
-                selectedMeasArea[chemical] = {};
-                for (sample in selectedMeas[chemical]) {
-                    let parts = sample.split(": ");
-console.log(parts);
-                    totalArea = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea;
-                    selectedMeasArea[chemical][sample] = selectedMeas[chemical][sample] / totalArea;
-                }
-            }*/
             instanceNo += 1;
 //console.log(selectedMeasArea);
             displayChemicalChart(selectedMeasArea, sheetName, instanceNo, unitTitle + ' / Area', false);
         }
 
+        largeInstanceNo = -1;
         if (subsToDisplay['positionplace']) {
             retData = dataForScatterCharting(sheetName);
             unitTitle = retData['unitTitle'];
@@ -159,12 +155,69 @@ console.log(parts);
 
             // Step 3: Append the table to a container element in your HTML (e.g., <div id="container"></div>)
             const chartContainer = document.getElementById('chartContainer');
+            // first add a div for the buttons
+            if (largeInstanceNo > 1) {
+                const divContainer = document.createElement('div');
+                divContainer.id = 'chartButtons';
+                chartContainer.appendChild(divContainer);
+            }
             chartContainer.appendChild(scatterTable);
             instanceNo = startInstanceNo;
             i = 0;
             for (const c in chemicalData) {
                 instanceNo += 1;
-                displayScatterChart(scatterData, chemicalData[c], sheetName, instanceNo, c);
+//console.log(c,scatterData, chemicalData[c]);
+                displayScatterChart(scatterData, chemicalData[c], sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
+                i += 1;
+            }
+        }
+
+        if (subsToDisplay['positionplace']) {
+            retData = dataForTotalAreaScatterCharting(sheetName);
+            unitTitle = retData['unitTitle'];
+            //console.log('unitTitle displayCharts ',unitTitle);
+            scatterData = retData['scatterData'];
+            chemicalData = retData['chemicalData'];
+            const allChemicals = Object.keys(chemicalData);
+
+//console.log(chemicalData);
+            instanceNo += 1;
+            displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
+            largeInstanceNo = instanceNo;
+
+            // Step 1: Create a table element
+            const scatterTable = document.createElement('table');
+            const noCharts = allChemicals.length;
+            const startInstanceNo = instanceNo;
+            // Step 2: Loop to create rows and cells for the table
+            for (let i = 0; i < noCharts; i++) {
+                instanceNo += 1;
+                if (i % 4 === 0) {
+//                    console.log('created row');
+                    row = scatterTable.insertRow(); // Create a row
+//                    console.log(row);
+                }
+                const cell = row.insertCell(); // Create a cell
+                const canvas = document.createElement('canvas'); // Create a canvas for the chart
+                canvas.id = 'chart' + instanceNo;; // Unique id for each chart canvas
+                cell.appendChild(canvas); // Append the canvas to the cell
+                //  }
+            }
+
+            // Step 3: Append the table to a container element in your HTML (e.g., <div id="container"></div>)
+            const chartContainer = document.getElementById('chartContainer');
+            if (largeInstanceNo > 1) {
+                const divContainer = document.createElement('div');
+                divContainer.id = 'chartButtons';
+                chartContainer.appendChild(divContainer);
+            }
+            chartContainer.appendChild(scatterTable);
+            instanceNo = startInstanceNo;
+            i = 0;
+            for (const c in chemicalData) {
+                instanceNo += 1;
+//console.log(c,scatterData[c], chemicalData[c]);
+                displayScatterChart(scatterData[c], chemicalData[c], sheetName, instanceNo, c, 'Total Area', 'Concentration',largeInstanceNo);
                 i += 1;
             }
         }
@@ -194,7 +247,7 @@ console.log(parts);
         if (sheetName === 'PAH data' && subsToDisplay['gorhamtest']) {
             instanceNo += 1;
             selectedSums = sumsForGorhamCharting();
-console.log(selectedSums);
+//console.log(selectedSums);
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
 //            retData = null;
         }
@@ -203,7 +256,7 @@ console.log(selectedSums);
             retData = sumsForTotalHCCharting();
             unitTitle = retData['unitTitle'];
             selectedSums = retData['measChart'];
-console.log(Object.keys(selectedSums));
+//console.log(Object.keys(selectedSums));
             displayTotalHC(selectedSums, sheetName, instanceNo, unitTitle);
         }
         if (sheetName === 'PAH data' && subsToDisplay['pahratios']) {
@@ -250,17 +303,10 @@ function dataForCharting(sheetName) {
     let ct = sheetName;
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let measChart = {};
-    //			for (const ds in selected) {
     datesSampled.sort();
     datesSampled.forEach(ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {
-            //        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null )) {
-            /*            //Populate chemicals as data could be missing some chemicals
-                        //Needed to cope with CEFAS data where chemicals can be missed out
-                        expectedChemicals = Object.keys(ddLookup.sheet).filter(key => ddLookup.sheet[key] === ct);
-                        for (let i = 0; i < expectedChemicals.length; i++) {
-                            c = expectedChemicals[i];*/
             for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
@@ -268,9 +314,6 @@ function dataForCharting(sheetName) {
                 let allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.sortSamples(ds, 'totalArea');
-                //                allSamples.sort((a, b) => selectedSampleInfo[ds].position[a]['Position latitude'] - selectedSampleInfo[ds].position[a]['Position latitude']);
-                //                allSamples.sort((a, b) => selectedSampleMeasurements[ds]['Physical Data'].samples[a].totalArea - 
-                //                                          selectedSampleMeasurements[ds]['Physical Data'].samples[b].totalArea);
                 allSamples.forEach(s => {
                     if (selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == undefined || selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == null) {
                         measChart[c][ds + ': ' + s] = 0.0;
@@ -285,7 +328,6 @@ function dataForCharting(sheetName) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
                 }
-                //               for (const s in selectedSampleInfo[ds].position) {
                 let allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
                 allSamples.forEach(s => {
@@ -295,12 +337,11 @@ function dataForCharting(sheetName) {
         }
     });
     unitTitle = blankSheets[ct]['Unit of measurement'];
-console.log(sheetName,measChart);
-//    measChartSort(measChart);
+//console.log(sheetName,measChart);
     if (!(xAxisSort === 'normal')) {
         measChart = measChartSort(measChart);
     }
-console.log(measChart);
+//console.log(measChart);
     return { unitTitle, measChart }
 }
 
@@ -361,10 +402,10 @@ testOne = selectedSampleMeasurements[ds];
             });
         }
     });
-console.log(measChart);
+//console.log(measChart);
     if (!(xAxisSort === 'normal')) {
         measChart = propertyChartSort(measChart);
-console.log(measChart);
+//console.log(measChart);
     }
     return measChart
 }
@@ -377,13 +418,10 @@ function sumsForGorhamCharting() {
     datesSampled.forEach(ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//       if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
-            //            for (const s in selectedSampleMeasurements[ds]['PAH data'].gorhamTest) {
             const allChemicals = Object.keys(selectedSampleMeasurements[ds]['PAH data'].chemicals);
 //console.log(allChemicals);
             const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].chemicals[allChemicals[0]].samples);
 //console.log(allSamples);
-//chemicalNames.sort((a, b) => chemInfo[a][properties[i]] - chemInfo[b][properties[i]]);
             allSamples.sort();
 //            allSamples.sort((a, b) => selectedSampleInfo[ds].position[a]['Position latitude'] - selectedSampleInfo[ds].position[b]['Position latitude']);
 allSamples.sortSamples(ds,'totalArea');
@@ -396,7 +434,6 @@ allSamples.sortSamples(ds,'totalArea');
                 }
             });
         } else {
-            //            for (const s in selectedSampleInfo[ds].position) {
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
             allSamples.forEach(s => {
@@ -404,10 +441,10 @@ allSamples.sortSamples(ds,'totalArea');
             });
         }
     });
-console.log(measChart);
+//console.log(measChart);
     if (!(xAxisSort === 'normal')) {
         measChart = propertyChartSort(measChart);
-console.log(measChart);
+//console.log(measChart);
     }
     return measChart
 }
@@ -422,14 +459,10 @@ function sumsForTotalHCCharting() {
     datesSampled.forEach(ds => {
         const allSamples = Object.keys(selectedSampleInfo[ds].position);
         allSamples.sort();
-//        if (!(selectedSampleMeasurements[ds]['PAH data'].totalHC == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC == null)) {
-//    if (!(totalHC in selectedSampleMeasurements[ds]['PAH data'])) {
     if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
         (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//    if ('PAH data' in selectedSampleMeasurements[ds]) {
 //console.log(ds,allSamples);
             allSamples.forEach(s => {
-//                if (!(selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].totalHC[s] == null)) {
                 if (s in selectedSampleMeasurements[ds]['PAH data'].totalHC) {
                         measChart[ds + ': ' + s] = {totalHC: selectedSampleMeasurements[ds]['PAH data'].totalHC[s]};
                 } else {
@@ -445,10 +478,8 @@ function sumsForTotalHCCharting() {
 //                console.log(sampleNo, ds, s);
             });
         }
-//        if (!(selectedSampleMeasurements[ds]['PAH data'].total == undefined || selectedSampleMeasurements[ds]['PAH data'].total == null)) {
     if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
         (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//if ('PAH data' in selectedSampleMeasurements[ds]) {
         allSamples.forEach(s => {
                 if (!(selectedSampleMeasurements[ds]['PAH data'].total[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].total[s] == null)) {
                     measChart[ds + ': ' + s].fractionPAH = selectedSampleMeasurements[ds]['PAH data'].total[s] / 1000;
@@ -466,15 +497,15 @@ function sumsForTotalHCCharting() {
             });
         }
     });
-console.log(measChart);
-console.log(xAxisSort);
+//console.log(measChart);
+//console.log(xAxisSort);
     if (!(xAxisSort === 'normal')) {
-console.log(measChart);
+//console.log(measChart);
         measChart = propertyChartSort(measChart);
-console.log(Object.keys(measChart));
+//console.log(Object.keys(measChart));
     }
-console.log(measChart);
-return { unitTitle, measChart }
+//console.log(measChart);
+    return { unitTitle, measChart }
 }
 
 function ratiosForPAHs() {
@@ -487,7 +518,6 @@ function ratiosForPAHs() {
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
             const ratios = sampleMeasurements[ds]['PAH data'].ratios;
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
@@ -536,7 +566,6 @@ function simpleRatiosForPAHs() {
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
             let simpleRatios = sampleMeasurements[ds]['PAH data'].simpleRatios;
             let allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
@@ -585,8 +614,6 @@ function epaRatiosForPAHs() {
         datesSampled.forEach (ds => {
             if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
                 (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//                if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
-    //            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
                 let ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
                 let allSamples = Object.keys(selectedSampleInfo[ds].position);
                 allSamples.sort();
@@ -630,8 +657,6 @@ if (!(xAxisSort === 'normal')) {
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
-//        if (!(selectedSampleMeasurements[ds]['PAH data'] == undefined || selectedSampleMeasurements[ds]['PAH data'] == null)) {
-//            const chemicals = selectedSampleMeasurements[ds]['PAH data'].chemicals;
             let  ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
             let  allSamples = Object.keys(selectedSampleInfo[ds].position);
             allSamples.sort();
@@ -689,7 +714,6 @@ function setBlanksForCharting() {
 function dataForPSDCharting(sheetName) {
     let  datesSampled = Object.keys(selectedSampleMeasurements);
     let ct = sheetName;
-//			unitTitle = selected[datesSampled[0]][ct]['Unit of measurement'];
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let measChart = {};
     let measChartArea = {};
@@ -698,65 +722,58 @@ function dataForPSDCharting(sheetName) {
     let ptsVolumes = null;
     let splitWeights = {};
     let splitAreas = {};
-//			for (const ds in selected) {
+    let cumWeights = {};
+    let cumAreas = {};
     datesSampled.sort();
        datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
-//            if (!ptsSizes) {
-                ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
-                ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize));
-/*                ptsAreas = ptsSizes.map(size => Math.PI * size * size / 4);
-                ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
-            }*/
-            for (const s in selectedSampleMeasurements[ds][ct].samples) {
-/*//                measChart[ds + ': ' + s] = selectedSampleMeasurements[ds][ct].samples[s].psd;
-                currentPsd = selectedSampleMeasurements[ds][ct].samples[s].psd;*/
-                measChart[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].psd;
+            ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
+            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+            ptsAreas = ptsSizes.map(size => (Math.PI * size * size) / 4);
+            ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
+        for (const s in selectedSampleMeasurements[ds][ct].samples) {
+                currentPsd = selectedSampleMeasurements[ds][ct].samples[s].psd;
+                measChart[ds + ': ' + s] =  currentPsd;
+//                measChart[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].psd;
                 measChartArea[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].psdAreas;
                 splitWeights[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].splitWeights;
                 splitAreas[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].splitAreas;
-/*                areas = [];
+                cumWeights[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].cumWeights;
+                cumAreas[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].cumAreas;
 //console.log(sizes.length);
-                totalArea = 0;
+/*                totalArea = 0;
                 for (i=0;i<ptsSizes.length;i++) {
-//                    noPts = currentPsd[i] / volumes[i];
                     currentArea = ptsAreas[i] * currentPsd[i] / ptsVolumes[i];
                     areas[i] = currentArea;
                     totalArea += currentArea;
                 }
                 measChartArea[ds + ': ' + s + ' : ' + totalArea] = areas;
                 splitWeights[ds + ': ' + s] = psdSplit(currentPsd);
-                splitAreas[ds + ': ' + s] = psdSplit(areas);
-//                totalAreas[ds + ': ' + s] = totalArea;
+                splitAreas[ds + ': ' + s] = psdSplit(areas);*/
 //console.log(ds + ': ' + s, totalArea);
             }
         } else {
             for (const s in selectedSampleInfo[ds].position) {
                 measChart[ds + ': ' + s] = new Array(42).fill(0.0);
                 measChartArea[ds + ': ' + s] = new Array(42).fill(0.0);
-            }*/
             }
         }
     });
 //console.log('dataforPSD ', unitTitle,ptsSizes,ptsAreas,ptsVolumes,measChart,measChartArea);
-    return {unitTitle, ptsSizes, measChart, measChartArea, splitWeights, splitAreas}
+    return {unitTitle, ptsSizes, measChart, measChartArea, splitWeights, splitAreas, cumWeights, cumAreas}
 }
 
 function dataForScatterCharting(sheetName) {
     let datesSampled = Object.keys(selectedSampleMeasurements);
     let ct = sheetName;
-//			unitTitle = selected[datesSampled[0]][ct]['Unit of measurement'];
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let scatterData = [];
     let chemicalData = {};
-//			for (const ds in selected) {
-//    datesSampled.sort();
     i = 0;
     datesSampled.forEach (ds => {
 
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {        
-//        if (!(selectedSampleMeasurements[ds][ct] === undefined)) {
             let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
             for (const s in selectedSampleMeasurements[ds][ct].chemicals[allChemicals[0]].samples) {
                 scatterData[i] = ({
@@ -781,76 +798,42 @@ function dataForScatterCharting(sheetName) {
         }
     });
 
-/*    scatterData = [{
-        x: 10,
-        y: 20
-    }, {
-        x: 15,
-        y: 10
-    }];*/
 //console.log('data ',sheetName,scatterData);
     return {unitTitle, scatterData, chemicalData}
 }
 
-/**
- * You may use this function with both 2 or 3 interval colors for your gradient.
- * For example, you want to have a gradient between Bootstrap's danger-warning-success colors.
- */
-/*function colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
-    var color1 = rgbColor1;
-    var color2 = rgbColor2;
-    var fade = fadeFraction;
-
-    // Do we have 3 colors for the gradient? Need to adjust the params.
-    if (rgbColor3) {
-      fade = fade * 2;
-
-      // Find which interval to use and adjust the fade percentage
-      if (fade >= 1) {
-        fade -= 1;
-        color1 = rgbColor2;
-        color2 = rgbColor3;
-      }
-    }
-
-    var diffRed = color2.red - color1.red;
-    var diffGreen = color2.green - color1.green;
-    var diffBlue = color2.blue - color1.blue;
-
-    var gradient = {
-      red: parseInt(Math.floor(color1.red + (diffRed * fade)), 10),
-      green: parseInt(Math.floor(color1.green + (diffGreen * fade)), 10),
-      blue: parseInt(Math.floor(color1.blue + (diffBlue * fade)), 10),
-    };
-
-    return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
-  }*/
-
-/**
- * You may use this function with both 2 or 3 interval colors for your gradient.
- * For example, you want to have a gradient between Bootstrap's danger-warning-success colors.
- */
-function OldcolorGradient(fraction, rgbColor1, rgbColor2) {
-    var colorStart = rgbColor1;
-    var colorEnd = rgbColor2;
-    var percent = fraction;
-//console.log(percent,rgbColor1,rgbColor2,colorStart,colorEnd);
-    let rs = colorStart.red * colorStart.red;
-    let gs = colorStart.green * colorStart.green;
-    let bs = colorStart.blue * colorStart.blue;
-    let re = colorEnd.red * colorEnd.red;
-    let ge = colorEnd.green * colorEnd.green;
-    let be = colorEnd.blue * colorEnd.blue;
-//console.log(rs,gs,bs,re,ge,be);
-    var gradient = {
-        red : Math.floor(Math.sqrt(rs * (1 - percent) + re * percent),10),
-        green : Math.floor(Math.sqrt(gs * (1 - percent) + ge * percent),10),
-        blue : Math.floor(Math.sqrt(bs * (1 - percent) + be * percent),10)
-    };
-//console.log(percent, colorStart, colorEnd, gradient);
-
-    return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
-  }
+function dataForTotalAreaScatterCharting(sheetName) {
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let ct = sheetName;
+    //			unitTitle = selected[datesSampled[0]][ct]['Unit of measurement'];
+    let unitTitle = blankSheets[ct]['Unit of measurement'];
+    let scatterData = {};
+    let chemicalData = {};
+    datesSampled.forEach(ds => {
+        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
+            (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {
+            let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
+            for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
+                i = 0;
+                scatterData[c] = [];
+                if (chemicalData[c] == undefined || chemicalData[c] == null) {
+                    chemicalData[c] = {};
+                }
+                currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
+                for (const s in selectedSampleMeasurements[ds][ct].chemicals[c].samples) {
+                    scatterData[c][i] = ({
+                        x: sampleMeasurements[ds]['Physical Data'].samples[s].totalArea,
+                        y: currentChemical.samples[s]
+                    });
+                    chemicalData[c][ds + ' : ' + s] = currentChemical.samples[s];
+                    i += 1;
+                }
+            }
+        }
+    });
+//console.log('data ',sheetName,scatterData);
+    return {unitTitle, scatterData, chemicalData}
+}
 
 // Function to interpolate between two colors based on the value
 function colorGradient(value, color1, color2) {
@@ -884,9 +867,6 @@ function hexToRgb(hex) {
     };
 }
 
-
-
-
 function resizeChart(chart) {
     // Get the parent container of the chart
     var container = chart.canvas.parentNode;
@@ -898,25 +878,56 @@ function resizeChart(chart) {
     chart.resize();
 }
 
-function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, unitTitle) {
-//console.log(scatterData);
+function displayCombinedScatterChart(meas, sheetName, instanceNo, unitTitle) {
+    legends[instanceNo] = true;
+    ylinlog[instanceNo] = false;
+    stacked[instanceNo] = false;
+    createCanvas(instanceNo);
+    const convas = document.getElementById("chart" + instanceNo);
+    convas.style.display = "block";
+    instanceType[instanceNo] = 'combinedscatter';
+    instanceSheet[instanceNo] = sheetName;
+//console.log(meas);
+    const allChemicals = Object.keys(meas);
+    const allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals // Using the first concentration value for simplicity
+    const datasets = allChemicals.map((chemical, index) => {
+        const data = meas[chemical];
+        return {
+            label: chemical,
+            data: data,
+            borderWidth: 1,
+            yAxisID: 'y',
+        };
+    });
+//console.log(datasets);
+
+    const chartConfig = {
+        type: 'scatter',
+        data:
+        {
+            datasets: datasets
+        }
+    };
+    const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
+    chartInstance[instanceNo] = new Chart(ctx, chartConfig);
+    createResetZoomButton(chartInstance[instanceNo], instanceNo);
+    createToggleLegendButton(chartInstance[instanceNo], instanceNo);
+    createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
+    createStackedButton(chartInstance[instanceNo], instanceNo);
+//    console.log(ddatasets);
+}
+
+function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo) {
+//console.log(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
     legends[instanceNo] = false;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
-//    createCanvas(instanceNo,row);
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
     instanceType[instanceNo] = 'Scatter';
     instanceSheet[instanceNo] = sheetName;
     const color1 = '#00ff00'; // Start of gradient (red)
     const color2 = '#ff0000'; // End of gradient (green)
-/*      var color1 = {
-        red: 19, green: 255, blue: 19
-      };
-      var color2 = {
-        red: 255, green: 0, blue: 0
-      };*/
-
       allSamples = Object.keys(oneChemical);
       allConcs = Object.values(oneChemical);
 //console.log(allConcs);
@@ -925,26 +936,22 @@ function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, un
 //console.log(minConc,maxConc);
 //console.log(oneChemical);
 //      oneChemical = (oneChemical - minConc) / (maxConc - minConc);
+      scaledChemical = {};
       for (s in oneChemical) {
-        oneChemical[s] = (oneChemical[s] - minConc) / (maxConc - minConc);
+        scaledChemical[s] = (oneChemical[s] - minConc) / (maxConc - minConc);
 //console.log(oneChemical[s]);
       }
-console.log(oneChemical);
+//console.log(oneChemical);
     // Chart configuration
     const chartConfig = {
         type: 'scatter',
         data: {
-//            labels: sizes,
-//            datasets: datasets,
-//            datasets: scatterData,
                   datasets: [{
                     data: scatterData,
                     backgroundColor:
-                       allSamples.map(sample => colorGradient(oneChemical[sample], color1, color2)),
+                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
                     borderColor:
-                       allSamples.map(sample => colorGradient(oneChemical[sample], color1, color2)),
-                       
-//                       pointRadius: 10
+                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
                        pointRadius: function(context) {
                         return convas.width / 70
                        }
@@ -983,44 +990,33 @@ console.log(oneChemical);
                 },
                 scales: {
                     x: {
-//                        type: 'logarithmic',
                         position: 'bottom',
                         title: {
                             display: true,
-                            text: 'Longitude'
+                            text: xAxisTitle
                             }
                     },
                     y: {
-//                        beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Latitude'
+                            text: yAxisTitle
                             }
                         }
                     },
-/*            autocolors: {
-                mode: 'label'
-            }*/
         }
     };
 //console.log(chartConfig);
     const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
+    if (chartInstance[instanceNo]) {
+        chartInstance[instanceNo].destroy();
+    }
     chartInstance[instanceNo] = new Chart(ctx, chartConfig);
-    createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
-/*    createResetZoomButton(chartInstance[instanceNo], instanceNo);
-    createToggleLegendButton(chartInstance[instanceNo], instanceNo);
-    createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
-    createStackedButton(chartInstance[instanceNo], instanceNo);*/
-
-/*    document.querySelector('chart' + instanceNo).addEventListener('mouseenter', function() {
-        chartInstance[instanceNo].resize(200, 200); // Adjust dimensions to match CSS hover effect
-      });
-      
-      document.querySelector('chart' + instanceNo).addEventListener('mouseleave', function() {
-        chartInstance[instanceNo].resize(400, 400); // Restore original dimensions
-      });*/
-
-
+//    createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
+//console.log(largeInstanceNo,oneChemical);
+/*    if (largeInstanceNo > 1) {
+        createToggleFocusChart(convas, chartInstance[instanceNo], instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
+    }*/
+    document.getElementById('chart' + instanceNo).addEventListener('click', () => displayScatterChart(scatterData, oneChemical, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1));
     Chart.register({
         id: 'selectSample',
         afterDraw: function (chart, args, options) {
@@ -1039,9 +1035,8 @@ console.log(oneChemical);
     });
 }
 
-
-
 function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle) {
+console.log(sizes, meas, sheetName, instanceNo, unitTitle, subTitle);
     legends[instanceNo] = false;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
@@ -1058,7 +1053,6 @@ function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle
         return {
             label: sampleName,
             data: meas[sampleName],
-//		            borderColor: getRandomColor(), // Function to generate random color
             borderWidth: 2,
             fill: false,
         };
@@ -1191,7 +1185,7 @@ function displaySampleChart(meas, sheetName, instanceNo, unitTitle) {
     convas.style.display = "block";
     instanceType[instanceNo] = 'chemical';
     instanceSheet[instanceNo] = sheetName;
-console.log(meas);
+//console.log(meas);
     const allChemicals = Object.keys(meas);
     const allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals
     const datasets = allChemicals.map((chemical, index) => {
@@ -1221,30 +1215,6 @@ function isEmpty(obj) {
 }
 
 function createRadarPlot(meas, sheetName) {
-/*    // Initialize arrays to accumulate concentrations and labels for each sample
-    let allConcentrations = [];
-    let allChemicalLabels = [];
-    for (const dateSampled in selectedSampleMeasurements) {
-        for (const chemical in selectedSampleMeasurements[dateSampled]['PAH data'].chemicals) {
-            const chemicalData = selectedSampleMeasurements[dateSampled]['PAH data'].chemicals[chemical].samples;
-
-            // Initialize arrays to accumulate concentrations and labels for each sample
-            allConcentrations[chemical] = [];
-            allChemicalLabels[chemical] = [];
-
-            // Iterate over each sample
-            for (const sample in chemicalData) {
-                const concentration = Object.values(chemicalData[sample]);
-//                const chemicalLabel = Object.keys(chemicalData[sample]);
-
-                // Accumulate concentrations and labels for the current sample
-                allConcentrations[chemical].push(concentration);
-//                allChemicalLabels.push(chemicalLabels);
-            }
-
-        }
-    }
-*/
         if (!isEmpty(popupInstance)) {
             allPopupKeys = Object.keys(popupInstance);
             allPopupKeys.forEach(popupKey => {
@@ -1257,12 +1227,6 @@ function createRadarPlot(meas, sheetName) {
         let data = {};
         const datasets = allSamples.map((sample, index) => {
             data[sample] = allChemicals.map(chemical => meas[chemical][sample]); // Using the first concentration value for simplicity
-/*            return {
-                label: sample,
-                data: data,
-                borderWidth: 1,
-                yAxisID: 'y',
-            };*/
         });
         
     console.log("datasets ",datasets);
@@ -1274,8 +1238,6 @@ function createRadarPlot(meas, sheetName) {
         divContainer.id = divId;
         divContainer.style = "width:250px; height:300px;"
         chartsForMapContainer.appendChild(divContainer);
-
-//        const container = document.getElementById(divId);
         const canvas = document.createElement('canvas');
         canvas.id = `c_${divId}`; // Unique chart ID
         canvas.style = "width:250px; height:300px;"
@@ -1297,9 +1259,6 @@ function createRadarPlot(meas, sheetName) {
                             display: false //Hides the labels around the radar chart
                         }
                     },
-/*                    ticks: {
-                        display: true // Show the labels in the middle (numbers)
-                    }*/
                 }
             }
         });
@@ -1312,7 +1271,7 @@ function displayAnySampleChart(meas, all, datasets, instanceNo, title, yTitle, s
         let parts = all[i].split(": ");
         readableLabels[i] = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]]['label'];
     }
-    console.log(readableLabels,datasets);
+//console.log(readableLabels,datasets);
     displayAnyChart(meas, readableLabels, datasets, instanceNo, title, yTitle, showLegend);
 }
 
@@ -1413,7 +1372,6 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
-    //clickableScales(chartInstance[instanceNo], 1);		            
     function clickableScales(chart, canvas, click) {
         //console.log(chart);
         const height = chart.scales.x.height;
@@ -1432,7 +1390,6 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
             for (let i = 0; i < chart.scales.x.ticks.length; i++) {
                 if (x >= left + (right * i) && x <= left + (right * (i + 1))) {
                     console.log('x label', i);
-//                    const regexPattern = /^(\S+): (.+)$/;
                     const regexPattern = /^(.+): (.+)$/;
 console.log(all[i]);
                     const matchResult = all[i].match(regexPattern);
@@ -1444,7 +1401,6 @@ console.log(all[i]);
                         // Output the results
                         console.log("Date Sampled: ", dateSampled);
                         console.log("Sample:", sample);
-//                        createHighlights(meas, dateSampled, sample, null);
                         createHighlights(meas, dateSampled, all[i], null);
                     } else {
                         console.log("String format doesn't match the expected pattern.");
@@ -1456,7 +1412,6 @@ console.log(all[i]);
     ctx.addEventListener('click', (e) => {
         clickableScales(chartInstance[instanceNo], ctx, e);
         chartInstance[instanceNo].resize();
-        //chartInstance[instanceNo].updtae();
     });
     const xLabels = document.querySelectorAll('#chart' + instanceNo + '.chartjs-axis-x .chartjs-axis-label');
     xLabels.forEach((label, index) => {
@@ -1465,9 +1420,6 @@ console.log(all[i]);
             toggleHighlightMapLocation(index);
         });
     });
-//    legends[instanceNo] = false;
-//    ctx.style.width = '10%'; // Set a small width
-//    ctx.style.height = '10%'; // Set a small height    
 }
 
 
@@ -1492,7 +1444,6 @@ function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs
 //console.log("datasets ",datasets);
     displayAnyChart(meas, allChemicals,datasets,instanceNo,sheetName,unitTitle,false);
     chartInstance[instanceNo].options.plugins.annotation.annotations = {};
-    //chartInstance[instanceNo].resize(600,600);
     let allal = actionLevels[sheetName];
 
 if (dsiplayALs) {
@@ -1505,7 +1456,6 @@ if (dsiplayALs) {
                 item = allChemicals.indexOf(chemical);
                 for (i = 0; i < 2; i++) {
                     if (al[i] > 0.0) {
-    //							borderColor = actionLevelColors[i];
                         // Get the units right between action levels and sample measurements
                         // Action levels are all in mg/kg but PAHs in ug/kg
                         if (sheetName === 'PAH data') {
@@ -1540,10 +1490,6 @@ if (dsiplayALs) {
     // Update the chart
     chartInstance[instanceNo].update();
     }
-
-    //        chartInstance[3].resetZoom();
-    // <button onclick="chartInstance[3].resetZoom()">Reset Zoom</button>
-
     // Function to find the maximum concentration
     function findMaxConcentration(data) {
     let maxConcentration = -Infinity;
@@ -1561,7 +1507,6 @@ if (dsiplayALs) {
 }
 
 function chartLine(instanceNo,name,xMin,xMax,yMin,yMax,borderColor,borderDash) {
-//		    chartInstance[instanceNo].options.plugins.annotation.annotations.push({
       chartInstance[instanceNo].options.plugins.annotation.annotations[('line-' + instanceNo + '-' + name)] = {
         type: 'line',
         yMin: yMin,
@@ -1575,7 +1520,6 @@ function chartLine(instanceNo,name,xMin,xMax,yMin,yMax,borderColor,borderDash) {
 }
     
 function chartLabel(instanceNo,xValue,yValue,borderColor,label) {
-//		    chartInstance[instanceNo].options.plugins.annotation.annotations.push({
     chartInstance[instanceNo].options.plugins.annotation.annotations[('label-' + instanceNo + '-'+label)] = {
       type: 'label',
       enabled: true,
@@ -1608,11 +1552,11 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
     };
 
     const samples = Object.keys(sums);
-samples.forEach(sample => console.log(sample));
+//samples.forEach(sample => console.log(sample));
     const lmwSumData = samples.map(sample => sums[sample].lmwSum);
-console.log(lmwSumData);
+//console.log(lmwSumData);
     const hmwSumData = samples.map(sample => sums[sample].hmwSum);
-console.log(hmwSumData);
+//console.log(hmwSumData);
             datasets = [
                 {
                     label: 'LMW Sums',
@@ -1633,7 +1577,6 @@ console.log(hmwSumData);
             ];
 
     displayAnySampleChart(sums, samples,datasets,instanceNo,sheetName + ': Gorham Test Protocol',unitTitle,true);
-
     chartInstance[instanceNo].options.plugins.annotation.annotations = {};
     chartLine(instanceNo,'LMW.ERL',0,samples.length,LMW.ERL,LMW.ERL,'rgba(0, 0, 255, 0.5)',[3,3]);
     chartLine(instanceNo,'LMW.ERM',0,samples.length,LMW.ERM,LMW.ERM,'rgba(0, 0, 255, 0.5)',[5,5]);
@@ -1673,7 +1616,6 @@ function displayPAHRatios(ratios, sheetName, instanceNo, unitTitle) {
     instanceSheet[instanceNo] = sheetName;
     const allSamples = Object.keys(ratios);
     const allRatios = Object.keys(ratios[allSamples[0]]); // Assuming all samples have the same chemicals
-//    const datasets = allRatios.map((ratio, index) => {
     const datasets = allRatios.map(ratio => {
             const data = allSamples.map(sample => ratios[sample][ratio]); // Using the first concentration value for simplicity
         return {
@@ -1850,7 +1792,7 @@ function displayTotalHC(sums, sheetName, instanceNo, unitTitle) {
     instanceType[instanceNo] = 'totalHC';
     instanceSheet[instanceNo] = sheetName;
     const samples = Object.keys(sums);
-samples.forEach(sample => console.log(sample));
+//samples.forEach(sample => console.log(sample));
     const totalHC = samples.map(sample => sums[sample].totalHC);
     const fractionPAH = samples.map(sample => sums[sample].fractionPAH);
     const datasets = [
@@ -1908,11 +1850,8 @@ function createHighlights(meas, dateSampled, hoveredSample) {
     const datesSampled = Object.keys(selectedSampleInfo);
     datesSampled.sort();
     datesSampled.forEach(dateSampled => {
-        //			for (const dateSampled in selectedSampleInfo) {
         const ok = Object.keys(selectedSampleInfo[dateSampled].position);
-        //				noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
         noSamples += ok.length;
-//        for (const sample in selectedSampleInfo[dateSampled].position) {
             const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
             allSamples.sort();
             allSamples.forEach(sample => {
@@ -1946,17 +1885,12 @@ function createHighlights(meas, dateSampled, hoveredSample) {
     });
 //console.log('clickedIndexes',clickedIndexes);
     clickedIndexes.forEach(item => {
-//        if (isMarked === null) {
             console.log('doing the null bit');
             if (highlighted[item]) {
                 highlighted[item] = false;
             } else {
                 highlighted[item] = true;
             }
-/*        } else {
-console.log('doing the other bit');
-            highlighted[item] = !isMarked;
-        }*/
     });
 //console.log(highlighted);
     clickedIndexes.forEach(item => {

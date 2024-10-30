@@ -254,6 +254,8 @@ for (i = 1; i < dataSheetNames.length; i++) {
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
                             }
                         }
@@ -268,6 +270,8 @@ for (i = 1; i < dataSheetNames.length; i++) {
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
                             }
                         }
@@ -924,6 +928,8 @@ function processExcelData(data, url) {
                             meas.samples[sample].psdAreas = retData['areas'];
                             meas.samples[sample].splitWeights = retData['splitWeights'];
                             meas.samples[sample].splitAreas = retData['splitAreas'];
+                            meas.samples[sample].cumWeights = retData['cumWeights'];
+                            meas.samples[sample].cumAreas = retData['cumAreas'];
                             meas.samples[sample].totalArea = retData['totalArea'];
                         }
                     }
@@ -1227,7 +1233,7 @@ console.log(row);
 
 // Function to create a button for resetting zoom
 function createResetZoomButton(chart,instanceNo) {
-//console.log('creating zoon buttom',instanceNo);
+//console.log('creating zoom buttom',instanceNo);
     const container = document.getElementById('chartContainer');
     const button = document.createElement('button');
     button.id = 'buttonz'+instanceNo
@@ -1264,7 +1270,28 @@ function createToggleLegendButton(chart,instanceNo) {
     });
     container.appendChild(button);
 }
-    
+
+/*
+// Function to create a button for canvassize
+function createToggleFocusChart(convas, chart, instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle,largeInstanceNo) {
+console.log(instanceNo, chemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle,largeInstanceNo)
+    const container = document.getElementById('chartButtons');
+    const button = document.createElement('button');
+    button.id = 'buttonf'+instanceNo
+    if (!largeSize[instanceNo]) {
+        button.textContent = unitTitle;
+    } else {
+        button.textContent = unitTitle;
+    }
+    button.addEventListener('click', () => {
+        displayScatterChart(scatterData, oneChemical, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1);
+        chartInstance[largeInstanceNo].update();
+//                           (scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo)   
+
+    });
+    container.appendChild(button);
+}*/
+
 // Function to create a button for canvassize
 function createToggleCanvasSize(canvas, chart,instanceNo,chemical) {
     const container = document.getElementById('chartContainer');

@@ -154,7 +154,8 @@ let ranges = {
     'Very Coarse And Coarse Sand': [10, 13],
     'Medium Sand': [14, 15],
     'Fine And Very Fine Sand': [16, 19],
-    'Silt And Clay': [20, 41]
+    'Silt And Clay': [20, 40]
+    // Ignore < 0.4um particles
   };
 
 // Function to calculate sum of a range
@@ -171,11 +172,11 @@ function sumInRange(psd, range) {
 function psdSplit(psd) {
     let split = {};
     // Calculate sums for each category
-    split['Gravel'] = sumInRange(psd, ranges['Gravel']);
-    split['Very Coarse And Coarse Sand'] = sumInRange(psd, ranges['Very Coarse And Coarse Sand']);
-    split['Medium Sand'] = sumInRange(psd, ranges['Medium Sand']);
-    split['Fine And Very Fine Sand'] = sumInRange(psd, ranges['Fine And Very Fine Sand']);
     split['Silt And Clay'] = sumInRange(psd, ranges['Silt And Clay']);
+    split['Fine And Very Fine Sand'] = sumInRange(psd, ranges['Fine And Very Fine Sand']);
+    split['Medium Sand'] = sumInRange(psd, ranges['Medium Sand']);
+    split['Very Coarse And Coarse Sand'] = sumInRange(psd, ranges['Very Coarse And Coarse Sand']);
+    split['Gravel'] = sumInRange(psd, ranges['Gravel']);
     return split
 }
 
@@ -185,20 +186,41 @@ function psdPostProcess(currentPsd, sizes) {
     ptsVolumes = null;
     splitWeights = {};
     splitAreas = {};
-    ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize));
-    ptsAreas = ptsSizes.map(size => Math.PI * size * size / 4);
+    // Ignore < 0.4um particles
+    sizes = sizes.slice(0,-1);
+//console.log(sizes);
+    //Sizes are in mm so convert to SI
+    ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+    ptsAreas = ptsSizes.map(size => (Math.PI * size * size) / 4);
     ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
+//console.log(ptsSizes,ptsAreas,ptsVolumes);
     areas = [];
     totalArea = 0;
+    cumAreas = [];
+    cumWeights = [];
     for (i = 0; i < ptsSizes.length; i++) {
         //                    noPts = currentPsd[i] / volumes[i];
         currentArea = ptsAreas[i] * currentPsd[i] / ptsVolumes[i];
         areas[i] = currentArea;
         totalArea += currentArea;
+        cumAreas[i] = 0;
+        cumWeights[i] = 0;
+    }
+//    cumAreas = Array(areas.length);
+    previousCumArea = 0;
+//    cumWeights = Array(areas.length);
+    previousCumWeight = 0;
+    for (i = ptsSizes.length-1; i > -1; i--) {
+        areas[i] = areas[i]*100/totalArea;
+        cumAreas[i] = previousCumArea + areas[i];
+        previousCumArea = cumAreas[i];
+        cumWeights[i] = previousCumWeight + currentPsd[i];
+        previousCumWeight = cumWeights[i];
     }
     splitWeights = psdSplit(currentPsd);
     splitAreas = psdSplit(areas);
-    return { areas, splitWeights, splitAreas, totalArea }
+console.log( areas, splitWeights, splitAreas, cumAreas, cumWeights, totalArea );
+    return { areas, splitWeights, splitAreas, cumAreas, cumWeights, totalArea }
 }
 
 function pcbPostProcess(newMeas,dateSampled) {
