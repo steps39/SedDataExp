@@ -97,9 +97,9 @@ function displayCharts(sheetName, instanceNo) {
     } else {
         retData = dataForCharting(sheetName);
         unitTitle = retData['unitTitle'];
-//console.log('unitTitle displayCharts ',unitTitle);
+console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
-//console.log('selectedMeas ', selectedMeas);
+console.log('selectedMeas ', selectedMeas);
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
@@ -305,8 +305,10 @@ function dataForCharting(sheetName) {
     let measChart = {};
     datesSampled.sort();
     datesSampled.forEach(ds => {
-        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
-            (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {
+        if (ct in selectedSampleMeasurements[ds]) {
+            //        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null )) {
+/*        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
+            (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {*/
             for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
                 if (measChart[c] == undefined || measChart[c] == null) {
                     measChart[c] = {};
@@ -810,8 +812,9 @@ function dataForTotalAreaScatterCharting(sheetName) {
     let scatterData = {};
     let chemicalData = {};
     datesSampled.forEach(ds => {
-        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
-            (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {
+        if (ct in selectedSampleMeasurements[ds]) {
+            /*        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
+            (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {*/
             let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
             for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
                 i = 0;
@@ -831,7 +834,7 @@ function dataForTotalAreaScatterCharting(sheetName) {
             }
         }
     });
-//console.log('data ',sheetName,scatterData);
+console.log('data ',sheetName,scatterData,chemicalData);
     return {unitTitle, scatterData, chemicalData}
 }
 
@@ -888,6 +891,7 @@ function displayCombinedScatterChart(meas, sheetName, instanceNo, unitTitle) {
     instanceType[instanceNo] = 'combinedscatter';
     instanceSheet[instanceNo] = sheetName;
 //console.log(meas);
+console.log(meas, sheetName, instanceNo, unitTitle);
     const allChemicals = Object.keys(meas);
     const allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals // Using the first concentration value for simplicity
     const datasets = allChemicals.map((chemical, index) => {

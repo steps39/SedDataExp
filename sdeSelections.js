@@ -205,30 +205,83 @@ function selectChemicals() {
     updateChart();
 }
 
-function getSelectedChemicalSampleMeasurements(selectedChemicals) {
+/*function getSelectedChemicalSampleMeasurements(selectedChemicals) {
     selectedMeas = {};
-    for (dateSampled in sampleMeasurements) {
+    for (dateSampled in selectedSampleMeasurements) {
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
-            for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
-                if (selectedChemicals.includes(chemical)) {
-                    // Put here as if no chemicals selected then don't need chemical type
-                    if (!selectedMeas[dateSampled]) {
-                        selectedMeas[dateSampled] = {};
-                    }
-                    if (!selectedMeas[dateSampled][chemicalType]) {
-                        selectedMeas[dateSampled][chemicalType] = {};
-                        selectedMeas[dateSampled][chemicalType].chemicals = {};
-                        if (chemicalType == 'PAH data') {
-                            // Just copy all common data even if only 1 PAH is selected
-                            selectedMeas[dateSampled][chemicalType].gorhamTest = selectedSampleMeasurements[dateSampled][chemicalType].gorhamTest;
-                            selectedMeas[dateSampled][chemicalType].total = selectedSampleMeasurements[dateSampled][chemicalType].total;
-                            selectedMeas[dateSampled][chemicalType].totalHC = selectedSampleMeasurements[dateSampled][chemicalType].totalHC;
-                            selectedMeas[dateSampled][chemicalType].totalHCUnit = selectedSampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+            if ('Physical Data' != chemicalType) {
+                for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
+                    if (selectedChemicals.includes(chemical)) {
+                        // Put here as if no chemicals selected then don't need chemical type
+                        if (!selectedMeas[dateSampled]) {
+                            selectedMeas[dateSampled] = {};
                         }
+                        if (!(chemicalType in selectedMeas[dateSampled])) {
+                            selectedMeas[dateSampled][chemicalType] = {};
+                            selectedMeas[dateSampled][chemicalType].chemicals = {};
+                            if (chemicalType == 'PAH data') {
+                                // Just copy all common data even if only 1 PAH is selected
+                                selectedMeas[dateSampled][chemicalType].gorhamTest = selectedSampleMeasurements[dateSampled][chemicalType].gorhamTest;
+                                selectedMeas[dateSampled][chemicalType].total = selectedSampleMeasurements[dateSampled][chemicalType].total;
+                                selectedMeas[dateSampled][chemicalType].totalHC = selectedSampleMeasurements[dateSampled][chemicalType].totalHC;
+                                selectedMeas[dateSampled][chemicalType].totalHCUnit = selectedSampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+                            }
+                            if (chemicalType == 'PCB data') {
+                                //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
+                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
+                            }
+                        }
+                        selectedMeas[dateSampled][chemicalType].chemicals[chemical] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical];
                     }
-                    selectedMeas[dateSampled][chemicalType].chemicals[chemical] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical];
                 }
             }
+        }
+    }
+    for (dateSampled in selectedMeas) {
+        if ('Physical Data' in sampleMeasurements[dateSampled]){
+            selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
+        }
+    }
+    return selectedMeas;
+}*/
+
+function getSelectedChemicalSampleMeasurements(selectedChemicals) {
+    selectedMeas = {};
+    for (dateSampled in selectedSampleMeasurements) {
+        for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
+            if ('Physical Data' != chemicalType) {
+                for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
+                    if (selectedChemicals.includes(chemical)) {
+                        // Put here as if no chemicals selected then don't need chemical type
+                        if (!selectedMeas[dateSampled]) {
+                            selectedMeas[dateSampled] = {};
+                        }
+                        if (!(chemicalType in selectedMeas[dateSampled])) {
+                            selectedMeas[dateSampled][chemicalType] = {};
+                            selectedMeas[dateSampled][chemicalType].chemicals = {};
+                            if (chemicalType == 'PAH data') {
+                                // Just copy all common data even if only 1 PAH is selected
+                                selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
+                                selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
+                                selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+                            }
+                            if (chemicalType == 'PCB data') {
+                                //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
+                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
+                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
+                            }
+                        }
+                        selectedMeas[dateSampled][chemicalType].chemicals[chemical] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical];
+                    }
+                }
+            }
+        }
+    }
+    for (dateSampled in selectedMeas) {
+        if ('Physical Data' in sampleMeasurements[dateSampled]){
+            selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
         }
     }
     return selectedMeas;
@@ -237,17 +290,26 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
 function getSelectedChemicalSampleInfo(selectedChemicals) {
     selectedSamps = {};
     for (const dateSampled in selectedSampleMeasurements) {
+        selectedSamps[dateSampled] = {};
+        selectedSamps[dateSampled]['Date sampled'] = sampleInfo[dateSampled]['Date sampled'];
+        selectedSamps[dateSampled].fileURL = sampleInfo[dateSampled].fileURL;
+        selectedSamps[dateSampled].Applicant = sampleInfo[dateSampled].Applicant;
+        selectedSamps[dateSampled]['Application number'] = sampleInfo[dateSampled]['Application number'];
+        selectedSamps[dateSampled]['Application title'] = sampleInfo[dateSampled]['Application title'];
+        selectedSamps[dateSampled]['label'] = sampleInfo[dateSampled]['label'];
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
-            selectedSamps[dateSampled] = {};
-            selectedSamps[dateSampled]['Date sampled'] = selectedSampleInfo[dateSampled]['Date sampled'];
-            selectedSamps[dateSampled].fileURL = selectedSampleInfo[dateSampled].fileURL;
-            selectedSamps[dateSampled].Applicant = selectedSampleInfo[dateSampled].Applicant;
-            selectedSamps[dateSampled]['Application number'] = selectedSampleInfo[dateSampled]['Application number'];
-            selectedSamps[dateSampled]['Application title'] = selectedSampleInfo[dateSampled]['Application title'];
-            selectedSamps[dateSampled].position = {};
-            for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
-                for (const sample in selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
-                    selectedSamps[dateSampled].position[sample] = selectedSampleInfo[dateSampled].position[sample];
+            if (!('position' in selectedSamps[dateSampled])) {
+console.log('setting up position');
+                selectedSamps[dateSampled].position = {};
+            }
+            if ('Physical Data' != chemicalType) {
+console.log('getting positions',chemicalType,chemical);
+                for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
+                    if (selectedChemicals.includes(chemical)) {
+                        for (const sample in selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
+                            selectedSamps[dateSampled].position[sample] = selectedSampleInfo[dateSampled].position[sample];
+                        }
+                    }
                 }
             }
         }
@@ -730,5 +792,6 @@ function getSelectedSamples(selectedSamples) {
 function clearSelections() {
     selectedSampleMeasurements = sampleMeasurements;
     selectedSampleInfo = sampleInfo;
+    updateChart();
 }
 
