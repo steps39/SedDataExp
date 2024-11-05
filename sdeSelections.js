@@ -205,47 +205,6 @@ function selectChemicals() {
     updateChart();
 }
 
-/*function getSelectedChemicalSampleMeasurements(selectedChemicals) {
-    selectedMeas = {};
-    for (dateSampled in selectedSampleMeasurements) {
-        for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
-            if ('Physical Data' != chemicalType) {
-                for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
-                    if (selectedChemicals.includes(chemical)) {
-                        // Put here as if no chemicals selected then don't need chemical type
-                        if (!selectedMeas[dateSampled]) {
-                            selectedMeas[dateSampled] = {};
-                        }
-                        if (!(chemicalType in selectedMeas[dateSampled])) {
-                            selectedMeas[dateSampled][chemicalType] = {};
-                            selectedMeas[dateSampled][chemicalType].chemicals = {};
-                            if (chemicalType == 'PAH data') {
-                                // Just copy all common data even if only 1 PAH is selected
-                                selectedMeas[dateSampled][chemicalType].gorhamTest = selectedSampleMeasurements[dateSampled][chemicalType].gorhamTest;
-                                selectedMeas[dateSampled][chemicalType].total = selectedSampleMeasurements[dateSampled][chemicalType].total;
-                                selectedMeas[dateSampled][chemicalType].totalHC = selectedSampleMeasurements[dateSampled][chemicalType].totalHC;
-                                selectedMeas[dateSampled][chemicalType].totalHCUnit = selectedSampleMeasurements[dateSampled][chemicalType].totalHCUnit;
-                            }
-                            if (chemicalType == 'PCB data') {
-                                //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
-                            }
-                        }
-                        selectedMeas[dateSampled][chemicalType].chemicals[chemical] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical];
-                    }
-                }
-            }
-        }
-    }
-    for (dateSampled in selectedMeas) {
-        if ('Physical Data' in sampleMeasurements[dateSampled]){
-            selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
-        }
-    }
-    return selectedMeas;
-}*/
-
 function getSelectedChemicalSampleMeasurements(selectedChemicals) {
     selectedMeas = {};
     for (dateSampled in selectedSampleMeasurements) {
@@ -269,8 +228,11 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
                             }
                             if (chemicalType == 'PCB data') {
                                 //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];
+/*                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
+                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];*/
+//                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
+                                selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
+                                selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
                             }
                         }
                         selectedMeas[dateSampled][chemicalType].chemicals[chemical] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical];

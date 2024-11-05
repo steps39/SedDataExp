@@ -216,21 +216,11 @@ function randomColor() {
     return '#' + Math.floor(Math.random() * 16777215).toString(16);
 }
 
-function exportChart() {
-    const now = new Date();
-    const formattedDate = now
-        .toISOString()
-        .slice(2, 16)
-        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
-
+function exportCharts() {
     for (i = 1; i<lastInstanceNo+1 ; i++) {
-        const canvas = document.getElementById('chart' + i);
-        const url = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        const filename = `${formattedDate}-${instanceSheet[i]}-${instanceType[i]}.png`;
-        link.href = url;
-        link.download = filename;
-        link.click();
+        if (!(instanceType[i].includes('Scatter'))){
+            exportChart(i);
+        }
     }
 /*      leafletImage(map, function(err, canvas) {
 // 'canvas' now contains an image of the map
@@ -239,6 +229,134 @@ img.src = canvas.toDataURL();
 document.body.appendChild(img);
 });*/
 }
+
+function exportChart(currentInstanceNo) {
+    const now = new Date();
+    const formattedDate = now
+        .toISOString()
+        .slice(2, 16)
+        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
+    canvas = document.getElementById('chart' + currentInstanceNo);
+    const url = canvas.toDataURL('image/png');
+    exportLink = document.createElement('a');
+    const filename = `${formattedDate}-${instanceSheet[currentInstanceNo]}-${instanceType[currentInstanceNo]}.png`;
+    exportLink.href = url;
+    exportLink.download = filename;
+    exportLink.click();
+}
+
+
+function neweexportChart() {
+    const now = new Date();
+    const formattedDate = now
+        .toISOString()
+        .slice(2, 16)
+        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
+
+        currentInstanceNo = 0;
+
+    for (let i = 1; i < lastInstanceNo + 1; i++) {
+        currentInstanceNo = i;
+        const chartType = instanceType[i];
+        
+        if (chartType.includes('Scatter')) {
+            chartLink = document.getElementById('chart' + i);
+            chartLink.click();
+            currentInstanceNo = lastScatterInstanceNo;
+            const chartElementId = 'chart' + currentInstanceNo;
+            const canvas = document.getElementById(chartElementId);
+
+            // Assuming you have access to each Chart instance here, e.g., in an array of charts
+//            const chartInstance = Chart.getChart(canvas); // or however you reference the Chart.js instance for each chart
+            const currentInstance = chartInstance[currentInstanceNo];
+
+console.log('exportChart part way in on scatter');
+
+            // Define the export logic as a separate function
+            const exportChartImage = () => {
+console.log('exportchartimage');
+                const url = canvas.toDataURL('image/png');
+                const exportLink = document.createElement('a');
+                const filename = `${formattedDate}-${instanceSheet[i]}-${chartType}.png`;
+                
+                exportLink.href = url;
+                exportLink.download = filename;
+                exportLink.click();
+                // Remove the hook to prevent repeated execution
+                currentInstance.options.animation.onComplete = null;
+            };
+
+
+            // Check if currentInstance exists and set onComplete callback
+            if (currentInstance) {
+console.log('setting animation');
+                // Set onComplete only for one-time execution
+                currentInstance.options.animation = currentInstance.options.animation || {};
+console.log('setting oncomplete',currentInstance.options.animation);
+                currentInstance.options.animation.onComplete = exportChartImage;
+console.log('set oncomplete',currentInstance.options.animation.onComplete);
+/*                currentInstance.options.plugins = currentInstance.options.plugins || {};
+                currentInstance.options.plugins.onComplete = exportChartImage;*/
+
+                // Redraw the chart to trigger the onComplete callback
+                currentInstance.update();
+            }
+/*console.log('doing chartLink click');
+            chartLink = document.getElementById('chart' + i);
+            chartLink.click();*/
+        }
+    }
+}
+
+
+
+
+function eexportChart() {
+    const now = new Date();
+    const formattedDate = now
+        .toISOString()
+        .slice(2, 16)
+        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
+
+    for (let i = 1; i < lastInstanceNo + 1; i++) {
+        const chartType = instanceType[i];
+        
+        if (chartType.includes('Scatter')) {
+            const chartElementId = 'chart' + i;
+            const canvas = document.getElementById(chartElementId);
+
+            // Assuming you have access to each Chart instance here, e.g., in an array of charts
+            const chartInstance = Chart.getChart(canvas); // or however you reference the Chart.js instance for each chart
+
+            // Define the export logic as a separate function
+            const exportChartImage = () => {
+                const url = canvas.toDataURL('image/png');
+                const exportLink = document.createElement('a');
+                const filename = `${formattedDate}-${instanceSheet[i]}-${chartType}.png`;
+                
+                exportLink.href = url;
+                exportLink.download = filename;
+                exportLink.click();
+            };
+
+            // Check if chartInstance exists and set onComplete callback
+            if (chartInstance) {
+                chartInstance.options.plugins = chartInstance.options.plugins || {};
+                chartInstance.options.plugins.onComplete = exportChartImage;
+
+                // Redraw the chart to trigger the onComplete callback
+                chartInstance.update();
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
 
 function parseCoordinate(input) {
     // Check if the input is undefined or null

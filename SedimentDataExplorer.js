@@ -18,7 +18,9 @@
     proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
 
     let lastInstanceNo = 0;
+    let lastScatterInstanceNo = 0;
     let noInstances = 16;
+    let exportLink = null;
     let chartInstance = [];
     let popupInstance = [];
     let instanceType = [];
@@ -252,8 +254,10 @@ for (i = 1; i < dataSheetNames.length; i++) {
                                 currentPsd = sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
                                 retData = psdPostProcess(currentPsd, sampleMeasurements[dateSampled]['Physical Data'].sizes);
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdRelaitveAreas = retData['realtiveAreas'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitRelativeAreas = retData['splitRelativeAreas'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
@@ -263,16 +267,20 @@ for (i = 1; i < dataSheetNames.length; i++) {
                 }
                 for (dateSampled in selectedSampleMeasurements) {
                     if ('Physical Data' in selectedSampleMeasurements[dateSampled]) {
+
                         for (sample in selectedSampleMeasurements[dateSampled]['Physical Data'].samples) {
                             if (!('totalArea' in selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
-                                currentPsd = selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample] = sampleMeasurements[dateSampled]['Physical Data'].samples[sample];
+/*                                currentPsd = selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
                                 retData = psdPostProcess(currentPsd, selectedSampleMeasurements[dateSampled]['Physical Data'].sizes);
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['realtiveAreas'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitRelativeAreas = retData['splitRelativeAreas'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
                                 selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
+                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];*/
                             }
                         }
                     }
@@ -926,8 +934,10 @@ function processExcelData(data, url) {
                             currentPsd = meas.samples[sample].psd;
                             retData = psdPostProcess(currentPsd,meas.sizes);
                             meas.samples[sample].psdAreas = retData['areas'];
+                            meas.samples[sample].psdRelativeAreas = retData['relativeAreas'];
                             meas.samples[sample].splitWeights = retData['splitWeights'];
                             meas.samples[sample].splitAreas = retData['splitAreas'];
+                            meas.samples[sample].splitRelativeAreas = retData['splitRelativeAreas'];
                             meas.samples[sample].cumWeights = retData['cumWeights'];
                             meas.samples[sample].cumAreas = retData['cumAreas'];
                             meas.samples[sample].totalArea = retData['totalArea'];
@@ -1232,6 +1242,19 @@ console.log(row);
 }
 
 // Function to create a button for resetting zoom
+function createExportButton(chart, instanceNo) {
+    //console.log('creating zoom buttom',instanceNo);
+    const container = document.getElementById('chartContainer');
+    const button = document.createElement('button');
+    button.id = 'buttone' + instanceNo
+    button.textContent = 'Export';
+    button.addEventListener('click', () => {
+        exportChart(instanceNo);
+    });
+    container.appendChild(button);
+}
+        
+    // Function to create a button for resetting zoom
 function createResetZoomButton(chart,instanceNo) {
 //console.log('creating zoom buttom',instanceNo);
     const container = document.getElementById('chartContainer');
@@ -1401,6 +1424,7 @@ function removeButtons(chartInstanceNo) {
     removeButton(chartInstanceNo, 'o');
     removeButton(chartInstanceNo, 's');
     removeButton(chartInstanceNo, 'c');    
+    removeButton(chartInstanceNo, 'e');    
 }
 
 function removeButton(chartInstanceNo, buttonType) {

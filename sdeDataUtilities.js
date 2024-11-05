@@ -191,36 +191,41 @@ function psdPostProcess(currentPsd, sizes) {
 //console.log(sizes);
     //Sizes are in mm so convert to SI
     ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize)/1000);
-    ptsAreas = ptsSizes.map(size => (Math.PI * size * size) / 4);
+    ptsAreas = ptsSizes.map(size => Math.PI * size * size);
     ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
 //console.log(ptsSizes,ptsAreas,ptsVolumes);
     areas = [];
     totalArea = 0;
     cumAreas = [];
     cumWeights = [];
+    relativeAreas = [];
     for (i = 0; i < ptsSizes.length; i++) {
         //                    noPts = currentPsd[i] / volumes[i];
-        currentArea = ptsAreas[i] * currentPsd[i] / ptsVolumes[i];
+        // Divide by 100 as psd in weight %
+        // Divide by 1000 as 1kg is 1000th of tonne which is 1m^3 with density of 1
+        currentArea = (ptsAreas[i] * currentPsd[i]) / (ptsVolumes[i] * 100 * 1000);
         areas[i] = currentArea;
         totalArea += currentArea;
         cumAreas[i] = 0;
         cumWeights[i] = 0;
+        relativeAreas[i] = 0;
     }
 //    cumAreas = Array(areas.length);
     previousCumArea = 0;
 //    cumWeights = Array(areas.length);
     previousCumWeight = 0;
     for (i = ptsSizes.length-1; i > -1; i--) {
-        areas[i] = areas[i]*100/totalArea;
-        cumAreas[i] = previousCumArea + areas[i];
+        relativeAreas[i] = areas[i]*100/totalArea;
+        cumAreas[i] = previousCumArea + relativeAreas[i];
         previousCumArea = cumAreas[i];
         cumWeights[i] = previousCumWeight + currentPsd[i];
         previousCumWeight = cumWeights[i];
     }
     splitWeights = psdSplit(currentPsd);
     splitAreas = psdSplit(areas);
-console.log( areas, splitWeights, splitAreas, cumAreas, cumWeights, totalArea );
-    return { areas, splitWeights, splitAreas, cumAreas, cumWeights, totalArea }
+    splitRelativeAreas = psdSplit(relativeAreas);
+console.log( areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea );
+    return { areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea }
 }
 
 function pcbPostProcess(newMeas,dateSampled) {
@@ -364,5 +369,98 @@ function pahPostProcess(newMeas,dateSampled) {
             sampleMeasurements[dateSampled][sheetName].simpleRatios[s] = m;
         });
     }
+}
+
+function dualfitConcentration(concentration, totalArea, totalHC, ignoreSamples = []) {
+    // Extract sample keys and filter out ignored samples
+    const samples = Object.keys(concentration).filter(sample => !ignoreSamples.includes(sample));
+console.log(samples,samples.length);
+
+/*    // Extract sample keys
+    const samples = Object.keys(concentration);*/
+
+    // Create Y vector (concentration values)
+    const Y = samples.map(sample => concentration[sample]);
+
+    // Create X matrix with [totalArea, totalHC, 1] for each sample
+    const X = samples.map(sample => [totalArea[sample], totalHC[sample], 1]);
+
+    // Compute X transpose (X^T)
+    const XT = math.transpose(X);
+
+    // Compute (X^T * X)
+    const XTX = math.multiply(XT, X);
+
+    // Compute (X^T * X)^-1
+    const XTX_inv = math.inv(XTX);
+
+    // Compute (X^T * Y)
+    const XTY = math.multiply(XT, Y);
+
+    // Compute beta = (X^T * X)^-1 * (X^T * Y)
+    const beta = math.multiply(XTX_inv, XTY);
+
+    // Extract coefficients
+    const a = beta[0];
+    const b = beta[1];
+    const c = beta[2];
+
+    // Calculate predicted values and residuals
+    const Y_pred = samples.map(sample => a * totalArea[sample] + b * totalHC[sample] + c);
+    const Y_mean = math.mean(Y);
+
+    // Compute the total sum of squares (SS_tot) and residual sum of squares (SS_res)
+    const SS_tot = math.sum(Y.map(y => Math.pow(y - Y_mean, 2)));
+    const SS_res = math.sum(Y.map((y, i) => Math.pow(y - Y_pred[i], 2)));
+
+    // Calculate R-squared
+    const R_squared = 1 - (SS_res / SS_tot);
+
+    return { a, b, c, R_squared };
+}
+
+function concentrationFitter(concentration, predictors, ignoreSamples = []) {
+console.log(concentration, predictors);
+    // Extract sample keys and filter out ignored samples
+    const samples = Object.keys(concentration).filter(sample => !ignoreSamples.includes(sample));
+
+    // Create Y vector (concentration values) excluding ignored samples
+    const Y = samples.map(sample => concentration[sample]);
+
+    // Create X matrix dynamically based on the predictors provided, adding a column of 1s for the intercept
+    const X = samples.map(sample => [...predictors[sample], 1]);
+
+    // Compute X transpose (X^T)
+    const XT = math.transpose(X);
+
+    // Compute (X^T * X)
+    const XTX = math.multiply(XT, X);
+
+    // Compute (X^T * X)^-1
+    const XTX_inv = math.inv(XTX);
+
+    // Compute (X^T * Y)
+    const XTY = math.multiply(XT, Y);
+
+    // Compute beta = (X^T * X)^-1 * (X^T * Y)
+    const beta = math.multiply(XTX_inv, XTY);
+
+    // Calculate predicted values and residuals (only for included samples)
+    const Y_pred = samples.map(sample => {
+        // Calculate predicted concentration using the fitted model coefficients
+        return predictors[sample].reduce((sum, value, index) => sum + beta[index] * value, beta[beta.length - 1]);
+    });
+    const Y_mean = math.mean(Y);
+
+    // Compute the total sum of squares (SS_tot) and residual sum of squares (SS_res)
+    const SS_tot = math.sum(Y.map(y => Math.pow(y - Y_mean, 2)));
+    const SS_res = math.sum(Y.map((y, i) => Math.pow(y - Y_pred[i], 2)));
+
+    // Calculate R-squared
+    const R_squared = 1 - (SS_res / SS_tot);
+
+    // Return the coefficients (beta) and the R-squared value
+//    return { coefficients: beta, R_squared };
+    return { beta, R_squared };
 }
 

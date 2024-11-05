@@ -75,17 +75,22 @@ function displayCharts(sheetName, instanceNo) {
 //console.log('unitTitle displayCharts ',unitTitle);
         sizes = retData['ptsSizes'];
         selectedMeas = retData['measChart'];
+fred=selectedMeas;
+        selectedMeasRelativeArea = retData['measChartRelativeArea'];
         selectedMeasArea = retData['measChartArea'];
         splitWeights = retData['splitWeights'];
+        splitRelativeAreas = retData['splitRelativeAreas'];
         splitAreas = retData['splitAreas'];
         cumWeights = retData['cumWeights'];
         cumAreas = retData['cumAreas'];
 //console.log(sizes);	            
 //console.log('selectedMeas ', selectedMeas);
         instanceNo += 1;
-        displayPSDChart(sizes, selectedMeas, sheetName, instanceNo, unitTitle, 'Weight');
+        displayPSDChart(sizes, selectedMeas, sheetName, instanceNo, unitTitle, 'Relative Weight');
         instanceNo += 1;
-        displayPSDChart(sizes, selectedMeasArea, sheetName, instanceNo, unitTitle, 'Area');
+        displayPSDChart(sizes, selectedMeasRelativeArea, sheetName, instanceNo, unitTitle, 'Relative Area');
+        instanceNo += 1;
+        displayPSDChart(sizes, selectedMeasArea, sheetName, instanceNo, unitTitle, 'Absolute Area');
         instanceNo += 1;
         displayPSDChart(sizes, cumWeights, sheetName, instanceNo, unitTitle, 'Cumlative by Weight');
         instanceNo += 1;
@@ -93,7 +98,9 @@ function displayCharts(sheetName, instanceNo) {
         instanceNo += 1;
         displayPsdSplits(splitWeights, sheetName, instanceNo, unitTitle, 'Weight');
         instanceNo += 1;
-        displayPsdSplits(splitAreas, sheetName, instanceNo, unitTitle, 'Area');
+        displayPsdSplits(splitRelativeAreas, sheetName, instanceNo, unitTitle, 'Relative Area');
+        instanceNo += 1;
+        displayPsdSplits(splitAreas, sheetName, instanceNo, unitTitle, 'Absolute Area');
     } else {
         retData = dataForCharting(sheetName);
         unitTitle = retData['unitTitle'];
@@ -133,6 +140,10 @@ console.log('selectedMeas ', selectedMeas);
             scatterData = retData['scatterData'];
             chemicalData = retData['chemicalData'];
             const allChemicals = Object.keys(chemicalData);
+
+            instanceNo += 1;
+            displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
+            largeInstanceNo = instanceNo;
 
             // Step 1: Create a table element
             const scatterTable = document.createElement('table');
@@ -178,6 +189,64 @@ console.log('selectedMeas ', selectedMeas);
             //console.log('unitTitle displayCharts ',unitTitle);
             scatterData = retData['scatterData'];
             chemicalData = retData['chemicalData'];
+            fitConcentration = retData['fitConcentration'];
+            fitPredictors = retData['fitPredictors'];
+            const allChemicals = Object.keys(chemicalData);
+
+//console.log(chemicalData);
+            instanceNo += 1;
+            displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
+            largeInstanceNo = instanceNo;
+
+            // Step 1: Create a table element
+            const scatterTable = document.createElement('table');
+            const noCharts = allChemicals.length;
+            const startInstanceNo = instanceNo;
+            // Step 2: Loop to create rows and cells for the table
+            for (let i = 0; i < noCharts; i++) {
+                instanceNo += 1;
+                if (i % 4 === 0) {
+//                    console.log('created row');
+                    row = scatterTable.insertRow(); // Create a row
+//                    console.log(row);
+                }
+                const cell = row.insertCell(); // Create a cell
+                const canvas = document.createElement('canvas'); // Create a canvas for the chart
+                canvas.id = 'chart' + instanceNo;; // Unique id for each chart canvas
+                cell.appendChild(canvas); // Append the canvas to the cell
+                //  }
+            }
+
+            // Step 3: Append the table to a container element in your HTML (e.g., <div id="container"></div>)
+            const chartContainer = document.getElementById('chartContainer');
+            if (largeInstanceNo > 1) {
+                const divContainer = document.createElement('div');
+                divContainer.id = 'chartButtons';
+                chartContainer.appendChild(divContainer);
+            }
+            chartContainer.appendChild(scatterTable);
+            instanceNo = startInstanceNo;
+            i = 0;
+            for (const c in chemicalData) {
+                retData = concentrationFitter(fitConcentration[c], fitPredictors[c], '2023/10/19 f MLA/2015/00088/6 : CHART 7');
+                beta = retData['beta'];
+                R_squared = retData['R_squared'];
+                instanceNo += 1;
+//console.log(c,scatterData[c], chemicalData[c]);
+//                displayScatterChart(scatterData[c], chemicalData[c], sheetName, instanceNo, c + ' : ' R_squared, 'Total Area ', 'Concentration',largeInstanceNo);
+                displayScatterChart(scatterData[c], chemicalData[c], sheetName, instanceNo, `${c} : ${R_squared.toFixed(4)}`, 'Total Area ', 'Concentration',largeInstanceNo);
+                i += 1;
+//console.log(c, beta, R_squared);
+            }
+        }
+
+
+        if (subsToDisplay['positionplace']) {
+            retData = dataForTotalHCScatterCharting(sheetName);
+            unitTitle = retData['unitTitle'];
+            //console.log('unitTitle displayCharts ',unitTitle);
+            scatterData = retData['scatterData'];
+            chemicalData = retData['chemicalData'];
             const allChemicals = Object.keys(chemicalData);
 
 //console.log(chemicalData);
@@ -217,10 +286,14 @@ console.log('selectedMeas ', selectedMeas);
             for (const c in chemicalData) {
                 instanceNo += 1;
 //console.log(c,scatterData[c], chemicalData[c]);
-                displayScatterChart(scatterData[c], chemicalData[c], sheetName, instanceNo, c, 'Total Area', 'Concentration',largeInstanceNo);
+                displayScatterChart(scatterData[c], chemicalData[c], sheetName, instanceNo, c, 'Total Hydrocarbon', 'Concentration',largeInstanceNo);
                 i += 1;
             }
         }
+
+
+
+
 
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
@@ -247,7 +320,7 @@ console.log('selectedMeas ', selectedMeas);
         if (sheetName === 'PAH data' && subsToDisplay['gorhamtest']) {
             instanceNo += 1;
             selectedSums = sumsForGorhamCharting();
-//console.log(selectedSums);
+console.log(selectedSums);
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
 //            retData = null;
         }
@@ -719,11 +792,13 @@ function dataForPSDCharting(sheetName) {
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let measChart = {};
     let measChartArea = {};
+    let measChartRelativeArea = {};
     let ptsSizes = null;
     let ptsAreas = null;
     let ptsVolumes = null;
     let splitWeights = {};
     let splitAreas = {};
+    let splitRelativeAreas = {};
     let cumWeights = {};
     let cumAreas = {};
     datesSampled.sort();
@@ -738,8 +813,10 @@ function dataForPSDCharting(sheetName) {
                 measChart[ds + ': ' + s] =  currentPsd;
 //                measChart[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].psd;
                 measChartArea[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].psdAreas;
+                measChartRelativeArea[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].psdRelativeAreas;
                 splitWeights[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].splitWeights;
                 splitAreas[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].splitAreas;
+                splitRelativeAreas[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].splitRelativeAreas;
                 cumWeights[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].cumWeights;
                 cumAreas[ds + ': ' + s] =  selectedSampleMeasurements[ds][ct].samples[s].cumAreas;
 //console.log(sizes.length);
@@ -762,7 +839,7 @@ function dataForPSDCharting(sheetName) {
         }
     });
 //console.log('dataforPSD ', unitTitle,ptsSizes,ptsAreas,ptsVolumes,measChart,measChartArea);
-    return {unitTitle, ptsSizes, measChart, measChartArea, splitWeights, splitAreas, cumWeights, cumAreas}
+    return {unitTitle, ptsSizes, measChart, measChartArea, measChartRelativeArea, splitWeights, splitAreas, splitRelativeAreas, cumWeights, cumAreas}
 }
 
 function dataForScatterCharting(sheetName) {
@@ -811,6 +888,48 @@ function dataForTotalAreaScatterCharting(sheetName) {
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let scatterData = {};
     let chemicalData = {};
+    let fitConcentration = {};
+    let fitPredictors = {};
+    datesSampled.forEach(ds => {
+        if (ct in selectedSampleMeasurements[ds]) {
+            /*        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
+            (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals)))) {*/
+            let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
+            for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
+                i = 0;
+                scatterData[c] = [];
+                if (chemicalData[c] == undefined || chemicalData[c] == null) {
+                    chemicalData[c] = {};
+                }
+                if (fitConcentration[c] == undefined || chemicalData[c] == null) {
+                    fitConcentration[c] = {};
+                    fitPredictors[c] = {};
+                }
+                currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
+                for (const s in selectedSampleMeasurements[ds][ct].chemicals[c].samples) {
+                    scatterData[c][i] = ({
+                        x: sampleMeasurements[ds]['Physical Data'].samples[s].totalArea,
+                        y: currentChemical.samples[s]
+                    });
+                    chemicalData[c][ds + ' : ' + s] = currentChemical.samples[s];
+                    i += 1;
+                    fitConcentration[c][ds + ' : ' + s] = currentChemical.samples[s];
+                    fitPredictors[c][ds + ' : ' + s] = [sampleMeasurements[ds]['Physical Data'].samples[s].totalArea, sampleMeasurements[ds]['PAH data'].totalHC[s]];
+                }
+            }
+        }
+    });
+console.log('data ',sheetName,scatterData,chemicalData);
+    return {unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors}
+}
+
+function dataForTotalHCScatterCharting(sheetName) {
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let ct = sheetName;
+    //			unitTitle = selected[datesSampled[0]][ct]['Unit of measurement'];
+    let unitTitle = blankSheets[ct]['Unit of measurement'];
+    let scatterData = {};
+    let chemicalData = {};
     datesSampled.forEach(ds => {
         if (ct in selectedSampleMeasurements[ds]) {
             /*        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
@@ -825,7 +944,7 @@ function dataForTotalAreaScatterCharting(sheetName) {
                 currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
                 for (const s in selectedSampleMeasurements[ds][ct].chemicals[c].samples) {
                     scatterData[c][i] = ({
-                        x: sampleMeasurements[ds]['Physical Data'].samples[s].totalArea,
+                        x: sampleMeasurements[ds]['PAH data'].totalHC[s],
                         y: currentChemical.samples[s]
                     });
                     chemicalData[c][ds + ' : ' + s] = currentChemical.samples[s];
@@ -834,7 +953,7 @@ function dataForTotalAreaScatterCharting(sheetName) {
             }
         }
     });
-console.log('data ',sheetName,scatterData,chemicalData);
+//console.log('data ',sheetName,scatterData,chemicalData);
     return {unitTitle, scatterData, chemicalData}
 }
 
@@ -918,17 +1037,19 @@ console.log(meas, sheetName, instanceNo, unitTitle);
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
+    createExportButton(chartInstance[instanceNo], instanceNo);
 //    console.log(ddatasets);
 }
 
 function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo) {
-//console.log(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
+console.log(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
+    lastScatterInstanceNo = instanceNo;
     legends[instanceNo] = false;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
-    instanceType[instanceNo] = 'Scatter';
+    instanceType[instanceNo] = 'Scatter ' + unitTitle;
     instanceSheet[instanceNo] = sheetName;
     const color1 = '#00ff00'; // Start of gradient (red)
     const color2 = '#ff0000'; // End of gradient (green)
@@ -1123,6 +1244,7 @@ console.log(sizes, meas, sheetName, instanceNo, unitTitle, subTitle);
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
+    createExportButton(chartInstance[instanceNo], instanceNo);
 
     Chart.register({
         id: 'selectSample',
@@ -1376,6 +1498,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
+    createExportButton(chartInstance[instanceNo], instanceNo);
     function clickableScales(chart, canvas, click) {
         //console.log(chart);
         const height = chart.scales.x.height;
