@@ -279,37 +279,96 @@ console.log('getting positions',chemicalType,chemical);
     return selectedSamps;
 }
 
-function openDatasetSelection(sampleMeasurements) {
+function openDatasetSelection(selectedSampleMeasurements) {
     const sampleModal = document.getElementById('datasetModal');
     sampleModal.style.display = 'block';
 
 }
 
+
+function yourapplyDatasetFilter() {
+    const sampleModal = document.getElementById('datasetModal');
+    sampleModal.style.display = 'none';
+
+    let sheetsToSelect = {}; // Use an object
+    for (let i = 0; i < dataSheetNames.length; i++) {
+        let sheetName = dataSheetNames[i]; // Declare sheetName with let
+        sheetsToSelect[sheetName] = document.getElementById(dataSheetNamesCheckboxes[i] + 'set').checked;
+    }
+
+    console.log(sheetsToSelect);
+    console.log(Object.keys(sheetsToSelect));
+
+    let datasetsToKeep = {}; // Use an object
+    for (let dateSelected in selectedSampleInfo) {
+        datasetsToKeep[dateSelected] = true;
+
+        for (let sheetName in sheetsToSelect) {
+            if (sheetsToSelect[sheetName]) {
+                console.log(sheetName);
+
+                if (!(sheetName in selectedSampleMeasurements[dateSelected])) {
+                    datasetsToKeep[dateSelected] = false;
+                    console.log(dateSelected, ' has no ', sheetName);
+                    break;
+                }
+            }
+        }
+        console.log(dateSelected, ' has ', sheetName);
+    }
+
+    console.log(datasetsToKeep);
+
+    selectedSampleInfo = {};
+    selectedSampleMeasurements = {};
+
+    for (let dateSelected in datasetsToKeep) {
+        if (datasetsToKeep[dateSelected]) {
+            selectedSampleInfo[dateSelected] = sampleInfo[dateSelected];
+            selectedSampleMeasurements[dateSelected] = sampleMeasurements[dateSelected];
+        }
+    }
+    
+    updateChart();
+}
+
+
+
+
+
+
 function applyDatasetFilter() {
     const sampleModal = document.getElementById('datasetModal');
     sampleModal.style.display = 'none';
-    sheetsToSelect = [];
-    for (i = 0; i < dataSheetNames.length; i++) {
-        sheetName = dataSheetNames[i];
+    let sheetsToSelect = {};
+    for (let i = 0; i < dataSheetNames.length; i++) {
+        //sheetName = dataSheetNames[i];
         sheetsToSelect[dataSheetNames[i]] = document.getElementById(dataSheetNamesCheckboxes[i]+'set').checked ? true : false; // Check the checkbox state
     }
-    datasetsToKeep = [];
-    for (const dateSelected in sampleInfo) {
+console.log(sheetsToSelect);
+console.log(Object.keys(sheetsToSelect));
+    let datasetsToKeep = {};
+    for (let dateSelected in selectedSampleInfo) {
         datasetsToKeep[dateSelected] = true;
-        for (sheetName in sheetsToSelect) {
+        for (let sheetName in sheetsToSelect) {
+//console.log(sheetName);
             if (sheetsToSelect[sheetName]) {
-                if (!(sheetName in sampleMeasurements[dateSelected])) {
+console.log(sheetName);
+                if (!(sheetName in selectedSampleMeasurements[dateSelected])) {
                     datasetsToKeep[dateSelected] = false;
+console.log(dateSelected,' has no ',sheetName);
                     break;
                 }
-                keepInfo = sampleInfo[dateSelected];
-                keepSample = sampleMeasurements[dateSelected]
+//                keepInfo = sampleInfo[dateSelected];
+//                keepSample = sampleMeasurements[dateSelected]
             }
         }
+        console.log(dateSelected,' has ',sheetName);
     }
+console.log(datasetsToKeep);
     selectedSampleInfo = {};
     selectedSampleMeasurements = {};
-    for (dateSelected in datasetsToKeep) {
+    for (let dateSelected in datasetsToKeep) {
         if (datasetsToKeep[dateSelected]) {
             selectedSampleInfo[dateSelected] = sampleInfo[dateSelected];
             selectedSampleMeasurements[dateSelected] = sampleMeasurements[dateSelected];

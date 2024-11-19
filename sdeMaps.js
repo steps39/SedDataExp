@@ -1,17 +1,11 @@
+//import { kml } from "https://unpkg.com/@tmcw/togeojson?module";
+
 function sampleMap(meas) {
     // Check if there's an existing map and remove it
     if (map) {
         map.remove();
     }
     // SampleInfo data structure
-    // Initialize the map
-    map = L.map('map').setView([54.596, -1.177], 13); // Set the initial center and zoom level
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
     latSum = 0;
     lonSum = 0;
     noLocations = 0;
@@ -20,6 +14,8 @@ function sampleMap(meas) {
     minLon = null;
     maxLon = null;
     let hoveredSample = null;
+    markers = [];
+    marker = null;
 
     var greenIcon = L.icon({
         iconUrl: markerPath + 'blue-marker-icon.png', // Replace with the path to your marker icon
@@ -46,20 +42,64 @@ function sampleMap(meas) {
     sampleNo = -1;
     const highlightIcon = new CustomIcon({ iconUrl: markerPath + 'marker-icon-highlight.png' });
     const datesSampled = Object.keys(selectedSampleInfo);
+
+
+    noSamples = 0;
+    allSamples = [];
+    icons = [];
+    iconNos = [];
+    markers = {};
     datesSampled.sort();
+    datesSampled.forEach(dateSampled => {
+        markers[dateSampled] = {};
+        iconNos[dateSampled] = iconNo;
+        currentIcon = new CustomIcon({ iconUrl: markerPath + markerPngs[iconNo] });
+console.log(iconNo,currentIcon);
+        iconNo = (iconNo + 1) % 9;
+        icons.push(currentIcon);
+//        noSamples = 0;
+//        for (const dateSampled in selectedSampleInfo) {
+        noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
+//        }
+        //console.log('noSamples', noSamples);
+        //        for (const sample in selectedSampleInfo[dateSampled].position) {
+        dsSamples = (Object.keys(selectedSampleInfo[dateSampled].position));
+        dsSamples.forEach(sample => {
+            allSamples.push(dateSampled + ": " + sample);
+        })
+    });
+    allSamples.sort();
+    if (!(xAxisSort === 'normal')) {
+        allSamples.sortComplexSamples();
+    }
+    highlighted = Array(noSamples).fill(false);
+console.log(iconNos,icons);
+console.log(allSamples);
+
+    allSamples.forEach(fullSample => {
+        part = fullSample.split(": ");
+        dateSampled = part[0];
+        sample = part[1];
+        iconNo = iconNos[dateSampled];
+        currentIcon = icons[iconNo];
+console.log(dateSampled,sample,iconNo,currentIcon);
+        
+
+
+/*    datesSampled.sort();
     datesSampled.forEach(dateSampled => {
         currentIcon = new CustomIcon({ iconUrl: markerPath + markerPngs[iconNo] });
         iconNo = (iconNo + 1) % 9;
         noSamples = 0;
-        for (const dateSampled in selectedSampleInfo) {
+//        for (const dateSampled in selectedSampleInfo) {
             noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
-        }
+//        }
         //console.log('noSamples', noSamples);
         highlighted = Array(noSamples).fill(false);
         //        for (const sample in selectedSampleInfo[dateSampled].position) {
         const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
         allSamples.sort();
-        allSamples.forEach(sample => {
+        allSamples.forEach(sample => {*/
             if (selectedSampleInfo[dateSampled].position[sample]['Position latitude']) {
                 lat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
                 lon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
@@ -88,53 +128,67 @@ function sampleMap(meas) {
                     // Create a marker for each sample
                     //						const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
                     const popupStatic = '<p style="height:200px; width:200px">static content</p>';
-//                    let popup = marker.getPopup();
+                    //                    let popup = marker.getPopup();
                     let chart_div = document.getElementById("c_radar_" + dateSampled + ": " + sample);
-//  just bodge to allow display of position                  const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
-//                    popup.setContent(chart_div);
-//const marker = L.marker([lat, lon], { icon: currentIcon }, {title: `${dateSampled}: ${sample}`}, {riseOnHover: true} ).
-const marker = L.marker([lat, lon], { icon: currentIcon }).
-addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`).bindTooltip(`${dateSampled}: ${sample}`);
-//                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map);
-//const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}<br>${popupStatic}`);
-/*						const marker = L.circleMarker([lat, lon],
-                                        {radius: 4, color: 'white', fillColor: 'red', fillOpacity: 1}
-                                        ).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                                        marker.bindTooltip(sample, { permanent: false, direction: 'top' });*/
-                        marker.isMarked = false;
-                    //console.log(sampleNo, dateSampled, sample);
+                    //  just bodge to allow display of position                  const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
+                    //                    popup.setContent(chart_div);
+                    //const marker = L.marker([lat, lon], { icon: currentIcon }, {title: `${dateSampled}: ${sample}`}, {riseOnHover: true} ).
+                    /*const marker = L.marker([lat, lon], { icon: currentIcon }).
+                    addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`).bindTooltip(`${dateSampled}: ${sample}`);*/
+                    var markerPopup = L.popup({
+                        closeOnClick: false,
+                        autoClose: false
+                        }).setContent(`${dateSampled}: ${sample}`);
+/*                    const marker = L.marker([lat, lon], { icon: currentIcon }).
+                        addTo(map).bindPopup(markerPopup).bindTooltip(`${dateSampled}: ${sample}`);*/
+                    marker = L.marker([lat, lon], { icon: currentIcon }).
+                        bindPopup(markerPopup).bindTooltip(`${dateSampled}: ${sample}`);
+                    //                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map);
+                    //const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}<br>${popupStatic,autoClose:false}`);
+                    /*						const marker = L.circleMarker([lat, lon],
+                                                            {radius: 4, color: 'white', fillColor: 'red', fillOpacity: 1}
+                                                            ).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+                                                            marker.bindTooltip(sample, { permanent: false, direction: 'top' });*/
+                    marker.isMarked = false;
+//console.log(sampleNo, dateSampled, sample);
 
                     // Add a click event listener to the static marker
-                    marker.on('click', function () {
+                    marker.on('click', function (e) {
                         //                        hoveredSample = sample;
+//console.log('alert',e.latlng);
 
-
-                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
-                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+/*                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
+                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];*/
+                        const centreLat = e.latlng.lat;
+                        const centreLon = e.latlng.lng;
+//console.log(centreLat,centreLon);
                         for (const ds in selectedSampleInfo) {
                             for (const s in selectedSampleInfo[ds].position) {
                                 const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
                                 const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
                                 distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-                                //console.log('distance1',distance);
+//console.log('distance1',distance);
                                 if (distance <= 10) {
                                     hoveredSample = ds + ': ' + s;
-console.log(meas);
-console.log(ds);
-console.log(hoveredSample);
+//console.log(meas);
+//console.log(ds);
+//console.log(hoveredSample);
                                     createHighlights(meas, ds, hoveredSample);
-console.log(popupInstance);
-                                    if(hoveredSample in popupInstance) {
+//console.log(popupInstance);
+                                    if (hoveredSample in popupInstance) {
                                         popupInstance[hoveredSample].update();
                                     }
                                     let popup = marker.getPopup();
                                     let chart_div = document.getElementById("c_radar_" + hoveredSample);
-                                    chart_div.style.height = '300px';
-                                    chart_div.style.width = '250px';
-/*                                    popup.options.closeOnClick = false;
-                                    popup.options.autoClose = false;*/
-                                    popup.setContent(chart_div);
-console.log(popup);
+                                    if (!(chart_div === null || chart_div ==undefined)) {
+//console.log(chart_div);
+                                        chart_div.style.height = '300px';
+                                        chart_div.style.width = '250px';
+                                        /*                                    popup.options.closeOnClick = false;
+                                                                            popup.options.autoClose = false;*/
+                                        popup.setContent(chart_div);
+                                    }
+//console.log(popup);
                                 }
                             }
                         }
@@ -151,34 +205,37 @@ console.log(popup);
                     // Create a highlight for each sample
                     //console.log(sampleNo,lat,lon);
                     highlightMarkers[sampleNo] = new L.marker(new L.LatLng(lat, lon), { icon: highlightIcon });
-//                    addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-highlightMarkers[sampleNo].bindTooltip(`${dateSampled}: ${sample}`);
-
+                    //                    addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
+                    highlightMarkers[sampleNo].bindTooltip(`${dateSampled}: ${sample}`);
+//console.log(sampleNo);
 
                     // Add a click event listener to the highlight marker
-                    highlightMarkers[sampleNo].on('click', function () {
+                    highlightMarkers[sampleNo].on('click', function (e) {
+//console.log('alert',e.latlng);
                         // Mark not just the clicked position but any things which are in the same place
-                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
-                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
+/*                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
+                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];*/
+                        const centreLat = e.latlng.lat;
+                        const centreLon = e.latlng.lng;
                         for (const ds in selectedSampleInfo) {
                             for (const s in selectedSampleInfo[ds].position) {
                                 const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
                                 const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
                                 distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-                                //console.log('distance2',distance);
+//console.log('distance2',distance);
                                 if (distance <= 10) {
                                     hoveredSample = ds + ': ' + s;
-console.log(meas,ds,hoveredSample);
+                                    console.log(meas, ds, hoveredSample);
                                     createHighlights(meas, ds, hoveredSample);
-console.log(popupInstance);
-                                    if(hoveredSample in popupInstance) {
+                                    console.log(popupInstance);
+                                    if (hoveredSample in popupInstance) {
                                         popupInstance[hoveredSample].update();
                                     }
                                     popup = marker.getPopup();
                                     chart_div = document.getElementById("c_radar_" + hoveredSample);
-/*                                    chart_div.style.height = '200px';
-                                    chart_div.style.width = '400px';*/
-/*                                    popup.options.closeOnClick = false;
+                                    /*                                    chart_div.style.height = '200px';
+                                                                        chart_div.style.width = '400px';*/
+                                    /*popup.options.closeOnClick = false;
                                     popup.options.autoClose = false;*/
                                     popup.setContent(chart_div);
                                 }
@@ -194,9 +251,112 @@ console.log(popupInstance);
                 sampleNo += 1;
                 highlightMarkers[sampleNo] = null;
             }
+            markers[dateSampled][fullSample] = marker;
         });
-        //console.log(iconNo, dateSampled);
+//console.log(iconNo, dateSampled);
+//    });
+
+    var exteriorStyle = {
+        "color": "#ffffff",
+        "weight": 0,
+        "fillOpacity": .75
+    };
+
+
+    let markerLayers = {};
+    datesSampled.forEach(dateSampled => {
+        markerLayers[dateSampled] = [];
+        allSamples = Object.keys(markers[dateSampled]);
+        allSamples.forEach(sample => {
+            markerLayers[dateSampled].push(markers[dateSampled][sample]);
+        });
     });
+//console.log(markers);
+//console.log(datesSampled,markerLayers);
+/*    var mapLayers = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    });*/
+    
+    var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    });
+    
+    var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
+    
+    var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+    });    
+
+    var mapLayers = {
+        "OpenStreetMap": osm,
+        "OpenStreetMap.HOT": osmHOT,
+        "OpenTopoMap": openTopoMap
+    };
+
+    var map = L.map('map', {
+        center: [54.596, -1.177],
+        zoom: 13,
+        layers: [osm]
+    });
+    markerLayer = {};
+    datesSampled.forEach(dateSampled => {
+        markerLayer[dateSampled] = L.layerGroup(markerLayers[dateSampled]).addTo(map);
+    });
+//console.log(markerLayer,markerLayers);
+
+
+    var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml", {async: true});
+//    var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2020_00506/MLA_2020_00506-LOCATIONS.kml", {async: true});
+console.log(kmlLayer);
+/*    kmlLayer.on("loaded", function(e) { 
+       map.fitBounds(e.target.getBounds());
+    });*/
+
+//    kmlLayer.setOpacity(5);
+kmlLayer.on("loaded", function(e) {
+    map.fitBounds(e.target.getBounds());
+fred = kmlLayer;
+    
+    // Access nested layers and apply styles
+//    const mainLayer = kmlLayer._layers[126];
+    const mainLayer = Object.values(kmlLayer._layers)[0];
+    if (mainLayer && mainLayer._layers) {
+        Object.values(mainLayer._layers).forEach(function(layer) {
+            if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
+                layer.setStyle({
+                    color: "#FF0000",       // Set line color to red
+                    weight: 2,              // Set line thickness
+                    opacity: 0.5,           // Set line opacity
+                    fillColor: "#FF0000",   // Set fill color to red
+                    fillOpacity: 0.2        // Set fill opacity for polygons
+                });
+            }
+        });
+    }
+});
+console.log(markers,markerLayers);
+//    markerOverlay = {"Markers" : L.layerGroup(markerLayers)};
+//    var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
+    var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
+    datesSampled.forEach(dateSampled => {
+        shapeOverlay[dateSampled] = markerLayer[dateSampled];
+    });
+//console.log(shapeOverlay,mapLayers);
+
+
+    // Initialize the map
+/*    map = L.map('map').setView([54.596, -1.177], 13); // Set the initial center and zoom level
+
+    // Add OpenStreetMap tile layer
+    var mapLayers = {'Open Street Map' : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map)};*/
+
 
     if (noLocations > 0) {
         const centreLat = latSum / noLocations;
@@ -210,6 +370,18 @@ console.log(popupInstance);
         //			}
     }
 
+
+
+var layerControl = L.control.layers(mapLayers, shapeOverlay).addTo(map);
+
+/*    fetch("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml")
+      .then(function (response) {
+        return response.text();
+      })
+      .then(function (xml) {
+        geoJSONThing = kml(new DOMParser().parseFromString(xml, "text/xml"));
+        L.geoJSON(geoJSONThing).addTo(map);
+    });*/
 }
 
 function randomColor() {

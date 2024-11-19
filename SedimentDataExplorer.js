@@ -55,7 +55,8 @@
         subName = subChartNames[i];
         subsToDisplay[sheetName] = true;
     }
-    sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel'];
+    sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
+        'totalhc', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
     calcSheetNames = ['Physical Stats','PSA Charts','Metals calcs','PAH calcs','PCB calcs','BDE calcs','Organotin calcs','Organochlorine calcs'];
     let map; // Declare map as a global variable
     let fred;
@@ -285,7 +286,6 @@ for (i = 1; i < dataSheetNames.length; i++) {
                         }
                     }
                 }
-
                 updateChart();
             };
             reader.readAsText(file);
@@ -514,10 +514,12 @@ console.log('importChemInfo');
         const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
         for (let r = 1; r < df.length; r++) {
             const sample = df[r][0];
-            namedLocations[sample] = {};
-            namedLocations[sample].latitude = df[r][1];
-            namedLocations[sample].longitude = df[r][2];
-console.log(sample,namedLocations[sample]);
+//console.log('|',sample,'|',sample.trim(),'|');
+            cleanSample = sample.replace(/\s+/g, '').toLowerCase();
+            namedLocations[cleanSample] = {};
+            namedLocations[cleanSample].latitude = df[r][1];
+            namedLocations[cleanSample].longitude = df[r][2];
+//console.log(sample,namedLocations[sample]);
         }
 console.log('End of processExcelLocations');
     }
@@ -536,7 +538,7 @@ console.log('End of processExcelLocations');
                 for (let i = 0; i < sels.length; i++) {
 console.log(i);
 console.log(sels[i]);
-                    const checkbox = document.getElementById(sels[i]);
+                    const checkbox = document.getElementById(sels[i].toLowerCase());
                     checkbox.checked = true;
                 }
             }
@@ -956,17 +958,22 @@ function processExcelData(data, url) {
         if (!totalSum > 0 && !(sheetName === 'Physical Data')) {
             return 'No data for ' + sheetName;
         }
+        if (sheetName === 'Physical Data' && Object.keys(meas.samples).length === 0) {
+            return 'No data for ' + sheetName;
+        }
         //console.log(dateSampled, sheetName, 'meas ', meas);
-        sampleMeasurements[dateSampled][sheetName] = meas;
-        const sums = {};
-        //console.log(meas);
-        //for (const sheetName in meas) {
-        if (sheetName === 'PAH data') {
-            pahPostProcess(meas, dateSampled);
-        }
-        if (sheetName === 'PCB data') {
-            pcbPostProcess(meas, dateSampled);
-        }
+//        if (!(meas.samples === undefined || meas.samples === null)) {
+            sampleMeasurements[dateSampled][sheetName] = meas;
+            const sums = {};
+            //console.log(meas);
+            //for (const sheetName in meas) {
+            if (sheetName === 'PAH data') {
+                pahPostProcess(meas, dateSampled);
+            }
+            if (sheetName === 'PCB data') {
+                pcbPostProcess(meas, dateSampled);
+            }
+//        }
         //}
         return dateAnalysed;
     }
@@ -1086,11 +1093,16 @@ function processExcelData(data, url) {
                             //console.log(point);
                             if (point === null || point === undefined) {
                                 // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
-                                if (namedLocations[sample] !== null && namedLocations[sample] !== undefined) {
+                                cleanSample = sample.replace(/\s+/g, '').toLowerCase();
+console.log(sample,cleanSample);
+                                if (cleanSample in namedLocations) {
+//                                if (namedLocations[cleanSample] !== null && namedLocations[cleanSample] !== undefined) {
+console.log('found');
                                     point = {};
-                                    point['latitude'] = namedLocations[sample].latitude;
-                                    point['longitude'] = namedLocations[sample].longitude;
+                                    point['latitude'] = namedLocations[cleanSample].latitude;
+                                    point['longitude'] = namedLocations[cleanSample].longitude;
                                 } else {
+console.log('not found');
                                     //console.log('lat and long undefined does not match', sample);
                                     point = {};
                                     point['latitude'] = undefined;
@@ -1136,9 +1148,11 @@ function processExcelData(data, url) {
         newDateSampled = dateSampled;
 //console.log(dateSampled,dateAnalysed);
         if (dateSampled.includes('Missing')) {
-            newDateSampled = dateAnalysed + 'ADMSD';
+            // Date sampled is missing so include an M for missing and the analysis date
+            newDateSampled = dateAnalysed + 'M';
         } else if (dateSampled > dateAnalysed) {
-            newDateSampled = dateAnalysed + 'ADBSD';
+            // Date sampled is later than date analysed so include an L for late and the analysis date
+            newDateSampled = dateAnalysed + 'L';
         }
         //Add in application number
 //console.log(dateSampled,sampleInfo[dateSampled]);
@@ -1160,6 +1174,8 @@ function processExcelData(data, url) {
 }
             newDateSampled = newDateSampled + ' f ' + sampleInfo[dateSampled]['Application number'];
             sampleInfo[newDateSampled] = sampleInfo[dateSampled];
+            sampleInfo[newDateSampled]['Date Sampled'] = newDateSampled;
+            sampleInfo[newDateSampled].label = newDateSampled;
             delete sampleInfo[dateSampled];
             sampleMeasurements[newDateSampled] = sampleMeasurements[dateSampled];
             delete sampleMeasurements[dateSampled];
@@ -1442,8 +1458,10 @@ function removeButton(chartInstanceNo, buttonType) {
 function chemicalTypeHasData(sheetName) {
     chemicalTypeData = false;
     for (const ds in selectedSampleMeasurements) {
+console.log(ds);
+console.log(ds, sheetName);
         const chemicalTypes = Object.keys(selectedSampleMeasurements[ds]);
-        //console.log(ds, sheetName, chemicalTypes);
+console.log(ds, sheetName, chemicalTypes);
         if (chemicalTypes.includes(sheetName)) {
             chemicalTypeData = true;
             return chemicalTypeData;

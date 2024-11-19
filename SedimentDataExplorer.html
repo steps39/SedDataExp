@@ -15,7 +15,7 @@
 
 <body>
     <div id="everything" style="display: none;">
-        <h1>Sediment Data Explorer - v0.20241102</h1>
+        <h1>Sediment Data Explorer - v0.20241118</h1>
         MMO Templates -
         <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
         <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
@@ -209,6 +209,11 @@
             <input type="radio" name="sorting" id="longitude" value="longitude"> Longitude
             <input type="radio" name="sorting" id="latitude" value="latitude"> Latitude
             <input type="radio" name="sorting" id="totalarea" value="totalarea"> Total surface area of particles
+            <input type="radio" name="sorting" id="lmw" value="lmw"> LMW PAHs Gorham-Test sum
+            <input type="radio" name="sorting" id="hww" value="hmw"> HMW PAHs Gorham-Test sum
+            <input type="radio" name="sorting" id="totalhc" value="totalhc"> Total hydrocarbon
+            <input type="radio" name="sorting" id="ices7" value="ices7"> ICES7 PCBs sum
+            <input type="radio" name="sorting" id="allpcbs" value="allpcbs"> All PCBs sum
             <input type="radio" name="sorting" id="silt" value="silt"> Weight fraction silt and clay
             <input type="radio" name="sorting" id="siltsand" value="siltsand"> Weight fraction of silt, clay and fine sand
             <input type="radio" name="sorting" id="sand" value="sand"> Weight fraction of sand
@@ -217,6 +222,11 @@
             <input type="radio" name="sorting" id="datalongitude" value="datelongitude"> Date of sampling then longitude
             <input type="radio" name="sorting" id="datelatitude" value="datelatitude"> Date of sampling then latitude
             <input type="radio" name="sorting" id="datetotalarea" value="datetotalarea"> Date of sampling then total area
+            <input type="radio" name="sorting" id="datetotalhc" value="datetotalhc"> Date of sampling then total hydrocarbon
+            <input type="radio" name="sorting" id="datelmw" value="datelmw"> Date of sampling then LMW Gorham-Test sum
+            <input type="radio" name="sorting" id="datehmw" value="datehmw"> Date of sampling then HMW Gorham-Test sum
+            <input type="radio" name="sorting" id="dateices7" value="dateices7"> Date of sampling then ICES7 PCBs sum
+            <input type="radio" name="sorting" id="dateices7" value="dateallpcbs"> Date of sampling then All PCBs sum
         </div>
 
         <div>
@@ -268,6 +278,7 @@
     <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+    <script src="https://harrywood.co.uk/maps/examples/leaflet/leaflet-plugins/layer/vector/KML.js"></script>
     <script src="os-transform.js"></script>
     <script src="sdeDataUtilities.js"></script>
     <script src="sdeDredgeData.js"></script>
