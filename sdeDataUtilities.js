@@ -63,7 +63,7 @@ Array.prototype.sortComplexSamples = function() {
         }
 
         // Sorting by totalHC
-        if (xAxisSort === 'totalhc') {
+        if (xAxisSort === 'totalhcsort') {
             const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].totalHC[partsA[1]];
             const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].totalHC[partsB[1]];
             return valueA - valueB;
@@ -560,3 +560,17 @@ console.log(concentration, predictors);
     return { beta, R_squared };
 }
 
+// IDs of radio buttons to disable
+function disableRadioButtons(radioButtonsToChange,state)  {
+console.log(radioButtonsToChange);
+    // Disable each radio button
+    radioButtonsToChange.forEach(id => {
+        console.log(id);
+        document.getElementById(id).disabled = state;
+        if (state) {
+            document.querySelector("label[for='"+id+"']").style.color = "lightgrey";
+        } else {
+            document.querySelector("label[for='"+id+"']").style.color = "black";
+        }
+    });
+}

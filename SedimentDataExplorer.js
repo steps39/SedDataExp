@@ -41,22 +41,35 @@
     dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT',
         'Organochlorine data': 'OC'};
     dataSheetNamesCheckboxes = [];
+    let sortButtonGroups = {};
     for (let i = 0; i < dataSheetNames.length; i++) {
         dataSheetNamesCheckboxes[i] = dataSheetNames[i].replace(/\s/g, '').toLowerCase();
-      }
+        sortButtonGroups[dataSheetNames[i]] = [];
+    }
     sheetsToDisplay = {};
     for (i = 0; i < dataSheetNames.length; i++) {
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
     }
-    subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest']
+    subChartNames = ['samplegroup','chemicalgroup','positionplace','areadensity','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
         subsToDisplay[sheetName] = true;
     }
     sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
-        'totalhc', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
+        'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
+    sortButtonGroups['area'] = [...sortingOptions.filter(option => option.includes('area')), ...subChartNames.filter(option => option.includes('area'))];
+    sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7')),
+                ...subChartNames.filter(option => option.includes('congener'))];
+    sortButtonGroups['PAH data'] = [...sortingOptions.filter(option => option.includes('hc') || option.includes('mw') || option.includes('pah')),
+                ...subChartNames.filter(option => option.includes('pah') || option.includes('hc') || option.includes('gorham') || option.includes('ratios')
+                 || option.includes('ring') || option.includes('totalhc'))];
+    sortButtonGroups['Physical Data'] = [...sortingOptions.filter(option => option.includes('silt') || option.includes('sand') || option.includes('area') || option.includes('gravel')),
+                ...subChartNames.filter(option => option.includes('area'))];
+    for (group in sortButtonGroups) {
+        disableRadioButtons(sortButtonGroups[group], true);
+    }
     calcSheetNames = ['Physical Stats','PSA Charts','Metals calcs','PAH calcs','PCB calcs','BDE calcs','Organotin calcs','Organochlorine calcs'];
     let map; // Declare map as a global variable
     let fred;
@@ -932,6 +945,7 @@ function processExcelData(data, url) {
                                 }
                             }
                         }
+                        totalOfTotalArea = 0;
                         for (sample in meas.samples) {
                             currentPsd = meas.samples[sample].psd;
                             retData = psdPostProcess(currentPsd,meas.sizes);
@@ -943,6 +957,8 @@ function processExcelData(data, url) {
                             meas.samples[sample].cumWeights = retData['cumWeights'];
                             meas.samples[sample].cumAreas = retData['cumAreas'];
                             meas.samples[sample].totalArea = retData['totalArea'];
+//                            totalOfTotalArea += retData['totalArea'];
+                            totalSum += retData['totalArea'];
                         }
                     }
                     break;
@@ -955,12 +971,21 @@ function processExcelData(data, url) {
         meas['Date analysed'] = dateAnalysed;
         meas['Unit of measurement'] = measurementUnit;
         meas['Laboratory/contractor'] = contractor;
-        if (!totalSum > 0 && !(sheetName === 'Physical Data')) {
-            return 'No data for ' + sheetName;
-        }
-        if (sheetName === 'Physical Data' && Object.keys(meas.samples).length === 0) {
-            return 'No data for ' + sheetName;
-        }
+//        if (!(sheetName === 'Physical Data')) {
+            if (!totalSum > 0) {
+                return 'No data for ' + sheetName;
+            } else {
+                disableRadioButtons(sortButtonGroups[sheetName], false);
+            }
+/*        }
+//        if (sheetName === 'Physical Data' && Object.keys(meas.samples).length === 0) {
+        if (sheetName === 'Physical Data') {
+            if (totalOfTotalArea === 0) {
+                return 'No data for ' + sheetName;
+            } else {
+                disableRadioButtons(sortButtonGroups[sheetName], false);
+            }
+        }*/
         //console.log(dateSampled, sheetName, 'meas ', meas);
 //        if (!(meas.samples === undefined || meas.samples === null)) {
             sampleMeasurements[dateSampled][sheetName] = meas;
