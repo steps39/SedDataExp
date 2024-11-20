@@ -108,41 +108,47 @@ console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
 console.log('selectedMeas ', selectedMeas);
         selectedMeasArea = {};
+        totalAreasAvailable = true;
+        if (sheetsToDisplay['Physical Data']) {
+            for (chemical in selectedMeas) {
+                selectedMeasArea[chemical] = {};
+                for (sample in selectedMeas[chemical]) {
+                    let parts = sample.split(": ");
+                    //console.log(parts);
+/*                    if (selectedSampleMeasurements?.['2023/04/11 f NAN']?.['Physical Data']?.samples?.['S13 (0-14cm)']?.totalArea !== undefined) {
+                        console.log('totalArea exists:', selectedSampleMeasurements['2023/04/11 f NAN']['Physical Data'].samples['S13 (0-14cm)'].totalArea);
+                    } else {
+                        console.log('totalArea does not exist.');
+                    }
+*/
+                    if (selectedSampleMeasurements?.[parts[0]]?.['Physical Data']?.samples[parts[1]]?.totalArea !== undefined) {
+                        if (selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea > 0) {
+                            totalArea = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea;
+                            selectedMeasArea[chemical][sample] = selectedMeas[chemical][sample] / totalArea;
+                        } else {
+                            totalAreasAvailable = false;
+                            break;
+                        }
+                    } else {
+                        totalAreasAvailable = false;
+                        break;
+                    }
+                }
+            }
+        }
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
-            if (sheetsToDisplay['Physical Data']) {
-                for (chemical in selectedMeas) {
-                    selectedMeasArea[chemical] = {};
-                    for (sample in selectedMeas[chemical]) {
-                        let parts = sample.split(": ");
-                        //console.log(parts);
-                        totalArea = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea;
-                        selectedMeasArea[chemical][sample] = selectedMeas[chemical][sample] / totalArea;
-                    }
-                }
+            if (totalAreasAvailable) {
                 instanceNo += 1;
-                //console.log(selectedMeasArea);
-                            displaySampleChart(selectedMeasArea, sheetName, instanceNo, unitTitle + ' / Area');
+                displaySampleChart(selectedMeasArea, sheetName, instanceNo, unitTitle + ' / Area');
             }
         }
         if (subsToDisplay['chemicalgroup']) {
             instanceNo += 1;
             displayChemicalChart(selectedMeas, sheetName, instanceNo, unitTitle);
-            instanceNo += 1;
-//console.log(selectedMeasArea);
-            if (sheetsToDisplay['Physical Data']) {
-                if (selectedMeasArea === undefined || selectedMeasArea === null) {
-                    for (chemical in selectedMeas) {
-                        selectedMeasArea[chemical] = {};
-                        for (sample in selectedMeas[chemical]) {
-                            let parts = sample.split(": ");
-                            //console.log(parts);
-                            totalArea = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea;
-                            selectedMeasArea[chemical][sample] = selectedMeas[chemical][sample] / totalArea;
-                        }
-                    }
-                }
+            if (totalAreasAvailable) {
+                instanceNo += 1;
                 displayChemicalChart(selectedMeasArea, sheetName, instanceNo, unitTitle + ' / Area', false);
             }
         }

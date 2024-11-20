@@ -5,6 +5,34 @@ function sampleMap(meas) {
     if (map) {
         map.remove();
     }
+
+    var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    });
+    
+    var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
+    
+    var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+    });    
+
+    var mapLayers = {
+        "OpenStreetMap": osm,
+        "OpenStreetMap.HOT": osmHOT,
+        "OpenTopoMap": openTopoMap
+    };
+
+    map = L.map('map', {
+        center: [54.596, -1.177],
+        zoom: 13,
+        layers: [osm]
+    });
+
+
     // SampleInfo data structure
     latSum = 0;
     lonSum = 0;
@@ -54,7 +82,7 @@ function sampleMap(meas) {
         markers[dateSampled] = {};
         iconNos[dateSampled] = iconNo;
         currentIcon = new CustomIcon({ iconUrl: markerPath + markerPngs[iconNo] });
-console.log(iconNo,currentIcon);
+//console.log(iconNo,currentIcon);
         iconNo = (iconNo + 1) % 9;
         icons.push(currentIcon);
 //        noSamples = 0;
@@ -73,8 +101,8 @@ console.log(iconNo,currentIcon);
         allSamples.sortComplexSamples();
     }
     highlighted = Array(noSamples).fill(false);
-console.log(iconNos,icons);
-console.log(allSamples);
+//console.log(iconNos,icons);
+//console.log(allSamples);
 
     allSamples.forEach(fullSample => {
         part = fullSample.split(": ");
@@ -82,7 +110,7 @@ console.log(allSamples);
         sample = part[1];
         iconNo = iconNos[dateSampled];
         currentIcon = icons[iconNo];
-console.log(dateSampled,sample,iconNo,currentIcon);
+//console.log(dateSampled,sample,iconNo,currentIcon);
         
 
 
@@ -278,31 +306,6 @@ console.log(dateSampled,sample,iconNo,currentIcon);
         attribution: '© OpenStreetMap'
     });*/
     
-    var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-    });
-    
-    var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
-    
-    var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
-    });    
-
-    var mapLayers = {
-        "OpenStreetMap": osm,
-        "OpenStreetMap.HOT": osmHOT,
-        "OpenTopoMap": openTopoMap
-    };
-
-    var map = L.map('map', {
-        center: [54.596, -1.177],
-        zoom: 13,
-        layers: [osm]
-    });
     markerLayer = {};
     datesSampled.forEach(dateSampled => {
         markerLayer[dateSampled] = L.layerGroup(markerLayers[dateSampled]).addTo(map);
@@ -311,19 +314,12 @@ console.log(dateSampled,sample,iconNo,currentIcon);
 
 
     var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml", {async: true});
-//    var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2020_00506/MLA_2020_00506-LOCATIONS.kml", {async: true});
 console.log(kmlLayer);
-/*    kmlLayer.on("loaded", function(e) { 
-       map.fitBounds(e.target.getBounds());
-    });*/
-
-//    kmlLayer.setOpacity(5);
-kmlLayer.on("loaded", function(e) {
+    kmlLayer.on("loaded", function(e) {
     map.fitBounds(e.target.getBounds());
 fred = kmlLayer;
     
     // Access nested layers and apply styles
-//    const mainLayer = kmlLayer._layers[126];
     const mainLayer = Object.values(kmlLayer._layers)[0];
     if (mainLayer && mainLayer._layers) {
         Object.values(mainLayer._layers).forEach(function(layer) {
@@ -340,34 +336,17 @@ fred = kmlLayer;
     }
 });
 console.log(markers,markerLayers);
-//    markerOverlay = {"Markers" : L.layerGroup(markerLayers)};
-//    var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
     var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
     datesSampled.forEach(dateSampled => {
         shapeOverlay[dateSampled] = markerLayer[dateSampled];
     });
 //console.log(shapeOverlay,mapLayers);
-
-
-    // Initialize the map
-/*    map = L.map('map').setView([54.596, -1.177], 13); // Set the initial center and zoom level
-
-    // Add OpenStreetMap tile layer
-    var mapLayers = {'Open Street Map' : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map)};*/
-
-
     if (noLocations > 0) {
         const centreLat = latSum / noLocations;
         const centreLon = lonSum / noLocations;
         var bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
         map.fitBounds(bounds);
         //console.log('lat,lon ',minLat,minLon, maxLat,maxLon);
-        /*	    		if (centreLat !== undefined && centreLon !== undefined) {
-                        map.setView(new L.LatLng(centreLat, centreLon), 13);
-                    }*/
-        //			}
     }
 
 
@@ -582,68 +561,6 @@ function parseCoordinate(input) {
     return null;
 }
 
-/* function parseCoordinates(latitude, longitude) {
-//console.log('parse coordinates');
-//console.log(latitude,longitude);
-    // Check to see if only latitude in which case UK National Grid Reference System is being used
-    // Use https://github.com/OrdnanceSurvey/os-transform
-    if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
-//console.log(latitude);
-        const en = os.Transform.fromGridRef(latitude);
-//console.log(en);
-        if (en.ea === undefined || en.ea === null) {
-            console.log('Looks like this is an invalid grid reference ',latitude);
-            return null;
-        }
-        const latlong = os.Transform.toLatLng(en);
-//console.log(latlong);
-        if (latlong === undefined || latlong == null) {
-            return null;
-        }
-        return {latitude : latlong.lat, longitude : latlong.lng}
-    }
-    // Check if all input is undefined or null
-    if ((latitude == undefined || latitude == null) && (longitude == undefined || longitude == null)) {
-        return null;
-    }
-
-    // Crude check of whether easting and northing
-    if (latitude > 360) {
-        // Use proj4js library to convert British National Grid to latitude and longitude
-        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
-        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
-
-        return { latitude: point[1], longitude: point[0] };
-    } else {
-        return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
-    }
-
-    // Handle coordinates in degrees digital degrees with N/S and E/W
-    const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
-    const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
-    if (digitalDegreesMatch) {
-        const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
-        const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
-        return { latitude: latValue, longitude: lonValue };
-    }
-
-    // Handle coordinates in digital minutes with N/S and E/W
-    const digitalMinutesRegex = /^([-+]?\d[\°]?\s*\d+(\.\d+)?)[\’]?\s*([NSEW])([-+]?\d[\°]?\s*\d+(\.\d+)?)[\’]?\s*([NSEW])$/i;
-console.log(latitude,longitude);
-    const digitalMinutesMatch = `${latitude} ${longitude}`.match(digitalMinutesRegex);
-console.log(digitalMinutesMatch);
-    if (digitalMinutesMatch) {
-        const latValue = (parseInt(digitalMinutesMatch[1]) + parseFloat(digitalMinutesMatch[2])/60) * (digitalMinutesMatch[4].toUpperCase() === 'S' ? -1 : 1);
-        const lonValue = (parseInt(digitalMinutesMatch[5]) + parseFloat(digitalMinutesMatch[6])/60) * (digitalMinutesMatch[8].toUpperCase() === 'W' ? -1 : 1);
-console.log(latValue,lonValue);
-        return { latitude: latValue, longitude: lonValue };
-    }
-
-    // If the input doesn't match any recognized format, return null or handle accordingly
-    return null;
-}
-*/
-
 function parseCoordinates(latitude, longitude) {
     // If only latitude is provided, handle UK National Grid Reference System (as in your original logic)
     if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
@@ -704,4 +621,3 @@ function parseCoordinates(latitude, longitude) {
     // If no valid format matched, return null
     return null;
 }
-
