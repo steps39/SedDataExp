@@ -41,17 +41,24 @@
     dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT',
         'Organochlorine data': 'OC'};
     dataSheetNamesCheckboxes = [];
+    calcSheetNames = ['Physical Stats','PSA Charts','Metals calcs','PAH calcs','PCB calcs','BDE calcs','Organotin calcs','Organochlorine calcs'];
     let sortButtonGroups = {};
     for (let i = 0; i < dataSheetNames.length; i++) {
         dataSheetNamesCheckboxes[i] = dataSheetNames[i].replace(/\s/g, '').toLowerCase();
         sortButtonGroups[dataSheetNames[i]] = [];
     }
     sheetsToDisplay = {};
+    completeSheet = {};
     for (i = 0; i < dataSheetNames.length; i++) {
         sheetName = dataSheetNames[i];
         sheetsToDisplay[sheetName] = true;
+        completeSheet[sheetName] = false;
     }
-    subChartNames = ['samplegroup','chemicalgroup','positionplace','areadensity','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest']
+/*    dataSheetNames.forEach(sheetName => {
+        disableRadioButtons(sortButtonGroups[sheetName], false);
+        completeSheet[sheetName] = true;
+    })*/
+   subChartNames = ['samplegroup','chemicalgroup','positionplace','relationareadensity','relationhc','relationtotalsolids','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest']
     subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
@@ -60,17 +67,17 @@
     sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
         'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
     sortButtonGroups['area'] = [...sortingOptions.filter(option => option.includes('area')), ...subChartNames.filter(option => option.includes('area'))];
-    sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7')),
-                ...subChartNames.filter(option => option.includes('congener'))];
+    sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7'))];/*,
+                ...subChartNames.filter(option => option.includes('congener'))];*/
     sortButtonGroups['PAH data'] = [...sortingOptions.filter(option => option.includes('hc') || option.includes('mw') || option.includes('pah')),
                 ...subChartNames.filter(option => option.includes('pah') || option.includes('hc') || option.includes('gorham') || option.includes('ratios')
                  || option.includes('ring') || option.includes('totalhc'))];
     sortButtonGroups['Physical Data'] = [...sortingOptions.filter(option => option.includes('silt') || option.includes('sand') || option.includes('area') || option.includes('gravel')),
                 ...subChartNames.filter(option => option.includes('area'))];
     for (group in sortButtonGroups) {
-        disableRadioButtons(sortButtonGroups[group], true);
+console.log(group);
+        disableRadioButtons(sortButtonGroups[group], false);
     }
-    calcSheetNames = ['Physical Stats','PSA Charts','Metals calcs','PAH calcs','PCB calcs','BDE calcs','Organotin calcs','Organochlorine calcs'];
     let map; // Declare map as a global variable
     let fred;
     let sampleMeasurements = {};
@@ -347,11 +354,17 @@ for (i = 1; i < dataSheetNames.length; i++) {
     }
 
     function clearData() {
+/*        if (map) {
+            map.remove();
+        }*/
         sampleMeasurements = {};
         selectedSampleMeasurements = {};
         sampleInfo = {};
         selectedSampleInfo = {};
-/*			if (map) {
+        for (group in sortButtonGroups) {
+            disableRadioButtons(sortButtonGroups[group], false);
+        }
+    /*			if (map) {
             map.remove();
         }*/
         const canvas = [];
@@ -471,7 +484,7 @@ console.log('importChemInfo');
             const fileInput = document.getElementById('fileLocations');
             const urlInput = document.getElementById('urlLocations');
             const files = fileInput.files; // Files is now a FileList object containing multiple files
-            const urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+            urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
 
             if (files.length === 0 && urls.length === 0) {
                 alert('Please select files or enter URLs.');
@@ -530,11 +543,12 @@ console.log('importChemInfo');
 //console.log('|',sample,'|',sample.trim(),'|');
             cleanSample = sample.replace(/\s+/g, '').toLowerCase();
             namedLocations[cleanSample] = {};
+            namedLocations[cleanSample].label = sample;
             namedLocations[cleanSample].latitude = df[r][1];
             namedLocations[cleanSample].longitude = df[r][2];
 //console.log(sample,namedLocations[sample]);
         }
-console.log('End of processExcelLocations');
+//console.log('End of processExcelLocations');
     }
 
     function checkboxParameters(suppliedParams, paramName, checkboxNames) {
@@ -918,7 +932,12 @@ function processExcelData(data, url) {
                         meas.sizes = [];
                         startRow = r + 3;
                         startCol = c;
-                        for (let col = startCol + 7; col < df[startRow - 1].length; col++) {
+                        deltaExempt = 0;
+//console.log(df[startRow],df[startRow-1],df[startRow-2],df[startRow-3]);
+                        if (df[startRow - 3][startCol + 4].includes('Exempt')) {
+                            deltaExempt = 1;
+                        }
+                        for (let col = startCol + 6 + deltaExempt; col < df[startRow - 1].length; col++) {
                             meas.sizes.push(parseFloat(df[startRow - 2][col]) || 0);
                             for (let row = startRow; row < 38; row++) {
                                 sample = df[row][startCol + 2]; //bodge to pick up sample id
@@ -935,8 +954,10 @@ function processExcelData(data, url) {
                                         meas.samples[sample] = {};
                                         meas.samples[sample].psd = [];
                                         meas.samples[sample]['Visual Appearance'] = df[row][startCol + 3];
-                                        meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol + 5];
-                                        meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol + 6];
+//                                        meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol + 5];
+//                                        meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol + 6];
+                                        meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol + 4 + deltaExempt];
+                                        meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol + 5 + deltaExempt];
                                     }
 
                                     //console.log(sample);
@@ -973,10 +994,11 @@ function processExcelData(data, url) {
         meas['Laboratory/contractor'] = contractor;
 //        if (!(sheetName === 'Physical Data')) {
             if (!totalSum > 0) {
+                disableRadioButtons(sortButtonGroups[sheetName], true);
                 return 'No data for ' + sheetName;
-            } else {
+            } /*else {
                 disableRadioButtons(sortButtonGroups[sheetName], false);
-            }
+            }*/
 /*        }
 //        if (sheetName === 'Physical Data' && Object.keys(meas.samples).length === 0) {
         if (sheetName === 'Physical Data') {
@@ -1483,10 +1505,10 @@ function removeButton(chartInstanceNo, buttonType) {
 function chemicalTypeHasData(sheetName) {
     chemicalTypeData = false;
     for (const ds in selectedSampleMeasurements) {
-console.log(ds);
-console.log(ds, sheetName);
+//console.log(ds);
+//console.log(ds, sheetName);
         const chemicalTypes = Object.keys(selectedSampleMeasurements[ds]);
-console.log(ds, sheetName, chemicalTypes);
+//console.log(ds, sheetName, chemicalTypes);
         if (chemicalTypes.includes(sheetName)) {
             chemicalTypeData = true;
             return chemicalTypeData;

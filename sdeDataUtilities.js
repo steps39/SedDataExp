@@ -320,7 +320,7 @@ function psdPostProcess(currentPsd, sizes) {
     splitWeights = psdSplit(currentPsd);
     splitAreas = psdSplit(areas);
     splitRelativeAreas = psdSplit(relativeAreas);
-console.log( areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea );
+//console.log( areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea );
     return { areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea }
 }
 
@@ -516,7 +516,7 @@ console.log(samples,samples.length);
 }
 
 function concentrationFitter(concentration, predictors, ignoreSamples = []) {
-console.log(concentration, predictors);
+//console.log(concentration, predictors);
     // Extract sample keys and filter out ignored samples
     const samples = Object.keys(concentration).filter(sample => !ignoreSamples.includes(sample));
 
@@ -562,10 +562,10 @@ console.log(concentration, predictors);
 
 // IDs of radio buttons to disable
 function disableRadioButtons(radioButtonsToChange,state)  {
-console.log(radioButtonsToChange);
+//console.log(radioButtonsToChange);
     // Disable each radio button
     radioButtonsToChange.forEach(id => {
-        console.log(id);
+//console.log(id);
         document.getElementById(id).disabled = state;
         if (state) {
             document.querySelector("label[for='"+id+"']").style.color = "lightgrey";

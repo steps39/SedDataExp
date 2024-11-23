@@ -11,6 +11,21 @@
             /* Adjust the margin as needed */
         }
     </style>
+    <style>
+        #map {
+            height: 500px;
+        }
+        /* Style for the labels */
+        .custom-label {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 12px;
+            color: #333;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body>
@@ -179,8 +194,12 @@
             <label for="chemicalgroup">Group by chemical</label>
             <input type="checkbox" id="positionplace" checked>
             <label for="positionplace">Plot by position</label>
-            <input type="checkbox" id="areadensity" checked>
-            <label for="areadensity">Area density</label>
+            <input type="checkbox" id="relationareadensity" checked>
+            <label for="relationareadensity">Area density</label>
+            <input type="checkbox" id="relationhc" checked>
+            <label for="relationhc">Total hydrocarbons</label>
+            <input type="checkbox" id="relationtotalsolids" checked>
+            <label for="relationtotalsolids">Total solids</label>
             </div>
             <div>
             PAH specific

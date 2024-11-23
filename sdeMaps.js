@@ -65,6 +65,27 @@ function sampleMap(meas) {
             popupAnchor: [1, -34], // Replace with the popup anchor point of your marker icon
         }
     });
+
+ /*   // Add known locations to the map
+    if(namedLocations) {
+        // Loop through the named locations and add them to the map
+        for (const locationName in namedLocations) {
+            const location = namedLocations[locationName];
+            const label = location.label;
+            const latitude = location.latitude;
+            const longitude = location.longitude;
+
+            // Add an invisble marker with a popup displaying the location name
+            L.marker([latitude, longitude], {
+                icon: L.divIcon({
+                    className: 'custom-label',
+                    html: `<span>${label}</span>`,
+                    iconSize: [0, 0] // Make the icon itself invisible
+                })
+            }).addTo(map);
+        }
+    }*/
+
     // Add markers for each sample
     iconNo = 0;
     sampleNo = -1;
@@ -314,7 +335,7 @@ function sampleMap(meas) {
 
 
     var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml", {async: true});
-console.log(kmlLayer);
+//console.log(kmlLayer);
     kmlLayer.on("loaded", function(e) {
     map.fitBounds(e.target.getBounds());
 fred = kmlLayer;
@@ -335,7 +356,7 @@ fred = kmlLayer;
         });
     }
 });
-console.log(markers,markerLayers);
+//console.log(markers,markerLayers);
     var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
     datesSampled.forEach(dateSampled => {
         shapeOverlay[dateSampled] = markerLayer[dateSampled];
