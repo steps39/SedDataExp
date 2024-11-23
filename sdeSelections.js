@@ -345,27 +345,27 @@ function applyDatasetFilter() {
         //sheetName = dataSheetNames[i];
         sheetsToSelect[dataSheetNames[i]] = document.getElementById(dataSheetNamesCheckboxes[i]+'set').checked ? true : false; // Check the checkbox state
     }
-console.log(sheetsToSelect);
-console.log(Object.keys(sheetsToSelect));
+//console.log(sheetsToSelect);
+//console.log(Object.keys(sheetsToSelect));
     let datasetsToKeep = {};
     for (let dateSelected in selectedSampleInfo) {
         datasetsToKeep[dateSelected] = true;
         for (let sheetName in sheetsToSelect) {
 //console.log(sheetName);
             if (sheetsToSelect[sheetName]) {
-console.log(sheetName);
+//console.log(sheetName);
                 if (!(sheetName in selectedSampleMeasurements[dateSelected])) {
                     datasetsToKeep[dateSelected] = false;
-console.log(dateSelected,' has no ',sheetName);
+//console.log(dateSelected,' has no ',sheetName);
                     break;
                 }
 //                keepInfo = sampleInfo[dateSelected];
 //                keepSample = sampleMeasurements[dateSelected]
             }
         }
-        console.log(dateSelected,' has ',sheetName);
+//console.log(dateSelected,' has ',sheetName);
     }
-console.log(datasetsToKeep);
+//console.log(datasetsToKeep);
     selectedSampleInfo = {};
     selectedSampleMeasurements = {};
     for (let dateSelected in datasetsToKeep) {

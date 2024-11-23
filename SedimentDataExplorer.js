@@ -58,8 +58,10 @@
         disableRadioButtons(sortButtonGroups[sheetName], false);
         completeSheet[sheetName] = true;
     })*/
-   subChartNames = ['samplegroup','chemicalgroup','positionplace','relationareadensity','relationhc','relationtotalsolids','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest']
-    subsToDisplay = {};
+    subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest',
+                    'relationareadensity','relationhc','relationtotalsolids'];
+//    relationNames = ['relationareadensity','relationhc','relationtotalsolids'];
+        subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
         subsToDisplay[sheetName] = true;
@@ -73,9 +75,10 @@
                 ...subChartNames.filter(option => option.includes('pah') || option.includes('hc') || option.includes('gorham') || option.includes('ratios')
                  || option.includes('ring') || option.includes('totalhc'))];
     sortButtonGroups['Physical Data'] = [...sortingOptions.filter(option => option.includes('silt') || option.includes('sand') || option.includes('area') || option.includes('gravel')),
-                ...subChartNames.filter(option => option.includes('area'))];
+                ...subChartNames.filter(option => option.includes('area') || option.includes('solid'))];
+//                ...relationNames.filter(option => option.includes('area') || option.includes('solid'))];
     for (group in sortButtonGroups) {
-console.log(group);
+//console.log(group);
         disableRadioButtons(sortButtonGroups[group], false);
     }
     let map; // Declare map as a global variable
@@ -563,8 +566,8 @@ console.log('importChemInfo');
                 }
                 // Check all the boxes set in url
                 for (let i = 0; i < sels.length; i++) {
-console.log(i);
-console.log(sels[i]);
+//console.log(i);
+//console.log(sels[i]);
                     const checkbox = document.getElementById(sels[i].toLowerCase());
                     checkbox.checked = true;
                 }
@@ -608,9 +611,9 @@ function importData() {
             const everything = document.getElementById('everything');
             everything.style.display = 'inline';
         }
-        console.log(suppliedParams);
+//console.log(suppliedParams);
         const durlParam = suppliedParams.get('durl');
-        console.log(durlParam);
+//console.log(durlParam);
         if (durlParam) {
 /*            var urlInputDD = document.getElementById('urlInputDD');
             urlInputDD.value = durlParam;
@@ -633,7 +636,7 @@ function importData() {
             importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish,dlicences);
         }
         const sortParam = suppliedParams.get('sort');
-        console.log(durlParam);
+//console.log(durlParam);
         if (sortParam) {
             xAxisSort = sortParam;
 //            xAxisSortRadio = document.querySelector('input[name="sorting"][xAxisSort]');
@@ -754,6 +757,9 @@ function processExcelData(data, url) {
     const workbook = XLSX.read(data, { type: 'array' });
 
     function extractDataFromSheet(sheetName, sheetData, dateSampled) {
+        let missingTotalSolids = true;
+        let missingVisualAppearance = true;
+        let missingOrganicCarbon = true;
         if (sheetData === null || sheetData == undefined) {
             return null;
         }
@@ -953,13 +959,26 @@ function processExcelData(data, url) {
                                     if (!meas.samples[sample]) {
                                         meas.samples[sample] = {};
                                         meas.samples[sample].psd = [];
-                                        meas.samples[sample]['Visual Appearance'] = df[row][startCol + 3];
+                                        visualAppearance = df[row][startCol + 3];
+                                        meas.samples[sample]['Visual Appearance'] = visualAppearance;
+//console.log(visualAppearance);
+                                        if (!(visualAppearance === undefined)) {
+//console.log('setting to false');
+                                            missingVisualAppearance = false;
+                                        }
 //                                        meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol + 5];
 //                                        meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol + 6];
-                                        meas.samples[sample]['Total solids (% total sediment)'] = df[row][startCol + 4 + deltaExempt];
-                                        meas.samples[sample]['Organic matter (total organic carbon)'] = df[row][startCol + 5 + deltaExempt];
+                                        totalSolids = df[row][startCol + 4 + deltaExempt];
+                                        meas.samples[sample]['Total solids (% total sediment)'] = totalSolids;
+                                        if (!(totalSolids === undefined)) {
+                                            missingTotalSolids = false;
+                                        }
+                                        organicCarbon = df[row][startCol + 5 + deltaExempt];
+                                        meas.samples[sample]['Organic matter (total organic carbon)'] = organicCarbon;
+                                        if (!(organicCarbon === undefined)) {
+                                            missingOrganicCarbon = false;
+                                        }
                                     }
-
                                     //console.log(sample);
                                     meas.samples[sample].psd.push(parseFloat(df[row][col]) || 0);
                                     //console.log('meas.psd ',df[row][col]);
@@ -1010,6 +1029,19 @@ function processExcelData(data, url) {
         }*/
         //console.log(dateSampled, sheetName, 'meas ', meas);
 //        if (!(meas.samples === undefined || meas.samples === null)) {
+        if (sheetName === 'Physical Data') {
+            for (sample in meas.samples) {
+                if (missingVisualAppearance) {
+                    delete meas.samples[sample]['Visual Appearance'];
+                }
+                if (missingTotalSolids) {
+                    delete meas.samples[sample]['Total solids (% total sediment)'];
+                }
+                if (missingOrganicCarbon) {
+                    delete meas.samples[sample]['Organic matter (total organic carbon)'];
+                }
+            }
+        }
             sampleMeasurements[dateSampled][sheetName] = meas;
             const sums = {};
             //console.log(meas);
@@ -1141,15 +1173,15 @@ function processExcelData(data, url) {
                             if (point === null || point === undefined) {
                                 // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
                                 cleanSample = sample.replace(/\s+/g, '').toLowerCase();
-console.log(sample,cleanSample);
+//console.log(sample,cleanSample);
                                 if (cleanSample in namedLocations) {
 //                                if (namedLocations[cleanSample] !== null && namedLocations[cleanSample] !== undefined) {
-console.log('found');
+//console.log('found');
                                     point = {};
                                     point['latitude'] = namedLocations[cleanSample].latitude;
                                     point['longitude'] = namedLocations[cleanSample].longitude;
                                 } else {
-console.log('not found');
+//console.log('not found');
                                     //console.log('lat and long undefined does not match', sample);
                                     point = {};
                                     point['latitude'] = undefined;
