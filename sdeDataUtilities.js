@@ -37,7 +37,13 @@ Array.prototype.sortComplexSamples = function() {
     return this.sort((a, b) => {
 //console.log(a,b);
         const partsA = a.split(": ");
+        if (partsA.length >2) {
+            partsA[1] = partsA[1] + ': ' + partsA[2];
+        }
         const partsB = b.split(": ");
+        if (partsB.length >2) {
+            partsB[1] = partsB[1] + ': ' + partsB[2];
+        }
         selectedSampleInfo[partsA[0]].position[partsA[1]]
 //console.log(partsA);
 //console.log(partsB);

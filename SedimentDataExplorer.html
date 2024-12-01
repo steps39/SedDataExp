@@ -78,7 +78,7 @@
 
         <div id="datasetModal" style="display: none;">
             Must have -
-            <input type="checkbox" id="tracemetaldataset">
+            <input type="checkbox" id="tracemetaldataset" unchecked>
             <label for="tracemetaldataset">Trace metal data</label>
             <input type="checkbox" id="pahdataset">
             <label for="pahdataset">PAH data</label>
@@ -205,6 +205,11 @@
                 <label for="relationtotalsolids">Total solids</label>
             </div>
             <div>
+                Resuspension -
+                <label for="resuspensionsize">Maximum resuspension size (µm):</label>
+                <input type="number" id="resuspensionsize" placeholder="0 for no resuspension">
+            </div>
+            <div>
             PAH specific
             <input type="checkbox" id="gorhamtest" checked>
             <label for="gorhamtest">PAH - Gorham Test Protocol</label>
@@ -328,6 +333,7 @@
     <script src="sdeDataUtilities.js"></script>
     <script src="sdeDredgeData.js"></script>
     <script src="SedimentDataExplorer.js"></script>
+    <script src="sdeCalcs4Charts.js"></script>
     <script src="sdeCharts.js"></script>
     <script src="sdeSelections.js"></script>
     <script src="sdeMaps.js"></script>

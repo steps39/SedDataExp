@@ -1,5 +1,6 @@
     let testOne = {};
     let radarPlot = "None";
+    let resuspensionSize = 0;
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -47,11 +48,12 @@
         dataSheetNamesCheckboxes[i] = dataSheetNames[i].replace(/\s/g, '').toLowerCase();
         sortButtonGroups[dataSheetNames[i]] = [];
     }
+//    disableRadioButtons(dataSheetNamesCheckboxes,true);
     sheetsToDisplay = {};
     completeSheet = {};
     for (i = 0; i < dataSheetNames.length; i++) {
         sheetName = dataSheetNames[i];
-        sheetsToDisplay[sheetName] = true;
+        sheetsToDisplay[sheetName] = false;
         completeSheet[sheetName] = false;
     }
 /*    dataSheetNames.forEach(sheetName => {
@@ -64,7 +66,7 @@
         subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
-        subsToDisplay[sheetName] = true;
+        subsToDisplay[subName] = false;
     }
     sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
         'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
@@ -246,11 +248,60 @@ for (i = 1; i < dataSheetNames.length; i++) {
         const fileName = fileSave.value;
         saveStatus(fileName);
     }
-    
+
+function postLoadSnapShot() {
+    for (dateSampled in sampleMeasurements) {
+//        console.log('looking for labels');
+        if (!(sampleInfo[dateSampled].hasOwnProperty('label'))) {
+//console.log('sampleInfo',dateSampled, 'adding label');
+            sampleInfo[dateSampled].label = dateSampled;
+        }
+        for (sample in sampleInfo[dateSampled].position) {
+            if (!(sampleInfo[dateSampled].position[sample].hasOwnProperty('label'))) {
+                sampleInfo[dateSampled].position[sample].label = sample;
+            }
+        }
+        if ('Physical Data' in sampleMeasurements[dateSampled]) {
+            for (sample in sampleMeasurements[dateSampled]['Physical Data'].samples) {
+                if (!('totalArea' in sampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
+                    currentPsd = sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
+                    retData = psdPostProcess(currentPsd, sampleMeasurements[dateSampled]['Physical Data'].sizes);
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdRelaitveAreas = retData['realtiveAreas'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitRelativeAreas = retData['splitRelativeAreas'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
+                }
+            }
+        }
+    }
+    for (dateSampled in selectedSampleMeasurements) {
+        if (!(selectedSampleInfo[dateSampled].hasOwnProperty('label'))) {
+            selectedSampleInfo[dateSampled].label = dateSampled;
+        }
+        for (sample in selectedSampleInfo[dateSampled].position) {
+            if (!(selectedSampleInfo[dateSampled].position[sample].hasOwnProperty('label'))) {
+                selectedSampleInfo[dateSampled].position[sample].label = sample;
+            }
+        }
+        if ('Physical Data' in selectedSampleMeasurements[dateSampled]) {
+            for (sample in selectedSampleMeasurements[dateSampled]['Physical Data'].samples) {
+                if (!('totalArea' in selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
+                    selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample] = sampleMeasurements[dateSampled]['Physical Data'].samples[sample];
+                }
+            }
+        }
+    }
+}
+
     function loadSnapShotURL() {
         const urlLoad = document.getElementById('urlLoad');
         const fileUrl = urlLoad.value;
         loadStatus(fileUrl);
+        postLoadSnapShot();
     }
     
     function loadSnapShotFile() {
@@ -271,44 +322,7 @@ for (i = 1; i < dataSheetNames.length; i++) {
                 sampleMeasurements = jsonData.sampleMeasurements;
                 selectedSampleInfo = jsonData.selectedSampleInfo;
                 selectedSampleMeasurements = jsonData.selectedSampleMeasurements;
-                for (dateSampled in sampleMeasurements) {
-                    if ('Physical Data' in sampleMeasurements[dateSampled]) {
-                        for (sample in sampleMeasurements[dateSampled]['Physical Data'].samples) {
-                            if (!('totalArea' in sampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
-                                currentPsd = sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
-                                retData = psdPostProcess(currentPsd, sampleMeasurements[dateSampled]['Physical Data'].sizes);
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdRelaitveAreas = retData['realtiveAreas'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitRelativeAreas = retData['splitRelativeAreas'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
-                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
-                            }
-                        }
-                    }
-                }
-                for (dateSampled in selectedSampleMeasurements) {
-                    if ('Physical Data' in selectedSampleMeasurements[dateSampled]) {
-
-                        for (sample in selectedSampleMeasurements[dateSampled]['Physical Data'].samples) {
-                            if (!('totalArea' in selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample] = sampleMeasurements[dateSampled]['Physical Data'].samples[sample];
-/*                                currentPsd = selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
-                                retData = psdPostProcess(currentPsd, selectedSampleMeasurements[dateSampled]['Physical Data'].sizes);
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['realtiveAreas'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitAreas = retData['splitAreas'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitRelativeAreas = retData['splitRelativeAreas'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumAreas = retData['cumAreas'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].cumWeights = retData['cumWeights'];
-                                selectedSampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];*/
-                            }
-                        }
-                    }
-                }
+                postLoadSnapShot();
                 updateChart();
             };
             reader.readAsText(file);
@@ -349,6 +363,7 @@ for (i = 1; i < dataSheetNames.length; i++) {
             sampleMeasurements = jsonData.sampleMeasurements;
             selectedSampleInfo = jsonData.selectedSampleInfo;
             selectedSampleMeasurements = jsonData.selectedSampleMeasurements;
+            postLoadSnapShot();
             updateChart();
             return jsonData;
         } catch (error) {
@@ -1577,12 +1592,20 @@ function filenameDisplay() {
         // console.log(dateSampled);
         positions = Object.keys(selectedSampleInfo[dateSampled].position);
         infos = '';
+//        infos = positions.length
         for (dataType in selectedSampleMeasurements[dateSampled]) {
 //console.log(dataType,dateSampled);
             if (dataType === 'Physical Data') {
                 infos += `${dataSheetAbr[dataType]} `;
             } else {
-                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals).length}x${dataSheetAbr[dataType]}s `;
+                let allChemicals = Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals);
+//console.log(allChemicals);
+//                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals).length}x${dataSheetAbr[dataType]}s `;
+//                infos += `${allChemicals.length}x${dataSheetAbr[dataType]}s `;
+//                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals[allChemicals[0]].samples).length}x${dataSheetAbr[dataType]}s `;
+//                infos += `${allChemicals.length}x${dataSheetAbr[dataType]}s `;
+//                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals[allChemicals[0]].samples).length}s ${allChemicals.length}c ${dataSheetAbr[dataType]}s `;
+                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals[allChemicals[0]].samples).length}[${allChemicals.length}x${dataSheetAbr[dataType]}s] `;
             }
         }
 //        infos = 'PAH BDE OC OT PCB Phys TM';

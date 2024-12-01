@@ -126,9 +126,12 @@ function sampleMap(meas) {
 //console.log(allSamples);
 
     allSamples.forEach(fullSample => {
-        part = fullSample.split(": ");
-        dateSampled = part[0];
-        sample = part[1];
+        parts = fullSample.split(": ");
+        if (parts.length > 2){
+            parts[1] = parts[1] + ': ' + parts[2];
+        }
+        dateSampled = parts[0];
+        sample = parts[1];
         iconNo = iconNos[dateSampled];
         currentIcon = icons[iconNo];
 //console.log(dateSampled,sample,iconNo,currentIcon);
@@ -149,7 +152,9 @@ function sampleMap(meas) {
         const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
         allSamples.sort();
         allSamples.forEach(sample => {*/
-            if (selectedSampleInfo[dateSampled].position[sample]['Position latitude']) {
+//            if (selectedSampleInfo[dateSampled].position[sample]['Position latitude']) {
+//console.log(dateSampled,sample);
+            if (selectedSampleInfo[dateSampled].position[sample].hasOwnProperty('Position latitude')) {
                 lat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
                 lon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
                 // Create a marker for each sample
