@@ -307,8 +307,8 @@ console.log('sumsForGorhamCharting selectedSums',selectedSums);
 //console.log(selectedSums);
             instanceNo += 1;
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
-            retData = recalculateConcentrationComplex(selectedSums);
             if (resuspensionSize > 0 && completeSheet['Physical Data']) {
+                retData = recalculateConcentrationComplex(selectedSums);
                 concentrateSums = retData['concentrateMeas'];
                 concentrateFactor = retData['concentrateFactor'];
                 instanceNo += 1;
@@ -1270,12 +1270,15 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
         ERM: 9600
     };
 
-    const samples = Object.keys(cumWeights);
-//samples.forEach(sample => console.log(sample));
+//    const samples = Object.keys(cumWeights);
+    const samples = Object.keys(sums);
+console.log(samples);
+console.log(sums);
+samples.forEach(sample => console.log(sample));
     const lmwSumData = samples.map(sample => sums[sample].lmwSum);
-//console.log(lmwSumData);
+console.log(lmwSumData);
     const hmwSumData = samples.map(sample => sums[sample].hmwSum);
-//console.log(hmwSumData);
+console.log(hmwSumData);
             datasets = [
                 {
                     label: 'LMW Sums',

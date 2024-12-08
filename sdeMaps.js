@@ -378,6 +378,9 @@ fred = kmlLayer;
 
 
 var layerControl = L.control.layers(mapLayers, shapeOverlay).addTo(map);
+layerControl.on("loaded", function(e) {
+    map.fitBounds(e.target.getBounds());map.fitBounds(e.target.getBounds());
+});
 
 /*    fetch("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml")
       .then(function (response) {

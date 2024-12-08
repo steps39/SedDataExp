@@ -46,7 +46,6 @@ function recalculateConcentration(meas) {
 
 function recalculateConcentrationComplex(meas) {
     let allSizes = {};
-    let areaWeightRatio = {};
     let concentrateFactor = {};
     for (dsSample in meas) {
         let parts = dsSample.split(": ");
