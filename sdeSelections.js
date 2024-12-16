@@ -1,17 +1,3 @@
-/*<div id="datasetLabels" style="display: none;">
-<form id="datasetLabels">
-</form>
-<button onclick="updateDatasetLabels()">Confirm Labels and Close</button>
-<button onclick="closeDatasetLabels()">Cancel</button>
-</div>
-
-<div id="sampleLabels" style="display: none;">
-<form id="sampleLabels">
-</form>
-<button onclick="updateSampleLabels()">Confirm Labels and Close</button>
-<button onclick="closeSampleLabels()">Cancel</button>
-</div>*/
-
 function openDatasetLabels() {
     const datasetLabels = document.getElementById('datasetLabels');
     datasetLabels.style.display = 'block';
@@ -285,7 +271,6 @@ function openDatasetSelection(selectedSampleMeasurements) {
 
 }
 
-
 function yourapplyDatasetFilter() {
     const sampleModal = document.getElementById('datasetModal');
     sampleModal.style.display = 'none';
@@ -331,11 +316,6 @@ function yourapplyDatasetFilter() {
     
     updateChart();
 }
-
-
-
-
-
 
 function applyDatasetFilter() {
     const sampleModal = document.getElementById('datasetModal');
@@ -640,7 +620,7 @@ function selectSamples() {
 
 function getselectedSampleMeasurements(selectedSamples) {
     selectedMeas = {};
-    //console.log(selectedSamples);
+//console.log(selectedSamples);
     for (dateSampled in sampleMeasurements) {
         //console.log(dateSampled);
         const chemicalTypes = Object.keys(sampleMeasurements[dateSampled]);
@@ -665,12 +645,17 @@ function getselectedSampleMeasurements(selectedSamples) {
                                 //console.log('2 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
                             }
                             //console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
-                            selectedMeas[dateSampled][chemicalType].samples[sample] = {};
-                            selectedMeas[dateSampled][chemicalType].samples[sample].psd = sampleMeasurements[dateSampled][chemicalType].samples[sample].psd;
+//                            selectedMeas[dateSampled][chemicalType].samples[sample] = {};
+                            selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
+/*                            selectedMeas[dateSampled][chemicalType].samples[sample].psd = sampleMeasurements[dateSampled][chemicalType].samples[sample].psd;
                             selectedMeas[dateSampled][chemicalType].samples[sample].psdAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].psdAreas;
                             selectedMeas[dateSampled][chemicalType].samples[sample].splitAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].splitAreas;
                             selectedMeas[dateSampled][chemicalType].samples[sample].splitWeights = sampleMeasurements[dateSampled][chemicalType].samples[sample].splitWeights;
                             selectedMeas[dateSampled][chemicalType].samples[sample].totalArea = sampleMeasurements[dateSampled][chemicalType].samples[sample].totalArea;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].cumAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].cumAreas;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].cumWeights = sampleMeasurements[dateSampled][chemicalType].samples[sample].cumWeights;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].psdRelativeAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].psdRelativeAreas;
+                            selectedMeas[dateSampled][chemicalType].samples[sample].splitRelativeAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].splitRelativeAreas;*/
                         }
                     }
                 }

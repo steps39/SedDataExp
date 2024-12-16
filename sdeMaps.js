@@ -375,12 +375,16 @@ fred = kmlLayer;
         //console.log('lat,lon ',minLat,minLon, maxLat,maxLon);
     }
 
-
-
 var layerControl = L.control.layers(mapLayers, shapeOverlay).addTo(map);
-layerControl.on("loaded", function(e) {
+var bounds = L.latLngBounds();
+/*for (let layerName in shapeOverlay) {
+    bounds.extend(shapeOverlay[layerName].getLatLng());
+}*/
+//map.fitBounds(bounds);
+//map.fitBounds(shapeOverlay.getBounds());
+/*layerControl.on("loaded", function(e) {
     map.fitBounds(e.target.getBounds());map.fitBounds(e.target.getBounds());
-});
+});*/
 
 /*    fetch("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml")
       .then(function (response) {

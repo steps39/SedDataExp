@@ -1,3 +1,50 @@
+completeSample = {};
+function wrangleData(){
+    completeSample = {};
+    for (ds in selectedSampleInfo) {
+        completeSample[ds] = {};
+        for (sample in selectedSampleInfo[ds].position){
+            completeSample[ds][sample] = true;
+        }
+    }
+    for (ds in selectedSampleInfo) {
+        for (ct in selectedSampleMeasurements[ds]) {
+            if (ct === 'Physical Data') {
+                for (sample in selectedSampleInfo[ds].position) {
+                    if (selectedSampleMeasurements[ds][ct].samples[sample] === undefined) {
+                        completeSample[ds][sample] = false;
+                    }
+                }
+            } else {
+                for (sample in selectedSampleInfo[ds].position) {
+                    for (chemical in selectedSampleInfo[ds].chemicals){
+                        for (sample in selectedSampleInfo[ds].chemicals[chemical]) {
+                            if (selectedSampleMeasurements[ds][ct].chemicals[chemical].samples[sample] === undefined) {
+                                completeSample[ds][sample] = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    selectedSamples = [];
+    for (ds in selectedSampleInfo) {
+        for (sample in selectedSampleInfo[ds].position){
+            if (completeSample[ds][sample]) {
+                selectedSamples.push(ds + ': ' + sample);
+            }
+        }
+    }
+//console.log(selectedSamples);
+//console.log('old',selectedSampleMeasurements);
+    selectedSampleMeasurements = getselectedSampleMeasurements(selectedSamples);
+//console.log('new',selectedSampleMeasurements);
+//console.log('old',selectedSampleInfo);
+    selectedSampleInfo = getSelectedSamples(selectedSamples);
+//console.log('new',selectedSampleInfo);
+}
+
 function recalculateConcentration(meas) {
     let allSizes = {};
     let allChemicals = Object.keys(meas);
@@ -291,6 +338,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                     //let xValue;
                     switch (chartType) {
                         case "totalArea":
+//console.log(ds,s);
                             xValue = sampleMeasurements[ds]['Physical Data'].samples[s].totalArea;
                             break;
 
@@ -311,7 +359,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                         y: currentChemical.samples[s]
                     };
                     if (!xValue) {
-                        console.log('Total scatter charting not possible for ', chartType, ' as no data available');
+console.log('Total scatter charting not possible for ', chartType, ' as no data available');
                         unitTitle = 'No data';
                         return { unitTitle };
                     }

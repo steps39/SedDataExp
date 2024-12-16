@@ -39,6 +39,10 @@ function updateOptions() {
 
 function updateChart(){
     updateOptions();
+    wrangleData();
+
+
+
 //console.log('UPDATECHART*******************');
     if (lastInstanceNo > 0) {
         const canvas = [];
@@ -276,7 +280,7 @@ fred=selectedMeas;
             'chartContainer',
             instanceNo
         );
-
+//    }
 
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
@@ -303,7 +307,7 @@ fred=selectedMeas;
         if (sheetName === 'PAH data' && subsToDisplay['gorhamtest']) {
             unitTitle = retData['unitTitle'];
             selectedSums = sumsForGorhamCharting();
-console.log('sumsForGorhamCharting selectedSums',selectedSums);
+//console.log('sumsForGorhamCharting selectedSums',selectedSums);
 //console.log(selectedSums);
             instanceNo += 1;
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
@@ -377,7 +381,7 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
         // Fetch chart data
         const retData = dataForTotalScatterCharting(sheetName, chartType.key);
         const { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors } = retData;
-console.log('dataForTotalScatterCharting scatterData, chemicalData ',scatterData, chemicalData);
+//console.log('dataForTotalScatterCharting scatterData, chemicalData ',scatterData, chemicalData);
         if (unitTitle === 'No data') {
     return instanceNo
 }
@@ -1272,13 +1276,13 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
 
 //    const samples = Object.keys(cumWeights);
     const samples = Object.keys(sums);
-console.log(samples);
-console.log(sums);
-samples.forEach(sample => console.log(sample));
+//console.log(samples);
+//console.log(sums);
+//samples.forEach(sample => console.log(sample));
     const lmwSumData = samples.map(sample => sums[sample].lmwSum);
-console.log(lmwSumData);
+//console.log(lmwSumData);
     const hmwSumData = samples.map(sample => sums[sample].hmwSum);
-console.log(hmwSumData);
+//console.log(hmwSumData);
             datasets = [
                 {
                     label: 'LMW Sums',
