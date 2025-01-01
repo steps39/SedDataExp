@@ -19,11 +19,17 @@ function sampleMap(meas) {
         maxZoom: 19,
         attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
     });    
-
+    
+    var osSensorCommunity = L.tileLayer('https://osmc3.maps.sensor.community/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © Sensor Community'
+    });    
+    
     var mapLayers = {
         "OpenStreetMap": osm,
         "OpenStreetMap.HOT": osmHOT,
-        "OpenTopoMap": openTopoMap
+        "OpenTopoMap": openTopoMap,
+        "OpenSensorCommunity": osSensorCommunity
     };
 
     map = L.map('map', {
@@ -334,6 +340,7 @@ function sampleMap(meas) {
     
     markerLayer = {};
     datesSampled.forEach(dateSampled => {
+console.log(dateSampled,markerLayers[dateSampled]);        
         markerLayer[dateSampled] = L.layerGroup(markerLayers[dateSampled]).addTo(map);
     });
 //console.log(markerLayer,markerLayers);
