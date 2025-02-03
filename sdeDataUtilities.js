@@ -250,7 +250,7 @@ console.log('datetotalarea');
     });
 };
 
-// Define ranges for different materials
+// Define ranges for different materials for standard MMO template
 let ranges = {
     'Gravel': [0, 9],
     'Very Coarse And Coarse Sand': [10, 13],
@@ -259,6 +259,82 @@ let ranges = {
     'Silt And Clay': [20, 40]
     // Ignore < 0.4um particles
   };
+
+  function determineRanges(sizes) {
+    const ranges = {
+        'Gravel': [],
+        'Very Coarse And Coarse Sand': [],
+        'Medium Sand': [],
+        'Fine And Very Fine Sand': [],
+        'Silt And Clay': []
+    };
+
+    let startIndex = 0;
+
+    // Helper function to find the end index for a given range
+    function findEndIndex(startIndex, condition) {
+        for (let i = startIndex; i < sizes.length; i++) {
+            if (!condition(sizes[i])) {
+                return i - 1;
+            }
+        }
+        return sizes.length - 1;
+    }
+
+    // Gravel: all particles above 1.9mm (0.0019m)
+    let endIndex = findEndIndex(startIndex, size => size > 0.0019);
+    if (endIndex >= startIndex) {
+        ranges['Gravel'] = [startIndex, endIndex];
+        startIndex = endIndex + 1;
+    }
+
+    // Very Coarse And Coarse Sand: between 1.9mm (0.0019m) to 0.4mm (0.0004m)
+    endIndex = findEndIndex(startIndex, size => size <= 0.0019 && size >= 0.0004);
+    if (endIndex >= startIndex) {
+        ranges['Very Coarse And Coarse Sand'] = [startIndex, endIndex];
+        startIndex = endIndex + 1;
+    }
+
+    // Medium Sand: between 0.4mm (0.0004m) to 0.25mm (0.00025m)
+    endIndex = findEndIndex(startIndex, size => size < 0.0004 && size >= 0.00025);
+    if (endIndex >= startIndex) {
+        ranges['Medium Sand'] = [startIndex, endIndex];
+        startIndex = endIndex + 1;
+    }
+
+    // Fine And Very Fine Sand: between 0.25mm (0.00025m) to 0.05mm (0.00005m)
+    endIndex = findEndIndex(startIndex, size => size < 0.00025 && size >= 0.00005);
+    if (endIndex >= startIndex) {
+        ranges['Fine And Very Fine Sand'] = [startIndex, endIndex];
+        startIndex = endIndex + 1;
+    }
+
+    // Silt And Clay: below 0.05mm (0.00005m)
+    endIndex = findEndIndex(startIndex, size => size < 0.00005);
+    if (endIndex >= startIndex) {
+        ranges['Silt And Clay'] = [startIndex, endIndex];
+    }
+
+    return ranges;
+}
+
+/*// Function to determine the ranges for different materials
+function determineRanges(sizes) {
+    // Define ranges for different materials
+    let noSizes = sizes.length;
+    ranges = {
+        'Gravel': [0, 9],45mm 2mm
+        'Very Coarse And Coarse Sand': [10, 13],1.4mm 0.5mm    
+        'Medium Sand': [14, 15], 0.3536mm 0.25mm
+        'Fine And Very Fine Sand': [16, 19], 0.1768mm 0.063mm
+        'Silt And Clay': [20, 40] 0.0442mm 0.004mm
+        // Ignore < 0.4um particles
+    };
+    // Define the range for each material
+    for (const material in ranges) {
+        ranges[material] = [sizes[ranges[material][0]], sizes[ranges[material][1]]];
+    }
+}*/
 
 // Function to calculate sum of a range
 function sumInRange(psd, range) {
@@ -295,6 +371,7 @@ function psdPostProcess(currentPsd, sizes) {
     ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize)/1000);
     ptsAreas = ptsSizes.map(size => Math.PI * size * size);
     ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
+    ranges = determineRanges(ptsSizes);
 //console.log(ptsSizes,ptsAreas,ptsVolumes);
     areas = [];
     totalArea = 0;
