@@ -281,36 +281,36 @@ let ranges = {
         return sizes.length - 1;
     }
 
-    // Gravel: all particles above 1.9mm (0.0019m)
-    let endIndex = findEndIndex(startIndex, size => size > 0.0019);
+    // Gravel: > 2.0 mm (0.002 m)
+    let endIndex = findEndIndex(startIndex, size => size > 0.002);
     if (endIndex >= startIndex) {
         ranges['Gravel'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Very Coarse And Coarse Sand: between 1.9mm (0.0019m) to 0.4mm (0.0004m)
-    endIndex = findEndIndex(startIndex, size => size <= 0.0019 && size >= 0.0004);
+    // Very Coarse & Coarse Sand: 0.5 mm – 2.0 mm (0.0005 m – 0.002 m)
+    endIndex = findEndIndex(startIndex, size => size <= 0.002 && size >= 0.0005);
     if (endIndex >= startIndex) {
         ranges['Very Coarse And Coarse Sand'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Medium Sand: between 0.4mm (0.0004m) to 0.25mm (0.00025m)
-    endIndex = findEndIndex(startIndex, size => size < 0.0004 && size >= 0.00025);
+    // Medium Sand: 0.25 mm – 0.5 mm (0.00025 m – 0.0005 m)
+    endIndex = findEndIndex(startIndex, size => size < 0.0005 && size >= 0.00025);
     if (endIndex >= startIndex) {
         ranges['Medium Sand'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Fine And Very Fine Sand: between 0.25mm (0.00025m) to 0.05mm (0.00005m)
-    endIndex = findEndIndex(startIndex, size => size < 0.00025 && size >= 0.00005);
+    // Fine & Very Fine Sand: 0.0625 mm – 0.25 mm (0.0000625 m – 0.00025 m)
+    endIndex = findEndIndex(startIndex, size => size < 0.00025 && size >= 0.0000625);
     if (endIndex >= startIndex) {
         ranges['Fine And Very Fine Sand'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Silt And Clay: below 0.05mm (0.00005m)
-    endIndex = findEndIndex(startIndex, size => size < 0.00005);
+    // Silt & Clay: < 0.0625 mm (< 0.0000625 m)
+    endIndex = findEndIndex(startIndex, size => size < 0.0000625);
     if (endIndex >= startIndex) {
         ranges['Silt And Clay'] = [startIndex, endIndex];
     }
