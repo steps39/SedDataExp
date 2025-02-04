@@ -266,6 +266,7 @@ function postLoadSnapShot() {
                 if (!('totalArea' in sampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
                     currentPsd = sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
                     retData = psdPostProcess(currentPsd, sampleMeasurements[dateSampled]['Physical Data'].sizes);
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd = retData['currentPsd'];
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdRelaitveAreas = retData['realtiveAreas'];
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
@@ -276,6 +277,7 @@ function postLoadSnapShot() {
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].totalArea = retData['totalArea'];
                 }
             }
+            sampleMeasurements[dateSampled]['Physical Data'].sizes = [...standard_phiSizes, 0];
         }
     }
     for (dateSampled in selectedSampleMeasurements) {
@@ -1004,6 +1006,7 @@ function processExcelData(data, url) {
                         for (sample in meas.samples) {
                             currentPsd = meas.samples[sample].psd;
                             retData = psdPostProcess(currentPsd,meas.sizes);
+                            meas.samples[sample].psd = retData['currentPsd'];
                             meas.samples[sample].psdAreas = retData['areas'];
                             meas.samples[sample].psdRelativeAreas = retData['relativeAreas'];
                             meas.samples[sample].splitWeights = retData['splitWeights'];
@@ -1015,6 +1018,7 @@ function processExcelData(data, url) {
 //                            totalOfTotalArea += retData['totalArea'];
                             totalSum += retData['totalArea'];
                         }
+                        meas.sizes = [...standard_phiSizes, 0];
                     }
                     break;
                 }

@@ -358,6 +358,73 @@ function psdSplit(psd) {
     return split
 }
 
+standard_phiSizes = [-5.5,-5.0,-4.5,-4.0,-3.5,-3.0,-2.5,-2.0,-1.5,-1.0,-0.5,0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,10.5,11.0,11.5,12.0,12.5,13.0,13.5,14.0,14.5];
+standard_ptsSizes = standard_phiSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+
+function InterresamplePsd(currentPsd, ptsSizes, standard_ptsSizes) {
+    function interpolate(x, x0, y0, x1, y1) {
+        return y0 + ((y1 - y0) * ((x - x0) / (x1 - x0)));
+    }
+    
+    let resampledPsd = [];
+    resampledPsd.push(0);
+    sum = 0;
+    
+    for (let i = 0; i < standard_ptsSizes.length; i++) {
+        let targetSize = standard_ptsSizes[i];
+        
+        if (targetSize >= ptsSizes[0]) {
+            resampledPsd.push(currentPsd[0]);
+        } else if (targetSize <= ptsSizes[ptsSizes.length - 1]) {
+            resampledPsd.push(currentPsd[currentPsd.length - 1]);
+        } else {
+            for (let j = 0; j < ptsSizes.length - 1; j++) {
+                if (targetSize <= ptsSizes[j] && targetSize > ptsSizes[j + 1]) {
+                    let interpolatedValue = interpolate(
+                        targetSize, ptsSizes[j], currentPsd[j], ptsSizes[j + 1], currentPsd[j + 1]
+                    );
+                    resampledPsd.push(interpolatedValue);
+                    break;
+                }
+            }
+        }
+        sum += resampledPsd[i];
+    }
+    
+    // Normalize to ensure the sum is 100%
+    resampledPsd = resampledPsd.map(value => (value / sum) * 100);
+    
+    return resampledPsd;
+}
+
+function resamplePsd(currentPsd, ptsSizes, standard_ptsSizes) {
+    let resampledPsd = new Array(standard_ptsSizes.length).fill(0);
+    let sizeMap = new Map();
+    
+    // Map the original PSD values to their respective particle sizes
+    for (let i = 0; i < ptsSizes.length; i++) {
+        sizeMap.set(ptsSizes[i], currentPsd[i]);
+    }
+    
+    for (let i = 0; i < standard_ptsSizes.length; i++) {
+        let targetSize = standard_ptsSizes[i];
+        
+        let closestSize = ptsSizes.reduce((prev, curr) => 
+            Math.abs(curr - targetSize) < Math.abs(prev - targetSize) ? curr : prev
+        );
+        
+        resampledPsd[i] = sizeMap.get(closestSize) || 0;
+    }
+    
+    // Normalize to ensure the sum is 100%
+    let sum = resampledPsd.reduce((acc, val) => acc + val, 0);
+    if (sum > 0) {
+        resampledPsd = resampledPsd.map(value => (value / sum) * 100);
+    }
+    
+    return resampledPsd;
+}
+
 function psdPostProcess(currentPsd, sizes) {
     ptsSizes = null;
     ptsAreas = null;
@@ -365,13 +432,26 @@ function psdPostProcess(currentPsd, sizes) {
     splitWeights = {};
     splitAreas = {};
     // Ignore < 0.4um particles
+//console.log(standard_phiSizes);
+//console.log(sizes)
     sizes = sizes.slice(0,-1);
-//console.log(sizes);
+//console.log(sizes)    
     //Sizes are in mm so convert to SI
-    ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+    current_ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+//console.log(current_ptsSizes);
+//console.log(standard_ptsSizes);
+    if (current_ptsSizes.length !== standard_ptsSizes.length) {
+        currentPsd = resamplePsd(currentPsd, current_ptsSizes, standard_ptsSizes);
+//console.log('Resampled');
+//console.log(currentPsd);
+    } 
+//console.log(currentPsd.length);
+//console.log(currentPsd);
+    ptsSizes = standard_ptsSizes;
+//console.log(ptsSizes);
     ptsAreas = ptsSizes.map(size => Math.PI * size * size);
     ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
-    ranges = determineRanges(ptsSizes);
+//    ranges = determineRanges(ptsSizes);
 //console.log(ptsSizes,ptsAreas,ptsVolumes);
     areas = [];
     totalArea = 0;
@@ -404,7 +484,7 @@ function psdPostProcess(currentPsd, sizes) {
     splitAreas = psdSplit(areas);
     splitRelativeAreas = psdSplit(relativeAreas);
 //console.log( areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea );
-    return { areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea }
+    return { currentPsd, areas, relativeAreas, splitWeights, splitAreas, splitRelativeAreas, cumAreas, cumWeights, totalArea }
 }
 
 function pcbPostProcess(newMeas,dateSampled) {
@@ -427,7 +507,7 @@ function pcbPostProcess(newMeas,dateSampled) {
             }
 //            console.log(chemical,sample);
 //            console.log(mmeas.chemicals[chemical].samples[sample]);
-            //	                        const congenerConcentration = meas.chemicals[chemical].samples[sample].reduce((acc, val) => acc + val, 0);
+            //,                        const congenerConcentration = meas.chemicals[chemical].samples[sample].reduce((acc, val) => acc + val, 0);
             const congenerConcentration = mmeas.chemicals[chemical].samples[sample] || 0;
             if (ICES7.includes(chemical)) {
                 sums[sample].ICES7 += congenerConcentration;
