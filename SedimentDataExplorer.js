@@ -266,7 +266,7 @@ function postLoadSnapShot() {
                 if (!('totalArea' in sampleMeasurements[dateSampled]['Physical Data'].samples[sample])) {
                     currentPsd = sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd;
                     retData = psdPostProcess(currentPsd, sampleMeasurements[dateSampled]['Physical Data'].sizes);
-                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd = retData['currentPsd'];
+                    sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psd = [...retData['currentPsd'],0];
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdAreas = retData['areas'];
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].psdRelaitveAreas = retData['realtiveAreas'];
                     sampleMeasurements[dateSampled]['Physical Data'].samples[sample].splitWeights = retData['splitWeights'];
@@ -1006,7 +1006,7 @@ function processExcelData(data, url) {
                         for (sample in meas.samples) {
                             currentPsd = meas.samples[sample].psd;
                             retData = psdPostProcess(currentPsd,meas.sizes);
-                            meas.samples[sample].psd = retData['currentPsd'];
+                            meas.samples[sample].psd = [...retData['currentPsd'],0];
                             meas.samples[sample].psdAreas = retData['areas'];
                             meas.samples[sample].psdRelativeAreas = retData['relativeAreas'];
                             meas.samples[sample].splitWeights = retData['splitWeights'];
@@ -1553,7 +1553,7 @@ function removeButton(chartInstanceNo, buttonType) {
         }
 }
 
-function chemicalTypeHasData(sheetName) {
+/*function wrongchemicalTypeHasData(sheetName) {
     chemicalTypeData = false;
     for (const ds in selectedSampleMeasurements) {
 //console.log(ds);
@@ -1565,6 +1565,23 @@ function chemicalTypeHasData(sheetName) {
             return chemicalTypeData;
         }
     }
+    return chemicalTypeData;
+}*/
+
+function chemicalTypeHasData(sheetName) {
+    chemicalTypeData = true;
+    for (const ds in selectedSampleMeasurements) {
+//console.log(ds);
+//console.log(ds, sheetName);
+        const chemicalTypes = Object.keys(selectedSampleMeasurements[ds]);
+//console.log(ds, sheetName, chemicalTypes);
+        if (!(chemicalTypes.includes(sheetName))) {
+            chemicalTypeData = false;
+//console.log('No data for ', sheetName);
+            return chemicalTypeData;
+        }
+    }
+    return chemicalTypeData;
 }
 
 function filenameDisplay() {

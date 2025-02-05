@@ -253,6 +253,8 @@ fred=selectedMeas;
                 i += 1;
             }
         }
+
+
         // Usage
         instanceNo = displayScatterCharts(sheetName,
             { key: 'totalArea', sheetKey: 'Physical Data' },
@@ -416,6 +418,7 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
 
         instanceNo = startInstanceNo;
         for (const c in chemicalData) {
+//console.log(sheetName, c);
             const data = fitConcentration ? 
                 concentrationFitter(fitConcentration[c], fitPredictors[c], 'Chart Analysis') : 
                 { beta: 0, R_squared: 0 }; // Default values for charts without fitting
