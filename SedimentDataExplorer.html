@@ -203,6 +203,8 @@
                 <label for="relationhc">Total hydrocarbons</label>
                 <input type="checkbox" id="relationtotalsolids" checked>
                 <label for="relationtotalsolids">Total solids</label>
+                <input type="checkbox" id="relationorganiccarbon" checked>
+                <label for="relationorganiccarbon">Organic Carbon</label>
             </div>
             <div>
                 Resuspension -
@@ -285,6 +287,14 @@
             <input type="text" id="urlLocations" placeholder="Enter comma-separated URLs">
             <!-- Accept comma-separated URLs -->
             <button onclick="importLocations()">Import Locations</button>
+        </div>
+
+        <div>
+            Shape files -
+            <input type="file" id="fileShapes" multiple> <!-- Allow multiple file selection -->
+            <input type="text" id="urlShapes" placeholder="Enter comma-separated URLs">
+            <!-- Accept comma-separated URLs -->
+            <button onclick="importShapes()">Import shape files (kml)</button>
         </div>
 
         <div>

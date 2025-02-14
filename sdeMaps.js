@@ -346,8 +346,12 @@ console.log(dateSampled,markerLayers[dateSampled]);
 //console.log(markerLayer,markerLayers);
 
 
-    var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml", {async: true});
-//console.log(kmlLayer);
+/*    var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml", {async: true});
+console.log(kmlLayer);
+    for (filename in kmlLayers) {
+        kmlLayer = kmlLayers[filename];
+    }
+console.log(kmlLayer);
     kmlLayer.on("loaded", function(e) {
     map.fitBounds(e.target.getBounds());
 fred = kmlLayer;
@@ -369,10 +373,53 @@ fred = kmlLayer;
     }
 });
 //console.log(markers,markerLayers);
-    var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
+//    var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
+    var shapeOverlay =  {'MLA_2015_00088-LOCATIONS.kml' : kmlLayer};
+    datesSampled.forEach(dateSampled => {
+        shapeOverlay[dateSampled] = markerLayer[dateSampled];
+    });*/
+
+    var shapeOverlay = {};
+    let kmlColors = [];
+    kmlColors[0] = '#FF0000';
+    kmlColors[1] = '#00FF00';
+    kmlColors[2] = '#0000FF';
+    colorNo = 0;
+
+    for (filename in kmlLayers) {
+        url = kmlLayers[filename];
+        kmlLayer = new L.KML(url, {async: true});
+        kmlLayer.on("loaded", function (e) {
+//            map.fitBounds(e.target.getBounds());
+            // Access nested layers and apply styles
+            const mainLayer = Object.values(e.target._layers)[0];
+            if (mainLayer && mainLayer._layers) {
+                Object.values(mainLayer._layers).forEach(function (layer) {
+                    if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
+                        layer.setStyle({
+                            color: kmlColors[colorNo],       // Set line color to red
+                            weight: 2,              // Set line thickness
+                            opacity: 0.5,           // Set line opacity
+                            fillColor: kmlColors[colorNo],   // Set fill color to red
+                            fillOpacity: 0.2        // Set fill opacity for polygons
+                        });
+                    }
+                });
+            }
+            if (colorNo < 2) {
+                colorNo += 1;
+            } else {
+                colorNo = 0;
+            }
+        });
+        shapeOverlay[filename] = kmlLayer;
+    }
     datesSampled.forEach(dateSampled => {
         shapeOverlay[dateSampled] = markerLayer[dateSampled];
     });
+
+
+
 //console.log(shapeOverlay,mapLayers);
     if (noLocations > 0) {
         const centreLat = latSum / noLocations;

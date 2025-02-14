@@ -1,6 +1,7 @@
     let testOne = {};
     let radarPlot = "None";
     let resuspensionSize = 0;
+    let kmlLayers = {};
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -61,7 +62,7 @@
         completeSheet[sheetName] = true;
     })*/
     subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest',
-                    'relationareadensity','relationhc','relationtotalsolids'];
+                    'relationareadensity','relationhc','relationtotalsolids','relationorganiccarbon'];
 //    relationNames = ['relationareadensity','relationhc','relationtotalsolids'];
         subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
@@ -77,7 +78,7 @@
                 ...subChartNames.filter(option => option.includes('pah') || option.includes('hc') || option.includes('gorham') || option.includes('ratios')
                  || option.includes('ring') || option.includes('totalhc'))];
     sortButtonGroups['Physical Data'] = [...sortingOptions.filter(option => option.includes('silt') || option.includes('sand') || option.includes('area') || option.includes('gravel')),
-                ...subChartNames.filter(option => option.includes('area') || option.includes('solid'))];
+                ...subChartNames.filter(option => option.includes('area') || option.includes('solid') || option.includes('organic'))];
 //                ...relationNames.filter(option => option.includes('area') || option.includes('solid'))];
     for (group in sortButtonGroups) {
 //console.log(group);
@@ -545,6 +546,74 @@ console.log('importChemInfo');
         urlInput.value = '';
     }
     
+    function importShapes() {
+        urls = {};
+        if (firstTime) {
+            firstTime = false;
+            files = {};
+            // Get the current URL
+            const currentURL = window.location.href;
+            
+            // Parse the URL to get the search parameters
+            const suppliedParams = new URLSearchParams(window.location.search);
+
+            // Get the value of the 'locations' parameter
+            const shapesParam = suppliedParams.get('shapes');
+            if (!shapesParam) {
+                return;
+            } else {
+                    urls = shapesParam.split(',').map(url => url.trim()); // Split comma-separated URLs
+            }
+        } else {
+            const fileInput = document.getElementById('fileShapes');
+            const urlInput = document.getElementById('urlShapes');
+            const files = fileInput.files; // Files is now a FileList object containing multiple files
+            urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+
+            if (files.length === 0 && urls.length === 0) {
+                alert('Please select files or enter URLs.');
+                return;
+            }
+            // Process files
+            for (let i = 0; i < files.length; i++) {
+                filename = files[i].name;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const data = new Uint8Array(e.target.result);
+                    processExcelLocations(data,filename);
+                };
+                reader.readAsArrayBuffer(files[i]);
+            }
+        }
+        // Process URLs only if URLs are supplied
+        if (urls.length > 0) {
+            urls.forEach(url => {
+            // Check if the URL is a valid URL before fetching
+                 if  (!/^https?:\/\//i.test(url)) {
+                     console.error('Invalid URL:', url);
+                     return;
+                 }
+                 const filename = url.split('/').pop();
+console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
+//"https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml"
+//                 kmlLayers[filename] = new L.KML(url, {async: true});
+                 kmlLayers[filename] = url;
+
+/*                 fetch(url)
+                    .then(response => response.arrayBuffer())
+                    .then(data => {
+                        processExcelLocations(new Uint8Array(data),url);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching the locations file:', error);
+                    });*/
+                });
+        }
+        // Clear the input field after reading locations
+        fileInput.value = '';
+        urlInput.value = '';
+    }
+   
     function processExcelLocations(data,url) {
         // Based on simple Excel data in first sheet
         // row 1 column titles

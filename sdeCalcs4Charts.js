@@ -350,6 +350,10 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                             xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Total solids (% total sediment)'];
                             break;
 
+                        case "organicCarbon":
+                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Organic matter (total organic carbon)'];
+                            break;
+    
                         default:
                             console.error(`Unknown chart type: ${chartType}`);
                             return;

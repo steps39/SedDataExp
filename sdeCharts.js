@@ -282,6 +282,18 @@ fred=selectedMeas;
             'chartContainer',
             instanceNo
         );
+
+        instanceNo = displayScatterCharts(sheetName,
+            { key: 'organicCarbon', sheetKey: 'Physical Data' },
+            'relationorganiccarbon',
+            'Organic Carbon %',
+            'Concentration',
+            'chartContainer',
+            instanceNo
+        );
+
+
+
 //    }
 
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
