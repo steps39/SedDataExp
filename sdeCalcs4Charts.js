@@ -180,9 +180,9 @@ function dataForCharting(sheetName) {
     });
     unitTitle = blankSheets[ct]['Unit of measurement'];
 //console.log(sheetName,measChart);
-    if (!(xAxisSort === 'normal')) {
+//    if (!(xAxisSort === 'normal')) {
         measChart = measChartSort(measChart);
-    }
+//    }
 //console.log(measChart);
     return { unitTitle, measChart }
 }
@@ -414,10 +414,10 @@ testOne = selectedSampleMeasurements[ds];
         }
     });
 //console.log(measChart);
-    if (!(xAxisSort === 'normal')) {
+//    if (!(xAxisSort === 'normal')) {
         measChart = propertyChartSort(measChart);
 //console.log(measChart);
-    }
+//    }
     return measChart
 }
 
@@ -453,10 +453,10 @@ allSamples.sortSamples(ds,'totalArea');
         }
     });
 //console.log(measChart);
-    if (!(xAxisSort === 'normal')) {
+//    if (!(xAxisSort === 'normal')) {
         measChart = propertyChartSort(measChart);
 //console.log(measChart);
-    }
+//    }
     return measChart
 }
 
@@ -510,11 +510,11 @@ function sumsForTotalHCCharting() {
     });
 //console.log(measChart);
 //console.log(xAxisSort);
-    if (!(xAxisSort === 'normal')) {
+//    if (!(xAxisSort === 'normal')) {
 //console.log(measChart);
         measChart = propertyChartSort(measChart);
 //console.log(Object.keys(measChart));
-    }
+//    }
 //console.log(measChart);
     return { unitTitle, measChart }
 }
@@ -561,9 +561,9 @@ function ratiosForPAHs() {
         }
     });
 //console.log('ratios',measChart);
-if (!(xAxisSort === 'normal')) {
+//if (!(xAxisSort === 'normal')) {
     measChart = propertyChartSort(measChart);
-}
+//}
 return {unitTitle, measChart}
 }
 
@@ -609,9 +609,9 @@ function simpleRatiosForPAHs() {
         }
     });
 //console.log('ratios',measChart);
-if (!(xAxisSort === 'normal')) {
+//if (!(xAxisSort === 'normal')) {
     measChart = propertyChartSort(measChart);
-}
+//}
 return {unitTitle, measChart}
 }
 
@@ -652,9 +652,9 @@ function epaRatiosForPAHs() {
             }
         });
 //console.log('ratios',measChart);
-if (!(xAxisSort === 'normal')) {
+//if (!(xAxisSort === 'normal')) {
     measChart = propertyChartSort(measChart);
-}
+//}
     return {unitTitle, measChart}
     }
 
@@ -701,9 +701,9 @@ function ringFractionsForPAHs() {
         }
     });
 //console.log('ratios',measChart);
-if (!(xAxisSort === 'normal')) {
+//if (!(xAxisSort === 'normal')) {
     measChart = propertyChartSort(measChart);
-}
+//}
 return {unitTitle, measChart}
 }
 

@@ -44,9 +44,16 @@ Array.prototype.sortComplexSamples = function() {
         if (partsB.length >2) {
             partsB[1] = partsB[1] + ': ' + partsB[2];
         }
-        selectedSampleInfo[partsA[0]].position[partsA[1]]
+//        selectedSampleInfo[partsA[0]].position[partsA[1]]
 //console.log(partsA);
 //console.log(partsB);
+
+        // Sorting by datesampled and label
+        if (xAxisSort === 'normal') {
+            const valueA = (selectedSampleInfo[partsA[0]]['label'] + selectedSampleInfo[partsA[0]].position[partsA[1]]['label']).toLowerCase();
+            const valueB = (selectedSampleInfo[partsB[0]]['label'] + selectedSampleInfo[partsB[0]].position[partsB[1]]['label']).toLowerCase();
+            return valueA.localeCompare(valueB);
+        }
         // Sorting by latitude
         if (xAxisSort === 'latitude') {
             const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
@@ -171,7 +178,7 @@ Array.prototype.sortComplexSamples = function() {
 
         // Sorting by datetototalarea
         if (xAxisSort === 'datetotalarea') {
-console.log('datetotalarea');
+//console.log('datetotalarea');
             if (partsA[0] === partsB[0]) {
                 const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
                 const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;

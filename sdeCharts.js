@@ -1601,9 +1601,9 @@ console.log('createHighlights',hoveredSample,dateSampled);
         //			}
     });
     //This needs the new sorting logic  *************************************************************************
-    if (!(xAxisSort === 'normal')) {
+//    if (!(xAxisSort === 'normal')) {
         samples.sortComplexSamples();
-    }
+//    }
 //console.log(samples, hoveredSample);
     if (!dateSampled) {
         clickedSamples = findSamplesInSameLocation(hoveredSample);
