@@ -253,6 +253,7 @@ Array.prototype.sortComplexSamples = function() {
         }
         
         // Default case if no valid sort key is provided
+        // Usorted
         return 0;
     });
 };
@@ -544,7 +545,7 @@ function pahPostProcess(newMeas,dateSampled) {
         mmeas = newMeas;
         sums = {};
         // Goring Test protocol here, but results stored by sample
-        const lmw = ['Acenaphthene', 'Acenaphthylene', 'Anthracene', 'Fluorene', 'C1-Naphthalenes', 'Naphthalene', 'Phenanthrene'];
+        const lmw = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'C1-Napthalenes',  'Fluorene','Napthalene', 'Phenanthrene'];
         const hmw = ['Benz[a]anthracene', 'Benzo[a]pyrene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene', 'Pyrene'];
 
         for (const chemical in mmeas.chemicals) {
@@ -559,6 +560,7 @@ function pahPostProcess(newMeas,dateSampled) {
                 //console.log(meas[chemical][sample]);
                 if (lmw.includes(chemical)) {
                     const lmwConcentrationSum = mmeas.chemicals[chemical].samples[sample] || 0;
+//console.log(chemical,sample,lmwConcentrationSum);
                     sums[sample].lmwSum += lmwConcentrationSum;
                 } else if (hmw.includes(chemical)) {
                     const hmwConcentrationSum = mmeas.chemicals[chemical].samples[sample] || 0;

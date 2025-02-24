@@ -1278,7 +1278,7 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
     convas.style.display = "block";
     instanceType[instanceNo] = 'gorham';
     instanceSheet[instanceNo] = sheetName;
-    const lmw = ['Acenaphthene', 'Acenaphthylene', 'Anthracene', 'Fluorene', 'C1-Naphthalenes', 'Naphthalene', 'Phenanthrene'];
+    const lmw = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Fluorene', 'C1-Napthalenes', 'Napthalene', 'Phenanthrene'];
     const hmw = ['Benz[a]anthracene', 'Benzo[a]pyrene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene', 'Pyrene'];
     const LMW = {
         ERL: 552,

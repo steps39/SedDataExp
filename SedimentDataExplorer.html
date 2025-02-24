@@ -237,6 +237,8 @@
 
         <div>
             Sample sorting for charts
+            <input type="radio" name="sorting" id="unsorted" value="unsorted" checked>
+            <label for="unsorted">Unsorted</label>
             <input type="radio" name="sorting" id="longitude" value="longitude">
             <label for="longitude">Longitude</label>
             <input type="radio" name="sorting" id="latitude" value="latitude">
@@ -261,7 +263,7 @@
             <label for="sand">Weight fraction of sand</label>
             <input type="radio" name="sorting" id="gravel" value="gravel">
             <label for="gravel">Weight fraction of gravel</label>
-            <input type="radio" name="sorting" id="normal" value="normal" checked>
+            <input type="radio" name="sorting" id="normal" value="normal">
             <label for="normal">Date of sampling</label>
             <input type="radio" name="sorting" id="datelongitude" value="datelongitude">
             <label for="datelongitude">Date of sampling then longitude</label>
@@ -320,8 +322,10 @@
     <div id="fileDisplay">
     </div>
     <div id="sample-info-table-container"></div>
-    <div id="map" style="height: 800px;"></div>
-    Radar Popup: <div id="radarPlots"></div>
+    <div id="everything-maps" style="display: none;">
+        <div id="map" style="height: 800px;"></div>
+        Radar Popup: <div id="radarPlots"></div>
+    </div>
     <div id="chartContainer"></div>
     <div id="chartsForMapContainer"></div>
     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>

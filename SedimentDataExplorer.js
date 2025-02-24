@@ -69,7 +69,7 @@
         subName = subChartNames[i];
         subsToDisplay[subName] = false;
     }
-    sortingOptions = ['normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
+    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
         'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
     sortButtonGroups['area'] = [...sortingOptions.filter(option => option.includes('area')), ...subChartNames.filter(option => option.includes('area'))];
     sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7'))];/*,
@@ -692,8 +692,20 @@ function importData() {
         }
         checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
         checkboxParameters(suppliedParams, 'subcharts', subChartNames);
-        const noninter = suppliedParams.get('noninter');
-        if (!noninter) {
+        const featuresParams = suppliedParams.get('features');
+        if (featuresParams) {
+            features = featuresParams.split(',').map(feature => feature.trim()); // Split comma-separated features
+            if(!features.includes('nomap')) {
+                const everythingMaps = document.getElementById('everything-maps');
+                everythingMaps.style.display = 'inline';
+            }
+            if(!features.includes('noninter')) {
+                const everything = document.getElementById('everything');
+                everything.style.display = 'inline';
+            }
+        } else {
+            const everythingMaps = document.getElementById('everything-maps');
+            everythingMaps.style.display = 'inline';
             const everything = document.getElementById('everything');
             everything.style.display = 'inline';
         }
