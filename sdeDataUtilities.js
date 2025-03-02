@@ -527,6 +527,7 @@ function pcbPostProcess(newMeas,dateSampled) {
 }
 
 function pahPostProcess(newMeas,dateSampled) {
+console.log('fered');
     sheetName = 'PAH data';
     const chemicals = sampleMeasurements[dateSampled][sheetName].chemicals;
     if ('Acenapthene' in chemicals) {
@@ -573,14 +574,17 @@ function pahPostProcess(newMeas,dateSampled) {
         sampleMeasurements[dateSampled][sheetName].ratios = {};
         sampleMeasurements[dateSampled][sheetName].ringSums = {};
         sampleMeasurements[dateSampled][sheetName].simpleRatios = {};
+//console.log('stuff there');
         const allSamples = Object.keys(sampleInfo[dateSampled].position);
         allSamples.sort();
         allSamples.forEach(s => {
+//console.log('stuff here');
             const ace = chemicals['Acenapthene'].samples[s];//3
             const aceph = chemicals['Acenapthylene'].samples[s];//3
             const anth = chemicals['Anthracene'].samples[s];//3//Ant
             const baa = chemicals['Benz[a]anthracene'].samples[s];//4
             const bap = chemicals['Benzo[a]pyrene'].samples[s];//5
+            const bep = chemicals['Benzo[e]pyrene'].samples[s];
             const bbf = chemicals['Benzo[b]fluoranthene'].samples[s];//4
             const bghip = chemicals['Benzo[g,h,i]perylene'].samples[s];//6//Bgp
             const bkf = chemicals['Benzo[k]fluoranthene'].samples[s];//4
@@ -592,49 +596,55 @@ function pahPostProcess(newMeas,dateSampled) {
             const phen = chemicals['Phenanthrene'].samples[s];//3
             const naph = chemicals['Napthalene'].samples[s];//2
             const pyr = chemicals['Pyrene'].samples[s];//4
-            m = {};
+            let m1 = {};
             //Diagnostic ratios
             //IP/(IP+B(ghi)P)
-            m['IP/(IP+B(ghi)P)'] = ip / (ip + bghip);
+            m1['IP/(IP+B(ghi)P)'] = ip / (ip + bghip);
             //BaA/(BaA+Chr)
-            m['BaA/(BaA+Chr)'] = baa / (baa + chr);
+            m1['BaA/(BaA+Chr)'] = baa / (baa + chr);
             //BaP/(BaP+Chr)
-            m['BaP/(BaP+Chr)'] = bap / (bap + chr);
+            m1['BaP/(BaP+Chr)'] = bap / (bap + chr);
             //Phen/(Phen+Anth)
-            m['Phen/(Phen+Anth)'] = phen / (phen + anth);
+            m1['Phen/(Phen+Anth)'] = phen / (phen + anth);
             //BaA/(BaA+BaP)
-            m['BaA/(BaA+BaP)'] = baa / (baa + bap);
+            m1['BaA/(BaA+BaP)'] = baa / (baa + bap);
             //BbF/(BbF+BkF)
-            m['BbF/(BbF+BkF)'] = bbf / (bbf + bkf);
-            sampleMeasurements[dateSampled][sheetName].ratios[s] = m;
-            m = {};
+            m1['BbF/(BbF+BkF)'] = bbf / (bbf + bkf);
+            sampleMeasurements[dateSampled][sheetName].ratios[s] = m1;
+            let m2 = {};
             // Dash Sums: L'PAHs - Phen + Anth + Flu + Pyr; H'PAHs - BaA + Chr + BbF + BkF + BaP + IP + DBA + BgP
-            m['LdPAHs'] = phen + anth + flu + pyr;
-            m['HdPAHs'] = baa + chr + bbf + bkf + bap + ip + dba + bghip;
-            m['Total d PAHs'] = m['LdPAHs'] + m['HdPAHs'];
+            m2['LdPAHs'] = phen + anth + flu + pyr;
+            m2['HdPAHs'] = baa + chr + bbf + bkf + bap + ip + dba + bghip;
+            m2['Total d PAHs'] = m2['LdPAHs'] + m2['HdPAHs'];
             // EPS Sums: LPAHs - Naph, Aceph, Ace, Fl, Phen and Ant; HPAHs - Flu, Pyr, BaA, Chr, BbF, BkF, BaP, DBA, BgP and Inp
-            m['LPAHs'] = naph + aceph + ace + fl + phen + anth;
-            m['HPAHs'] = flu + pyr + baa + chr + bbf + bkf + bap + dba + bghip + ip;
-            m['Total EPA PAHs'] = m['LPAHs'] + m['HPAHs'];
+            m2['LPAHs'] = naph + aceph + ace + fl + phen + anth;
+            m2['HPAHs'] = flu + pyr + baa + chr + bbf + bkf + bap + dba + bghip + ip;
+            m2['Total EPA PAHs'] = m2['LPAHs'] + m2['HPAHs'];
             // Ring Sums
-            m['Sum of 2 rings'] = naph;//2
-            m['Sum of 3 rings'] = ace + aceph + anth + fl + phen;//3
-            m['Sum of 4 rings'] = baa + bbf + bkf + chr + flu + pyr;//4
-            m['Sum of 5 rings'] = bap + dba + ip;//5
-            m['Sum of 6 rings'] = bghip;//6
-            m['Total all rings'] = m['Sum of 2 rings'] + m['Sum of 3 rings'] + m['Sum of 4 rings'] + m['Sum of 5 rings'] + m['Sum of 6 rings'];
-            sampleMeasurements[dateSampled][sheetName].ringSums[s] = m;
-            m = {};
-            m['Phen/Anth'] = phen / anth;
-            m['Flu/Pyr'] = flu / pyr;
-            m['Baa/Chr'] = baa / chr;
-            if (chemicals['Benzo[e]pyrene'] === undefined || chemicals['Benzo[e]pyrene'] === null) {
-                const bep = chemicals['Benzo[e]pyrene'].sample[s];
-                m['Bep/Bap'] = bep / bap;
-            } else {
+            m2['Sum of 2 rings'] = naph;//2
+            m2['Sum of 3 rings'] = ace + aceph + anth + fl + phen;//3
+            m2['Sum of 4 rings'] = baa + bbf + bkf + chr + flu + pyr;//4
+            m2['Sum of 5 rings'] = bap + dba + ip;//5
+            m2['Sum of 6 rings'] = bghip;//6
+            m2['Total all rings'] = m2['Sum of 2 rings'] + m2['Sum of 3 rings'] + m2['Sum of 4 rings'] + m2['Sum of 5 rings'] + m2['Sum of 6 rings'];
+            sampleMeasurements[dateSampled][sheetName].ringSums[s] = m2;
+            let m3 = {};
+            m3['Phen/Anth'] = phen / anth;
+            m3['Flu/Pyr'] = flu / pyr;
+            m3['Baa/Chr'] = baa / chr;
+            m3['Bep/Bap'] = bep / bap;
+/*            m['Phen/Anth'] = 10;
+            m['Flu/Pyr'] = 10;
+            m['Baa/Chr'] = 10;
+            m['Bep/Bap'] = 10;            //            if (chemicals['Benzo[e]pyrene'] === undefined || chemicals['Benzo[e]pyrene'] === null) {
+//                const bep = chemicals['Benzo[e]pyrene'].samples[s];
+console.log(bap);
+console.log(bep);
+//                m['Bep/Bap'] = bep / bap;
+/*            } else {
                 m['Bep/Bap'] = 0;
-            }
-            sampleMeasurements[dateSampled][sheetName].simpleRatios[s] = m;
+            }*/
+            sampleMeasurements[dateSampled][sheetName].simpleRatios[s] = m3;
         });
     }
 }

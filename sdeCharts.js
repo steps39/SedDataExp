@@ -1135,8 +1135,8 @@ if (dsiplayALs) {
             }
         });
         maxConc = findMaxConcentration(meas);
-    //console.log('maxConc ',maxConc);
-    //console.log(meas);			
+//console.log('maxConc ',maxConc);
+//console.log(meas);			
         if (maxConc > alMax) {
             alMax = maxConc;
         }
@@ -1146,7 +1146,7 @@ if (dsiplayALs) {
         if (al2) {
             chartLabel(instanceNo,alX,0.9*alMax,actionLevelColors[1],'Action Level 2                  ');
             chartLine(instanceNo,'Legend - Action Level 2',alX*1.4,alX*2.5,0.9*alMax,0.9*alMax,actionLevelColors[1],actionLevelDashes[1]);
-console.log(sheetName,'here');
+//console.log(sheetName,'here');
         }
     }
 }
