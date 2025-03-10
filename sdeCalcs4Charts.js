@@ -142,7 +142,7 @@ function dataForCharting(sheetName) {
     let ct = sheetName;
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let measChart = {};
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach(ds => {
         if (ct in selectedSampleMeasurements[ds]) {
             //        if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null )) {
@@ -153,9 +153,9 @@ function dataForCharting(sheetName) {
                     measChart[c] = {};
                 }
                 let allSamples = Object.keys(selectedSampleInfo[ds].position);
-                allSamples.sort();
+//srg250308                allSamples.sort();
 //console.log(ds);
-                allSamples.sortSamples(ds, 'totalArea');
+//srg250308                allSamples.sortSamples(ds, 'totalArea');
                 allSamples.forEach(s => {
                     if (selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == undefined || selectedSampleMeasurements[ds][ct].chemicals[c].samples[s] == null) {
                         measChart[c][ds + ': ' + s] = 0.0;
@@ -171,7 +171,7 @@ function dataForCharting(sheetName) {
                     measChart[c] = {};
                 }
                 let allSamples = Object.keys(selectedSampleInfo[ds].position);
-                allSamples.sort();
+//srg250308                allSamples.sort();
                 allSamples.forEach(s => {
                     measChart[c][ds + ': ' + s] = 0.0;
                 });
@@ -180,9 +180,9 @@ function dataForCharting(sheetName) {
     });
     unitTitle = blankSheets[ct]['Unit of measurement'];
 //console.log(sheetName,measChart);
-//    if (!(xAxisSort === 'normal')) {
+    if (!(xAxisSort === 'normal')) {
         measChart = measChartSort(measChart);
-//    }
+    }
 //console.log(measChart);
     return { unitTitle, measChart }
 }
@@ -229,7 +229,7 @@ function dataForPSDCharting(sheetName) {
     let splitRelativeAreas = {};
     let cumWeights = {};
     let cumAreas = {};
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
        datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
             ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
@@ -387,7 +387,7 @@ function sumsForCongenerCharting() {
     let datesSampled = Object.keys(selectedSampleMeasurements);
     let measChart = {};
 //			for (const ds in selected) {
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
        datesSampled.forEach (ds => {
 //        if (!(selectedSampleMeasurements[ds]['PCB data'] == undefined || selectedSampleMeasurements[ds]['PCB data'] == null)) {
 testOne = selectedSampleMeasurements[ds];
@@ -395,7 +395,7 @@ testOne = selectedSampleMeasurements[ds];
 //					for (const s in selected[ds]['PCB data'].congenerTest) {
 //            for (const s in selectedSampleInfo[ds].position) {
                 const allSamples = Object.keys(selectedSampleInfo[ds].position);
-                allSamples.sort();
+//srg250308                allSamples.sort();
                 allSamples.forEach(s => {
 //console.log(ds,s);
                 if (selectedSampleMeasurements[ds]['PCB data'].congenerTest[s] == undefined || selectedSampleMeasurements[ds]['PCB data'].congenerTest[s] == null) {
@@ -407,7 +407,7 @@ testOne = selectedSampleMeasurements[ds];
         } else {
 //            for (const s in selectedSampleInfo[ds].position) {
     const allSamples = Object.keys(selectedSampleInfo[ds].position);
-    allSamples.sort();
+//srg250308    allSamples.sort();
     allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = { All : 0.0, ICES7 : 0.0};
             });
@@ -425,7 +425,7 @@ function sumsForGorhamCharting() {
     ct = 'PAH data';
     let datesSampled = Object.keys(selectedSampleMeasurements);
     let measChart = {};
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach(ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
@@ -433,9 +433,9 @@ function sumsForGorhamCharting() {
 //console.log(allChemicals);
             const allSamples = Object.keys(selectedSampleMeasurements[ds]['PAH data'].chemicals[allChemicals[0]].samples);
 //console.log(allSamples);
-            allSamples.sort();
+//srg250308            allSamples.sort();
 //            allSamples.sort((a, b) => selectedSampleInfo[ds].position[a]['Position latitude'] - selectedSampleInfo[ds].position[b]['Position latitude']);
-allSamples.sortSamples(ds,'totalArea');
+//srg250308     allSamples.sortSamples(ds,'totalArea');
 //console.log(allSamples);
             allSamples.forEach(s => {
                 if (selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s] == undefined || selectedSampleMeasurements[ds]['PAH data'].gorhamTest[s] == null) {
@@ -446,7 +446,7 @@ allSamples.sortSamples(ds,'totalArea');
             });
         } else {
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = { hmwSum: 0.0, lmwSum: 0.0 };
             });
@@ -466,10 +466,10 @@ function sumsForTotalHCCharting() {
     unitTitle = blankSheets[ct]['totalHCUnit'];
     let measChart = {};
     sampleNo = -1;
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach(ds => {
         const allSamples = Object.keys(selectedSampleInfo[ds].position);
-        allSamples.sort();
+//srg250308        allSamples.sort();
     if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
         (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
 //console.log(ds,allSamples);
@@ -525,13 +525,13 @@ function ratiosForPAHs() {
     unitTitle = 'Ratio';
     measChart = {};
     sampleNo = -1;
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
             const ratios = sampleMeasurements[ds]['PAH data'].ratios;
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = ratios[s];
                 sampleNo += 1;
@@ -539,7 +539,7 @@ function ratiosForPAHs() {
             });
         } else {
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 const m = {};
                 //IP/(IP+B(ghi)P)
@@ -573,13 +573,13 @@ function simpleRatiosForPAHs() {
     let unitTitle = 'Ratio';
     let measChart = {};
     let sampleNo = -1;
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
             let simpleRatios = sampleMeasurements[ds]['PAH data'].simpleRatios;
             let allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 measChart[ds + ': ' + s] = simpleRatios[s];
                 sampleNo += 1;
@@ -587,7 +587,7 @@ function simpleRatiosForPAHs() {
             });
         } else {
             const allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 const m = {};
                 //IP/(IP+B(ghi)P)    ????????????????????????????????????
@@ -621,13 +621,13 @@ function epaRatiosForPAHs() {
         let unitTitle = 'Fraction';
         let measChart = {};
         let sampleNo = -1;
-        datesSampled.sort();
+//srg250308        datesSampled.sort();
         datesSampled.forEach (ds => {
             if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
                 (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
                 let ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
                 let allSamples = Object.keys(selectedSampleInfo[ds].position);
-                allSamples.sort();
+//srg250308                allSamples.sort();
                 allSamples.forEach(s => {
                     let  rs = ringSums[s];
                     let  total = rs['Total EPA PAHs'];
@@ -640,7 +640,7 @@ function epaRatiosForPAHs() {
                 });
             } else {
                 let  allSamples = Object.keys(selectedSampleInfo[ds].position);
-                allSamples.sort();
+//srg250308                allSamples.sort();
                 allSamples.forEach(s => {
                     const m = {};
                     m['LPAHs/Total'] = 0.0;
@@ -664,13 +664,13 @@ function ringFractionsForPAHs() {
     let unitTitle = 'Fraction per ring size';
     let measChart = {};
     let sampleNo = -1;
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach (ds => {
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null ||
             (ct === 'PAH data' && !('Acenapthene' in selectedSampleMeasurements[ds][ct].chemicals) ) )) {
             let  ringSums = sampleMeasurements[ds]['PAH data'].ringSums;
             let  allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 let  rs = ringSums[s];
                 let  total = rs['Total all rings'];
@@ -686,7 +686,7 @@ function ringFractionsForPAHs() {
             });
         } else {
             let allSamples = Object.keys(selectedSampleInfo[ds].position);
-            allSamples.sort();
+//srg250308            allSamples.sort();
             allSamples.forEach(s => {
                 let  m = {};
                 m['2rings/tot'] = 0;

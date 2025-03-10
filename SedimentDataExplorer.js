@@ -39,6 +39,20 @@
         instanceType[i] = null;
         instanceSheet[i] = null;
     }
+    determinands = {};
+    determinands.pah = {};
+    determinands.pah.all = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Benz[a]anthracene', 'Benzo[a]pyrene', 'Benzo[b]fluoranthene',
+                            'Benzo[g,h,i]perylene', 'Benzo[e]pyrene', 'Benzo[k]fluoranthene', 'C1-Napthalenes', 'C1-Phenanthrenes',
+                            'C2-Napthalenes', 'C3-Napthalenes', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene',
+                            'Fluorene', 'Indeno[123-c,d]pyrene', 'Napthalene', 'Perylene', 'Phenanthrene', 'Pyrene'];
+    determinands.pah.lmw = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'C1-Napthalenes',  'Fluorene','Napthalene', 'Phenanthrene'];
+    determinands.pah.hmw = ['Benz[a]anthracene', 'Benzo[a]pyrene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene', 'Pyrene'];
+    determinands.pah.epa = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Benz[a]anthracene', 'Benzo[a]pyrene', 'Benzo[b]fluoranthene',
+                            'Benzo[g,h,i]perylene', 'Benzo[k]fluoranthene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene',
+                            'Fluorene', 'Indeno[123-c,d]pyrene', 'Napthalene', 'Phenanthrene', 'Pyrene'];
+    determinands.pah.smallpts = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Benzo[b]fluoranthene', 'Benzo[g,h,i]perylene',
+                            'Benzo[e]pyrene', 'Benzo[k]fluoranthene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene',
+                            'Fluorene', 'Indeno[123-c,d]pyrene', 'Pyrene'];
     dataSheetNames = ['Physical Data','Trace metal data','PAH data','PCB data','BDE data','Organotins data','Organochlorine data'];
     dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT',
         'Organochlorine data': 'OC'};
@@ -1620,6 +1634,11 @@ function removeButtons(chartInstanceNo) {
     removeButton(chartInstanceNo, 's');
     removeButton(chartInstanceNo, 'c');    
     removeButton(chartInstanceNo, 'e');    
+    removeButton(chartInstanceNo, 'r');
+    removeButton(chartInstanceNo, 'epa');    
+    removeButton(chartInstanceNo, 'lmw');    
+    removeButton(chartInstanceNo, 'hmw');    
+    removeButton(chartInstanceNo, 'smallpts');    
 }
 
 function removeButton(chartInstanceNo, buttonType) {

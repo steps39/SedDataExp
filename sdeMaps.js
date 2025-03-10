@@ -104,7 +104,7 @@ function sampleMap(meas) {
     icons = [];
     iconNos = [];
     markers = {};
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach(dateSampled => {
         markers[dateSampled] = {};
         iconNos[dateSampled] = iconNo;
@@ -123,7 +123,7 @@ function sampleMap(meas) {
             allSamples.push(dateSampled + ": " + sample);
         })
     });
-    allSamples.sort();
+//srg250308    allSamples.sort();
     if (!(xAxisSort === 'normal')) {
         allSamples.sortComplexSamples();
     }

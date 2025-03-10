@@ -527,7 +527,7 @@ function pcbPostProcess(newMeas,dateSampled) {
 }
 
 function pahPostProcess(newMeas,dateSampled) {
-console.log('fered');
+//console.log('fered');
     sheetName = 'PAH data';
     const chemicals = sampleMeasurements[dateSampled][sheetName].chemicals;
     if ('Acenapthene' in chemicals) {

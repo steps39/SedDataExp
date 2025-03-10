@@ -102,6 +102,86 @@ function displayPsdSplits(sums, sheetName, instanceNo, unitTitle, subTitle) {
 }
 
 
+// Function to toggle dataset visibility
+function toggleDataset(instanceNo, chemicalGroup) {
+    const chart = chartInstance[instanceNo];
+    if (!chart) return;
+
+    dataset = chart.data.datasets.forEach((ds, index) => {
+        if (!determinands.pah[chemicalGroup.toLowerCase()].includes(ds.label)) {
+            ds.hidden = true;
+            // Ensure internal Chart.js tracking is also updated
+            if (chart._metasets && chart._metasets[index]) {
+                chart._metasets[index].hidden = true;
+            }
+        }
+    });
+    chart.update();
+    document.getElementById('button'+chemicalGroup.toLowerCase()+instanceNo).disabled = true;
+}
+
+// Function to create a button for resetting samples in a chart
+function createDisplayChemicals(instanceNo,chemicalGroup) {
+    //console.log('creating zoom buttom',instanceNo);
+    let chart = chartInstance[instanceNo];
+    const container = document.getElementById('chartContainer');
+    const button = document.createElement('button');
+    button.id = 'button'+chemicalGroup.toLowerCase()+instanceNo
+    button.textContent = 'Select ' + chemicalGroup;
+    button.addEventListener('click', () => {
+        toggleDataset(instanceNo,chemicalGroup);
+    });
+    container.appendChild(button);
+}
+    
+
+
+// Function to reset chart (show all chemical
+// s)
+function resetDataset(instanceNo) {
+    const chart = chartInstance[instanceNo];
+    if (!chart) {
+        console.log('Chart not found');
+        return;
+    }
+    chart.data.datasets.forEach((ds, index) => {
+        if (ds.hidden) {
+            ds.hidden = false;
+        }
+    });
+    // Reset internal Chart.js hidden state (for legend toggling)
+    if (chart._metasets) {
+        chart._metasets.forEach(meta => {
+            meta.hidden = false;
+        });
+    }
+    enableDataButtons(instanceNo,['epa','lmw','hmw','smallpts']);
+    chart.update();
+}
+
+function enableDataButtons(instanceNo,chemicalGroups) {
+    for (let i = 0; i < chemicalGroups.length; i++) {
+        document.getElementById('button'+chemicalGroups[i].toLowerCase()+instanceNo).disabled = false;
+    }
+}
+//document.getElementById(id).disabled = false;
+
+
+// Function to create a button for resetting samples in a chart
+function createResetChart(instanceNo) {
+    //console.log('creating zoom buttom',instanceNo);
+    let chart = chartInstance[instanceNo];
+    const container = document.getElementById('chartContainer');
+    const button = document.createElement('button');
+    button.id = 'buttonr'+instanceNo
+    button.textContent = 'Reset Dataset';
+    button.addEventListener('click', () => {
+        resetDataset(instanceNo);
+    });
+    container.appendChild(button);
+}
+    
+        
 
 function displayCharts(sheetName, instanceNo) {
 //    totalAreasAvailable = true;
@@ -178,6 +258,16 @@ fred=selectedMeas;
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
+console.log(sheetName, selectedMeas, instanceNo, unitTitle);
+/*            if(sheetName === 'PAH data') {
+//This is where to create the buttons which show different PAH groups
+console.log('PAH data reset');
+                createDisplayChemicals(instanceNo,'EPA');
+                createDisplayChemicals(instanceNo,'LMW');
+                createDisplayChemicals(instanceNo,'HMW');
+                createDisplayChemicals(instanceNo,'SmallPts');
+                createResetChart(instanceNo);
+            }*/
             if (completeSheet['Physical Data']) {
                 if (resuspensionSize > 0) {
                     instanceNo += 1;
@@ -836,6 +926,15 @@ function displaySampleChart(meas, sheetName, instanceNo, unitTitle) {
         };
     });
     displayAnySampleChart(meas, allSamples,datasets,instanceNo,sheetName,unitTitle,false);
+    if(sheetName === 'PAH data') {
+        //This is where to create the buttons which show different PAH groups
+        console.log('PAH data reset');
+        createDisplayChemicals(instanceNo, 'EPA');
+        createDisplayChemicals(instanceNo, 'LMW');
+        createDisplayChemicals(instanceNo, 'HMW');
+        createDisplayChemicals(instanceNo, 'SmallPts');
+        createResetChart(instanceNo);
+    }
 }
 
 function highlightMapLocation(clickedIndex) {
@@ -1589,12 +1688,12 @@ console.log('createHighlights',hoveredSample,dateSampled);
     noSamples = 0;
     samples = [];
     const datesSampled = Object.keys(selectedSampleInfo);
-    datesSampled.sort();
+//srg250308    datesSampled.sort();
     datesSampled.forEach(dateSampled => {
         const ok = Object.keys(selectedSampleInfo[dateSampled].position);
         noSamples += ok.length;
         const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
-        allSamples.sort();
+//srg250308        allSamples.sort();
         allSamples.forEach(sample => {
             samples.push(dateSampled + ': ' + sample);
         });
