@@ -46,6 +46,7 @@ function updateChart(){
 //console.log('UPDATECHART*******************');
     if (lastInstanceNo > 0) {
         const canvas = [];
+        removeScatterTables();
         for (i = 1; i < lastInstanceNo + 1; i++) {
             canvas[i] = document.getElementById('chart' + i);
             clearCanvasAndChart(canvas[i], i);
@@ -184,7 +185,7 @@ function createResetChart(instanceNo) {
         
 
 function displayCharts(sheetName, instanceNo) {
-//    totalAreasAvailable = true;
+    //    totalAreasAvailable = true;
     if(sheetName === 'Physical Data') {
         retData = dataForPSDCharting(sheetName);
         unitTitle = retData['unitTitle'];
@@ -477,6 +478,22 @@ console.log('PAH data reset');
     // Display the canvas
 //console.log('Display the canvas ',instanceNo);
     return instanceNo
+}
+
+function removeScatterTables() {
+    const chartContainer = document.getElementById('chartContainer');
+    
+    // Remove all tables inside chartContainer
+    const tables = chartContainer.getElementsByTagName('table');
+    while (tables.length > 0) {
+        tables[0].remove();
+    }
+
+    // Optionally, remove the button container if it exists
+    const buttonContainer = document.getElementById('chartButtons');
+    if (buttonContainer) {
+        buttonContainer.remove();
+    }
 }
 
 function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLabel, containerId, instanceNo) {

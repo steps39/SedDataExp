@@ -217,6 +217,7 @@ function propertyChartSort(measChart) {
 function dataForPSDCharting(sheetName) {
     let  datesSampled = Object.keys(selectedSampleMeasurements);
     let ct = sheetName;
+console.log('dataForPSD ',ct,blankSheets);
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let measChart = {};
     let measChartArea = {};
@@ -231,6 +232,7 @@ function dataForPSDCharting(sheetName) {
     let cumAreas = {};
 //srg250308    datesSampled.sort();
        datesSampled.forEach (ds => {
+//console.log(ds);
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
             ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
             ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
