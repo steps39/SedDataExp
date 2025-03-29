@@ -50,9 +50,10 @@
     determinands.pah.epa = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Benz[a]anthracene', 'Benzo[a]pyrene', 'Benzo[b]fluoranthene',
                             'Benzo[g,h,i]perylene', 'Benzo[k]fluoranthene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene',
                             'Fluorene', 'Indeno[123-c,d]pyrene', 'Napthalene', 'Phenanthrene', 'Pyrene'];
-    determinands.pah.smallpts = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Benzo[b]fluoranthene', 'Benzo[g,h,i]perylene',
-                            'Benzo[e]pyrene', 'Benzo[k]fluoranthene', 'Chrysene', 'Dibenz[a,h]anthracene', 'Fluoranthene',
-                            'Fluorene', 'Indeno[123-c,d]pyrene', 'Pyrene'];
+    determinands.pah.smallpts = ['Acenapthene', 'Acenapthylene', 'Anthracene', 'Benz[a]anthracene', 'Benzo[a]pyrene', 'Benzo[b]fluoranthene',
+                            'Benzo[g,h,i]perylene', 'Benzo[e]pyrene', 'Benzo[k]fluoranthene', 'Chrysene', 'Dibenz[a,h]anthracene',
+                            'Fluoranthene', 'Fluorene', 'Indeno[123-c,d]pyrene', 'Pyrene'];
+    determinands.pah.organicc = ['C1-Napthalenes', 'C1-Phenanthrenes', 'C2-Napthalenes', 'C3-Napthalenes', 'Napthalene', 'Phenanthrene'];
     dataSheetNames = ['Physical Data','Trace metal data','PAH data','PCB data','BDE data','Organotins data','Organochlorine data'];
     dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT',
         'Organochlorine data': 'OC'};
@@ -1639,6 +1640,7 @@ function removeButtons(chartInstanceNo) {
     removeButton(chartInstanceNo, 'lmw');    
     removeButton(chartInstanceNo, 'hmw');    
     removeButton(chartInstanceNo, 'smallpts');    
+    removeButton(chartInstanceNo, 'organicc');    
 }
 
 function removeButton(chartInstanceNo, buttonType) {

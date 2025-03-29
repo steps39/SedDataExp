@@ -156,7 +156,7 @@ function resetDataset(instanceNo) {
             meta.hidden = false;
         });
     }
-    enableDataButtons(instanceNo,['epa','lmw','hmw','smallpts']);
+    enableDataButtons(instanceNo,['epa','lmw','hmw','smallpts','organicc']);
     chart.update();
 }
 
@@ -267,6 +267,7 @@ console.log('PAH data reset');
                 createDisplayChemicals(instanceNo,'LMW');
                 createDisplayChemicals(instanceNo,'HMW');
                 createDisplayChemicals(instanceNo,'SmallPts');
+                createDisplayChemicals(instanceNo,'OrganicC');
                 createResetChart(instanceNo);
             }*/
             if (completeSheet['Physical Data']) {
@@ -950,6 +951,7 @@ function displaySampleChart(meas, sheetName, instanceNo, unitTitle) {
         createDisplayChemicals(instanceNo, 'LMW');
         createDisplayChemicals(instanceNo, 'HMW');
         createDisplayChemicals(instanceNo, 'SmallPts');
+        createDisplayChemicals(instanceNo, 'OrganicC');
         createResetChart(instanceNo);
     }
 }

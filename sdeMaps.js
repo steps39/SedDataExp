@@ -6,10 +6,35 @@ function sampleMap(meas) {
         map.remove();
     }
 
+    var currentTime = new Date();
+    var year = currentTime.getFullYear()
+
+    //Ordnance Survey
+	var apiKey = 'WYvhmkLwjzAF0LgSL14P7y1v5fySAYy9';
+    //var apiKey = 'JGALcz384ZnN2rL4hFGEsG0U99jegLbp';
+	var serviceUrl = 'https://api.os.uk/maps/raster/v1/zxy';
+    
     var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+//        attribution: '© OpenStreetMap'
     });
+
+    var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,	
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.'
+});
+    var OS_Road = L.tileLayer(serviceUrl + '/Road_3857/{z}/{x}/{y}.png?key=' + apiKey, {
+        maxZoom: 19,	
+        attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year
+    });
+
+    var OS_Outdoor = L.tileLayer(serviceUrl + '/Outdoor_3857/{z}/{x}/{y}.png?key=' + apiKey, {
+        maxZoom: 19,	
+        attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year
+    });
+
+
     
     var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -27,6 +52,9 @@ function sampleMap(meas) {
     
     var mapLayers = {
         "OpenStreetMap": osm,
+        "WorldImagery": Esri_WorldImagery,
+        "OS Road": OS_Road,
+        "OS Outdoor": OS_Outdoor,
         "OpenStreetMap.HOT": osmHOT,
         "OpenTopoMap": openTopoMap,
         "OpenSensorCommunity": osSensorCommunity
