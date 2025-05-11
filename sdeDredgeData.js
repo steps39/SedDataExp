@@ -2,12 +2,21 @@ CEFASdata = {};
 CEFASfile = {};
 CEFASfilename = '';
 CEFASUniqueRows = {};
+CEFASMeasurementUnit = {};
+//CEFASMeasurementUnit['Physical Data'] = '';
+CEFASMeasurementUnit['Trace metal data'] = 'Metals as mg/kg dry weight';
+CEFASMeasurementUnit['PAH data'] = 'PAHs as dry weight (µg/kg dry weight)';
+CEFASMeasurementUnit['PCB data'] = 'PCBs as mg/kg dry weight';
+CEFASMeasurementUnit['BDE data'] = 'Brominated flame retardants as mg/kg dry weight';
+CEFASMeasurementUnit['Organotins data'] = 'Organotins as mg/kg dry weight';
+CEFASMeasurementUnit['Organochlorine data'] = 'Organochlorine pesticides as mg/kg dry weight';
+
 ddLookup = {};
 ddLookup.chemical = {'pcb101' : "2,2',4,5,5'-Pentachlorobiphenyl" , 'pcb105' : "2,3,3',4,4'-Pentachlorobiphenyl" , 'pcb110' : "2,3,3',4',6-Pentachlorobiphenyl" ,
     'pcb118' : "2,3',4,4',5-Pentachlorobiphenyl" , 'pcb128' : "2,2',3,3',4,4'-Hexachlorobiphenyl" , 'pcb138' : "2,2',3,4,4',5'-Hexachlorobiphenyl" , 
     'pcb141' : "2,2',3,4,5,5'-Hexachlorobiphenyl" , 'pcb149' : "2,2',3,4',5',6-Hexachlorobiphenyl" , 'pcb151' : "2,2',3,5,5',6-Hexachlorobiphenyl" ,
     'pcb153' : "2,2',4,4',5,5'-Hexachlorobiphenyl" , 'pcb156' : "2,3,3',4,4',5-Hexachlorobiphenyl" , 'pcb158' : "2,3,3',4,4',6-Hexachlorobiphenyl" ,
-    'pcb170' : "2,2',3,3',4,4',5-Heptachlorobiphenyl" , 'pcb18' : "2,2',5- Trichlorobiphenyl" , 'pcb180' : "2,2',3,4,4',5,5'-Heptachlorobiphenyl" ,
+    'pcb170' : "2,2',3,3',4,4',5-Heptachlorobiphenyl" , 'pcb18' : "2,2',5-Trichlorobiphenyl" , 'pcb180' : "2,2',3,4,4',5,5'-Heptachlorobiphenyl" ,
     'pcb183' : "2,2',3,4,4',5',6-Heptachlorobiphenyl" , 'pcb187' : "2,2',3,4',5,5',6-Heptachlorobiphenyl" , 'pcb194' : "2,2',3,3',4,4',5,5'-Octachlorobiphenyl" ,
     'pcb28' : "2,4,4'-Trichlorobiphenyl" , 'pcb31' : "2,4',5-Trichlorobiphenyl" , 'pcb44' : "2,2',3,5'-Tetrachlorobiphenyl" ,
     'pcb47' : "2,2',4,4'-Tetrachlorobiphenyl" , 'pcb49' : "2,2',4,5'-Tetrachlorobiphenyl" , 'pcb52' : "2,2',5,5'-Tetrachlorobiphenyl" ,
@@ -322,6 +331,22 @@ function extractDataFromSheet(sheetData, mlApplication) {
                 }
             }
         });
+        for (const sheetName in meas) {
+            meas[sheetName]['Unit of measurement'] = CEFASMeasurementUnit[sheetName];
+            // Fill in 0 for missing positions
+//            for (const chemical in determinands[sheetName]) {
+            for (let i = 0; i < determinands[sheetName].length; i++) {
+                const chemical = determinands[sheetName][i];
+//console.log(sheetName,chemical);
+//console.log(meas[sheetName].chemicals[chemical]);
+                for (const sample in sampleInfo[dateSampled].position) {
+                    meas[sheetName].chemicals[chemical].samples[sample] ??= 0;
+/*                    if(!(meas[sheetName].chemicals[chemical].samples[sample])) {
+                        meas[sheetName].chemicals[chemical].samples[sample] = 0;
+                    }*/
+                }
+            }
+        }
         sampleMeasurements[dateSampled] = meas;
         for (const sheetName in meas) {
             if (sheetName === 'PAH data') {

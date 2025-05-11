@@ -57,6 +57,7 @@ function updateChart(){
     setBlanksForCharting();
 //console.log(sheetsToDisplay);
     for (sheetName in sheetsToDisplay) {
+console.log(sheetName, sheetsToDisplay[sheetName], chemicalTypeHasData(sheetName));
         if (sheetsToDisplay[sheetName] && chemicalTypeHasData(sheetName)) {
             lastInstanceNo = displayCharts(sheetName, lastInstanceNo);
         }
@@ -225,7 +226,7 @@ fred=selectedMeas;
     } else {
         retData = dataForCharting(sheetName);
         unitTitle = retData['unitTitle'];
-//console.log('unitTitle displayCharts ',unitTitle);
+console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
 //console.log('dataForCharting - selectedMeas ', selectedMeas);
         selectedMeasArea = {};
@@ -259,6 +260,10 @@ fred=selectedMeas;
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
+console.log(sheetName);
+console.log(selectedMeas);
+console.log(instanceNo);
+console.log(unitTitle);
 console.log(sheetName, selectedMeas, instanceNo, unitTitle);
 /*            if(sheetName === 'PAH data') {
 //This is where to create the buttons which show different PAH groups

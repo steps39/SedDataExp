@@ -36,7 +36,7 @@ function wrangleData(){
             }
         }
     }
-//console.log(selectedSamples);
+console.log(selectedSamples);
 //console.log('old',selectedSampleMeasurements);
     selectedSampleMeasurements = getselectedSampleMeasurements(selectedSamples);
 //console.log('new',selectedSampleMeasurements);

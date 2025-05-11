@@ -54,6 +54,28 @@
                             'Benzo[g,h,i]perylene', 'Benzo[e]pyrene', 'Benzo[k]fluoranthene', 'Chrysene', 'Dibenz[a,h]anthracene',
                             'Fluoranthene', 'Fluorene', 'Indeno[123-c,d]pyrene', 'Pyrene'];
     determinands.pah.organicc = ['C1-Napthalenes', 'C1-Phenanthrenes', 'C2-Napthalenes', 'C3-Napthalenes', 'Napthalene', 'Phenanthrene'];
+    determinands['PAH data'] = determinands.pah.all;
+    determinands['PCB data'] = ["2,2',4,5,5'-Pentachlorobiphenyl", "2,3,3',4,4'-Pentachlorobiphenyl", "2,3,3',4',6-Pentachlorobiphenyl", 
+        "2,3',4,4',5-Pentachlorobiphenyl", "2,2',3,3',4,4'-Hexachlorobiphenyl", "2,2',3,4,4',5'-Hexachlorobiphenyl", 
+        "2,2',3,4,5,5'-Hexachlorobiphenyl", "2,2',3,4',5',6-Hexachlorobiphenyl", "2,2',3,5,5',6-Hexachlorobiphenyl", 
+        "2,2',4,4',5,5'-Hexachlorobiphenyl", "2,3,3',4,4',5-Hexachlorobiphenyl", "2,3,3',4,4',6-Hexachlorobiphenyl", 
+        "2,2',3,3',4,4',5-Heptachlorobiphenyl", "2,2',5-Trichlorobiphenyl", "2,2',3,4,4',5,5'-Heptachlorobiphenyl", 
+        "2,2',3,4,4',5',6-Heptachlorobiphenyl", "2,2',3,4',5,5',6-Heptachlorobiphenyl", "2,2',3,3',4,4',5,5'-Octachlorobiphenyl", 
+        "2,4,4'-Trichlorobiphenyl", "2,4',5-Trichlorobiphenyl", "2,2',3,5'-Tetrachlorobiphenyl", "2,2',4,4'-Tetrachlorobiphenyl", 
+        "2,2',4,5'-Tetrachlorobiphenyl", "2,2',5,5'-Tetrachlorobiphenyl", "2,3',4,4'-Tetrachlorobiphenyl"]; 
+    determinands['Organochlorine data'] = ['alpha-hexachlorocyclohexane (AHCH)', 'beta-hexachlorocyclohexane (BHCH)',
+        'gamma-hexachlorocyclohexane (GHCH)', 'Dieldrin', 'Hexachlorobenzene (HCB)', 
+        '1,1-Dichloro-2,2-bis(p-chlorophenyl) ethylene (PPDDE)', 'Dichlorodiphenyltrichloroethane (PPDDT)', 
+        '1,1-dichloro-2,2-bis(p-chlorophenyl)ethane (PPTDE)'];
+    determinands['Trace metal data'] = ['Arsenic (As)', 'Cadmium (Cd)', 'Chromium (Cr)', 'Copper (Cu)', 'Mercury (Hg)',
+         'Nickel (Ni)', 'Lead (Pb)', 'Zinc (Zn)'];
+    determinands['Organotins data'] = ['Dibutyltine (DBT)', 'Tributyltin (TBT)'];
+    determinands['BDE data'] = ['2,2′,4,4′,6-penta-bromodiphenyl ether (BDE100)', 'Hexabromodiphenyl ether (BDE138)', 
+        '2,2′,4,4′,5,5′-hexa-bromodiphenyl ether (BDE153)', '2,2′,4,4′,5,6′-hexa-bromodiphenyl ether (BDE154)', 
+        '2,2´,4-tri-bromodiphenylether (BDE17)', '2,2′,3,4,4′,5′,6-heptabromodiphenyl ether (BDE183)', 
+        "2,2',3,3',4,4',5,5',6,6'-decabrominated diphenyl ether (BDE 209)", "2,4,4'-tribromodiphenyl ether (BDE28)", 
+        '2,2′,4,4′-Tetrabromodiphenyl ether (BDE47)', "2,3',4,4'-Tetrabromodiphenyl ether (BDE66)", 
+        "2,2',3,4,4'-Pentabromodiphenyl ether (BDE85)", "2,2',4,4',5-pentabromodiphenyl ether (BDE99)"];
     dataSheetNames = ['Physical Data','Trace metal data','PAH data','PCB data','BDE data','Organotins data','Organochlorine data'];
     dataSheetAbr = {'Physical Data': 'Phys','Trace metal data': 'TM','PAH data': 'PAH','PCB data': 'PCB','BDE data': 'BDE','Organotins data': 'OT',
         'Organochlorine data': 'OC'};
@@ -1670,7 +1692,8 @@ function removeButton(chartInstanceNo, buttonType) {
     return chemicalTypeData;
 }*/
 
-function chemicalTypeHasData(sheetName) {
+//Everything has to have chemicalType data
+/*function chemicalTypeHasData(sheetName) {
     chemicalTypeData = true;
     for (const ds in selectedSampleMeasurements) {
 //console.log(ds);
@@ -1679,6 +1702,23 @@ function chemicalTypeHasData(sheetName) {
 //console.log(ds, sheetName, chemicalTypes);
         if (!(chemicalTypes.includes(sheetName))) {
             chemicalTypeData = false;
+//console.log('No data for ', sheetName);
+            return chemicalTypeData;
+        }
+    }
+    return chemicalTypeData;
+}*/
+
+//One or more datasets have to have chemicalType data
+function chemicalTypeHasData(sheetName) {
+    chemicalTypeData = false;
+    for (const ds in selectedSampleMeasurements) {
+//console.log(ds);
+//console.log(ds, sheetName);
+        const chemicalTypes = Object.keys(selectedSampleMeasurements[ds]);
+//console.log(ds, sheetName, chemicalTypes);
+        if (chemicalTypes.includes(sheetName)) {
+            chemicalTypeData = true;
 //console.log('No data for ', sheetName);
             return chemicalTypeData;
         }
