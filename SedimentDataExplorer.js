@@ -33,6 +33,7 @@
     let stacked = [];
     let largeSize = [];
     let xAxisSort = 'normal';
+    let lookSetting = 'colour';
     let highlightMarkers = {};
     for (i = 1; i < noInstances; i++) {
         chartInstance[i] = null;
@@ -98,7 +99,8 @@
         disableRadioButtons(sortButtonGroups[sheetName], false);
         completeSheet[sheetName] = true;
     })*/
-    subChartNames = ['samplegroup','chemicalgroup','positionplace','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest',
+    subChartNames = ['samplegroup','chemicalgroup','positionplace','pcaanalysis','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest',
+                    'pcanormalise','pcalmw','pcahmw','pcaepa','pcasmallpts','pcaorganiccarbon',
                     'relationareadensity','relationhc','relationtotalsolids','relationorganiccarbon'];
 //    relationNames = ['relationareadensity','relationhc','relationtotalsolids'];
         subsToDisplay = {};
@@ -106,8 +108,9 @@
         subName = subChartNames[i];
         subsToDisplay[subName] = false;
     }
-    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'silt', 'siltsand', 'sand', 'gravel',
+    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'totalsolids', 'organicmatter', 'silt', 'siltsand', 'sand', 'gravel',
         'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
+    lookOptions = ['colour', 'blackandwhite'];
     sortButtonGroups['area'] = [...sortingOptions.filter(option => option.includes('area')), ...subChartNames.filter(option => option.includes('area'))];
     sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7'))];/*,
                 ...subChartNames.filter(option => option.includes('congener'))];*/
@@ -122,7 +125,7 @@
         disableRadioButtons(sortButtonGroups[group], false);
     }
     let map; // Declare map as a global variable
-    let fred;
+    let fred ='waiting';
     let sampleMeasurements = {};
     let selectedSampleMeasurements = {};
     let sampleInfo = {};
@@ -787,6 +790,13 @@ function importData() {
                 case 'totalarea': xAxisSort = 'totalarea'; break
             }*/
         }
+        const lookParam = suppliedParams.get('look');
+//console.log(durlParam);
+        if (sortParam) {
+            lookSetting = lookParam;
+            lookRadio = document.getElementById(look);
+            lookRadio.checked = true;
+        }
     } else {
         const fileInput = document.getElementById('fileInput');
         const urlInput = document.getElementById('urlInput');
@@ -810,7 +820,7 @@ function importData() {
 
             reader.onload = function (e) {
                 const data = new Uint8Array(e.target.result);
-                processExcelData(data, filename);
+                processExcelData(data, filename, filesProcessed);
                 filesProcessed++; // Increment the counter after processing each file
                 // Check if all files have been processed
                 //console.log(files.length,fL, filesProcessed);
@@ -851,7 +861,8 @@ function importData() {
         if (urls.length > 0) {
             // Array to store all fetch promises
             const fetchPromises = [];
-        
+            let i = 0; // Initialize i to keep track of the file number
+            // Loop through each URL and create a fetch promise
             urls.forEach(url => {
                 // Check if the URL is a valid URL before fetching
                 if (!/^https?:\/\//i.test(url)) {
@@ -864,7 +875,8 @@ function importData() {
                     fetch(url)
                         .then(response => response.arrayBuffer())
                         .then(data => {
-                            processExcelData(new Uint8Array(data), url);
+                            i += 1; // Increment i for each URL
+                            processExcelData(new Uint8Array(data), url, i);
 //console.log('processexceldata again');
                         })
                         .catch(error => {
@@ -887,11 +899,11 @@ function importData() {
         urlInput.value = '';
     }
 
-function processExcelData(data, url) {
+function processExcelData(data, url, fileNumber) {
     // console.log('processexceldata',url);
     const workbook = XLSX.read(data, { type: 'array' });
 
-    function extractDataFromSheet(sheetName, sheetData, dateSampled) {
+    function extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber) {
         let missingTotalSolids = true;
         let missingVisualAppearance = true;
         let missingOrganicCarbon = true;
@@ -963,7 +975,7 @@ function processExcelData(data, url) {
                         measurementUnit = df[r][c + 3];
                     }
                     //}
-                    //console.log('unit ',measurementUnit);
+console.log('unit ',measurementUnit);
                     if (!(sheetName === 'Physical Data')) {
                         if (!(sheetName === 'PCB data')) {
                             startRow = r + 2;
@@ -1067,6 +1079,66 @@ function processExcelData(data, url) {
                                 }
                             }
                         }
+console.log('meas ',meas,sheetName,dateSampled);
+fred = df;
+                        if ('total' in meas) {
+
+                        allSamples = Object.keys(meas.total);
+console.log('allSamples ',allSamples,sheetName,dateSampled);
+console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
+//fred = sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]];
+//                        if (!sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)']) {
+//                        if (sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)'] === undefined) {
+console.log('New test: No total solids');
+// Code that reads Total Solids column into physical data
+                        if (!('Total solids (% total sediment)' in sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]])) {
+col = startCol + 3;
+row = startRow - 2;
+console.log('col ',col,' row ',row, df[row][col]);
+if(!(df[row][col] === undefined)) {
+                            if (df[row][col].includes('Total Solids (%)')) {
+console.log('Total Solids found column found');
+let ts = {};
+let missingTotalSolids = true;
+                                        for (let row = startRow; row < df.length; row++) {
+                                            sample = df[row][startCol + 2]; //bodge to pick up sample id
+                                            // If sample id not present then use Laboratory sample number instead
+                                            if (sample == undefined || sample == null) {
+                                                sample = df[row][startCol];
+                                            }
+                                            if (!(sample == undefined || sample == null)) {
+                                                const totalSolids = parseFloat(df[row][col + corec]);
+//                                                if (sample.includes('detection')) {
+//                                                    ts[sample] = totalSolids;
+//                                                    //.push(parseFloat(concentration) || 0);
+//                                                } else {
+                                                    if (isNaN(totalSolids)) {
+                                                        ts[sample] = 0.0;
+                                                    } else {
+                                                        ts[sample] = totalSolids;
+                                                        missingTotalSolids = false;
+                                                    }
+//                                                }
+                                            }
+                                        }
+                                        if (!missingTotalSolids) {
+                                        for (let sample in ts) {
+                                            if (!(sampleMeasurements[dateSampled]['Physical Data'].samples[sample] === undefined)) {
+                                                sampleMeasurements[dateSampled]['Physical Data'].samples[sample]['Total solids (% total sediment)'] = ts[sample];
+                                                if (!(ts[sample] === undefined)) {
+                                                    missingTotalSolids = false;
+                                                }
+                                            } else {
+                                                console.log('No physical data for ',sample);
+                                            }
+                                        }
+                                    }
+
+                            }
+                        }
+
+                        }
+                    }
                     } else {
                         measurementUnit = df[r][c + 7];
                         meas.samples = {};
@@ -1194,7 +1266,7 @@ function processExcelData(data, url) {
         return dateAnalysed;
     }
 
-    function extractApplicationDataFromSheet(sheetName, sheetData, url) {
+    function extractApplicationDataFromSheet(sheetName, sheetData, url, fileNumber) {
         //console.log('extractappdata',url);
         //            dateSampled = 'SD Missing';
         const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
@@ -1247,6 +1319,7 @@ function processExcelData(data, url) {
             dateSampled = 'Missing';
             dateRow = 17;
         }
+        dateSampled = dateSampled+' '+fileNumber;
         sampleInfo[dateSampled] = {};
         sampleInfo[dateSampled]['Applicant'] = applicant;
         sampleInfo[dateSampled]['Application number'] = applicationNumber;
@@ -1306,7 +1379,7 @@ function processExcelData(data, url) {
                             sInfo['Dredge area'] = df[row][dreCol];
                             point = parseCoordinates(df[row][latCol], df[row][lonCol]);
                             //console.log(df[row][latCol],df[row][lonCol]);
-                            //console.log(point);
+//console.log('point: ',point);
                             if (point === null || point === undefined) {
                                 // latitude and longitude aren't specified so try to retrieve latlon from previously entered locations
                                 cleanSample = sample.replace(/\s+/g, '').toLowerCase();
@@ -1357,28 +1430,36 @@ function processExcelData(data, url) {
 //                });
         sheetName = 'Application info';
         sheetData = workbook.Sheets[sheetName];
-        dateSampled = extractApplicationDataFromSheet(sheetName, sheetData, url);
+console.log('fileNumber',fileNumber);
+        dateSampled = extractApplicationDataFromSheet(sheetName, sheetData, url, fileNumber);
+console.log('dateSampled',dateSampled);
+
+        sheetName = 'Physical Data';
+        sheetData = workbook.Sheets[sheetName];
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
+
+
         sheetName = 'PAH data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
         newDateSampled = dateSampled;
 //console.log(dateSampled,dateAnalysed);
         if (dateSampled.includes('Missing')) {
             // Date sampled is missing so include an M for missing and the analysis date
-            newDateSampled = dateAnalysed + 'M';
+            newDateSampled = dateAnalysed + 'M'+fileNumber;
         } else if (dateSampled > dateAnalysed) {
             // Date sampled is later than date analysed so include an L for late and the analysis date
-            newDateSampled = dateAnalysed + 'L';
+            newDateSampled = dateAnalysed + 'L'+fileNumber;
         }
         //Add in application number
 //console.log(dateSampled,sampleInfo[dateSampled]);
         if ('Application number' in sampleInfo[dateSampled]) {
             if(!sampleInfo[dateSampled]['Application number']) {
-                pattern = '[A-Z]{3}_[0-9]{4}\_[0-9]{5}';
+                patternFile = '[A-Z]{3}_[0-9]{4}\_[0-9]{5}';
                 fileURL = sampleInfo[dateSampled]['fileURL'];
 //console.log(fileURL);
 //console.log(pattern);
-                matches = fileURL.match(pattern);
+                matches = fileURL.match(patternFile);
 /*                if (matches) {
                     console.log('matches');
                 }*/
@@ -1399,23 +1480,23 @@ function processExcelData(data, url) {
         dateSampled = newDateSampled;
         sheetName = 'PCB data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
         sheetName = 'Trace metal data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
         sheetName = 'BDE data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
         sheetName = 'Organotins data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
         sheetName = 'Organochlorine data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);
         
-        sheetName = 'Physical Data';
+/*        sheetName = 'Physical Data';
         sheetData = workbook.Sheets[sheetName];
-        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled);
+        dateAnalysed = extractDataFromSheet(sheetName, sheetData, dateSampled, fileNumber);*/
 
         
         selectedSampleMeasurements = sampleMeasurements;

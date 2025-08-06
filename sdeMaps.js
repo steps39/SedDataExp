@@ -382,7 +382,7 @@ console.log(kmlLayer);
 console.log(kmlLayer);
     kmlLayer.on("loaded", function(e) {
     map.fitBounds(e.target.getBounds());
-fred = kmlLayer;
+//fred = kmlLayer;
     
     // Access nested layers and apply styles
     const mainLayer = Object.values(kmlLayer._layers)[0];
@@ -677,6 +677,7 @@ function parseCoordinate(input) {
 }
 
 function parseCoordinates(latitude, longitude) {
+//console.log('parseCoordinates',latitude,longitude);
     // If only latitude is provided, handle UK National Grid Reference System (as in your original logic)
     if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
         const en = os.Transform.fromGridRef(latitude);

@@ -36,7 +36,7 @@ function wrangleData(){
             }
         }
     }
-console.log(selectedSamples);
+//console.log(selectedSamples);
 //console.log('old',selectedSampleMeasurements);
     selectedSampleMeasurements = getselectedSampleMeasurements(selectedSamples);
 //console.log('new',selectedSampleMeasurements);
@@ -103,7 +103,7 @@ function recalculateConcentrationComplex(meas) {
         sample = parts[1];
         let ptsSizes = [];
         if (allSizes[ds] == undefined || allSizes[ds] == null) {
-console.log(ds,sample);
+//console.log(ds,sample);
             ptsSizes = selectedSampleMeasurements[ds]['Physical Data'].sizes;
             ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
             allSizes[ds] = ptsSizes;
@@ -133,7 +133,7 @@ console.log(ds,sample);
                 concentrateMeas[dsSample][bit] = concentrateFactor[ds][sample] * meas[dsSample][bit];
         }
     }
-console.log(concentrateMeas,concentrateFactor);
+//console.log(concentrateMeas,concentrateFactor);
     return {concentrateMeas, concentrateFactor}
 }
 
@@ -180,9 +180,9 @@ function dataForCharting(sheetName) {
     });
     unitTitle = blankSheets[ct]['Unit of measurement'];
 //console.log(sheetName,measChart);
-    if (!(xAxisSort === 'normal')) {
+//    if (!(xAxisSort === 'normal')) {
         measChart = measChartSort(measChart);
-    }
+//    }
 //console.log(measChart);
     return { unitTitle, measChart }
 }
@@ -194,6 +194,7 @@ function measChartSort(measChart) {
 //console.log(allChemicals);
 //console.log(allSamples);
     allSamples.sortComplexSamples();
+//console.log(allSamples);
     for (c in measChart) {
         sortedChart[c] = {};
         allSamples.forEach(sample => {
@@ -207,6 +208,7 @@ function propertyChartSort(measChart) {
     let allSamples = Object.keys(measChart);
 //console.log(allSamples);
     allSamples.sortComplexSamples();
+//console.log(allSamples);
     let sortedChart = {};
         allSamples.forEach(sample => {
             sortedChart[sample] = measChart[sample];
@@ -217,7 +219,7 @@ function propertyChartSort(measChart) {
 function dataForPSDCharting(sheetName) {
     let  datesSampled = Object.keys(selectedSampleMeasurements);
     let ct = sheetName;
-console.log('dataForPSD ',ct,blankSheets);
+//console.log('dataForPSD ',ct,blankSheets);
     let unitTitle = blankSheets[ct]['Unit of measurement'];
     let measChart = {};
     let measChartArea = {};
@@ -269,8 +271,30 @@ console.log('dataForPSD ',ct,blankSheets);
         }
     });
 //console.log('dataforPSD ', unitTitle,ptsSizes,ptsAreas,ptsVolumes,measChart,measChartArea);
-    return {unitTitle, ptsSizes, measChart, measChartArea, measChartRelativeArea, splitWeights, splitAreas, splitRelativeAreas, cumWeights, cumAreas}
+    let allSamples = Object.keys(measChart);
+//    if (!(xAxisSort === 'normal')) {
+        allSamples.sortComplexSamples();
+//    }
+    return {unitTitle, ptsSizes, measChart, measChartArea, measChartRelativeArea, splitWeights, splitAreas, splitRelativeAreas, cumWeights, cumAreas, allSamples}
 }
+
+function ameasChartSort(measChart) {
+    let sortedChart = {};
+    let allChemicals = Object.keys(measChart);
+    let allSamples = Object.keys(measChart[allChemicals[0]]);
+//console.log(allChemicals);
+//console.log(allSamples);
+    allSamples.sortComplexSamples();
+    for (c in measChart) {
+        sortedChart[c] = {};
+        allSamples.forEach(sample => {
+            sortedChart[c][sample] = measChart[c][sample];
+        });
+    }
+    return sortedChart
+}
+
+
 
 function dataForScatterCharting(sheetName) {
     let datesSampled = Object.keys(selectedSampleMeasurements);
@@ -287,7 +311,8 @@ function dataForScatterCharting(sheetName) {
             for (const s in selectedSampleMeasurements[ds][ct].chemicals[allChemicals[0]].samples) {
                 scatterData[i] = ({
                     x: sampleInfo[ds].position[s]['Position longitude'],
-                    y: sampleInfo[ds].position[s]['Position latitude']
+                    y: sampleInfo[ds].position[s]['Position latitude'],
+                    label: ds + ' : ' + s,
                 });
                 i += 1;
                 //console.log(sampleInfo[ds].position[s]['Position latitude']);
@@ -312,7 +337,7 @@ function dataForScatterCharting(sheetName) {
 }
 
 
-function dataForTotalScatterCharting(sheetName, chartType) {
+/*function dataForTotalScatterCharting(sheetName, chartType) {
     let datesSampled = Object.keys(selectedSampleMeasurements);
     let ct = sheetName;
     let unitTitle = blankSheets[ct]['Unit of measurement'];
@@ -361,8 +386,9 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                             return;
                     }
                     scatterData[c][i] = {
-                        x: xValue,
-                        y: currentChemical.samples[s]
+                        x: Number(xValue),
+                        y: currentChemical.samples[s],
+                        label: ds + ' : ' + s
                     };
                     if (!xValue) {
 console.log('Total scatter charting not possible for ', chartType, ' as no data available');
@@ -379,12 +405,129 @@ console.log('Total scatter charting not possible for ', chartType, ' as no data 
     });
 
     // Return the result based on the chart type requirements
-/*    if (chartType === "totalHC") {
-        return { unitTitle, scatterData, chemicalData };
-    } else {*/
+//    if (chartType === "totalHC") {
+//        return { unitTitle, scatterData, chemicalData };
+//    } else {
         return { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors };
 //    }
+}*/
+
+function dataForTotalScatterCharting(sheetName, chartType) {
+    let datesSampled = Object.keys(selectedSampleMeasurements);
+    let ct = sheetName;
+    let unitTitle = blankSheets[ct]['Unit of measurement'];
+    let scatterData = {};
+    let chemicalData = {};
+    let fitConcentration = {};
+    let fitPredictors = {};
+
+    let j = -1;
+    datesSampled.forEach(ds => {
+        //        scatterData[ds] = {};
+        if (ct in selectedSampleMeasurements[ds]) {
+            j += 1;
+            let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
+            for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
+                let i = 0;
+
+                if (!(scatterData[c])) {
+                    scatterData[c] = [];
+//scatterData[c].pointStyle = 'rect';
+                }
+                scatterData[c][j] = {};
+                scatterData[c][j].data = [];
+                scatterData[c][j].label = ds;
+//console.log('scatterData', c, j, scatterData[c][j]);
+                if (chemicalData[c] == undefined || chemicalData[c] == null) chemicalData[c] = [];
+                if (fitConcentration[c] == undefined || fitPredictors[c] == null) {
+                    fitConcentration[c] = {};
+                    fitPredictors[c] = {};
+                }
+//console.log('scatterData', c, j, scatterData[c][j]);
+                let currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
+                let ii = 0;
+                for (const s in currentChemical.samples) {
+                    //console.log(ds,c,s);
+                    //let xValue;
+                    switch (chartType) {
+                        case "totalArea":
+                            //console.log(ds,s);
+                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s].totalArea;
+                            break;
+
+                        case "totalHC":
+                            xValue = sampleMeasurements[ds]['PAH data'].totalHC[s];
+                            break;
+
+                        case "totalSolids":
+                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Total solids (% total sediment)'];
+                            break;
+
+                        case "organicCarbon":
+                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Organic matter (total organic carbon)'];
+                            break;
+
+                        default:
+                            console.error(`Unknown chart type: ${chartType}`);
+                            return;
+                    }
+                    scatterData[c][j].data[ii] = {
+                        x: Number(xValue),
+                        y: currentChemical.samples[s],
+                        label: ds + ' : ' + s
+                    };
+                    ii += 1;
+                      if (!xValue) {
+// reverted to 250502 version of test not sure why?                   if (!(typeof xValue === "number")) {
+//console.log(i, ii, j, ds, c, s);
+                        console.log('Total scatter charting not possible for ', chartType, ' as no data available');
+//console.log(xValue);
+                        unitTitle = 'No data';
+                        return { unitTitle };
+                    }
+                    chemicalData[c][i] = currentChemical.samples[s];
+                    fitConcentration[c][ds + ' : ' + s] = currentChemical.samples[s];
+                    fitPredictors[c][ds + ' : ' + s] = [xValue];
+                    i += 1;
+                }
+            }
+        }
+    });
+//console.log('scatterData here', scatterData);
+    for (const c in scatterData) {
+        // Need to remove empty items
+        scatterData[c] = scatterData[c].filter(item => item.data && item.data.length > 0);
+//console.log('scatterData a', c, scatterData[c], scatterData[c].length);
+        minConc = Math.min(...chemicalData[c]);
+        maxConc = Math.max(...chemicalData[c]);
+//console.log('minConc', minConc, 'maxConc', maxConc);
+        for (let i = 0; i < scatterData[c].length; i++) {
+//console.log('scatterData', c, i);
+//console.log('scatterData', scatterData[c][i].data.length);
+            for (let j = 0; j < scatterData[c][i].data.length; j++) {
+//console.log('scatterData', c, i, j, scatterData[c][i].data[j]);
+                scaledValue = (scatterData[c][i].data[j].y - minConc) / (maxConc - minConc);
+                scatterData[c][i].data[j].pointBackgroundColor = heatmapColor(scaledValue);
+                scatterData[c][i].data[j].pointBorderColor = heatmapColor(scaledValue);
+                //                scatterData[c][i].data[j].pointRadius: function(context) { return convas.width / 70 }
+            }
+            scatterData[c][i].backgroundColor = null;
+            scatterData[c][i].borderColor = null;
+        }
+//console.log('scatterData b', c, scatterData[c], scatterData[c].length);
+    }
+    // Return the result based on the chart type requirements
+    //    if (chartType === "totalHC") {
+    //        return { unitTitle, scatterData, chemicalData };
+    //    } else {
+//console.log('scatterData', scatterData);
+    return { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors };
+    //    }
 }
+
+
+
+
 function sumsForCongenerCharting() {
     let datesSampled = Object.keys(selectedSampleMeasurements);
     let measChart = {};

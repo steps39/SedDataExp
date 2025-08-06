@@ -27,6 +27,7 @@ function updateOptions() {
         subsToDisplay[subName] = document.getElementById(subName).checked ? true : false; // Check the checkbox state
     }
     xAxisSort = document.querySelector('input[name="sorting"]:checked').value;
+    lookSetting = document.querySelector('input[name="look"]:checked').value;
     resuspensionSize = parseFloat(document.getElementById('resuspensionsize').value);
     if (isNaN(resuspensionSize)) {
         resuspensionSize = 0;
@@ -39,7 +40,7 @@ function updateOptions() {
 
 function updateChart(){
     updateOptions();
-    wrangleData();
+//SRG 250728 Removed loosing data, not sure why or why in in first place    wrangleData();
 
 
 
@@ -70,18 +71,24 @@ console.log(sheetName, sheetsToDisplay[sheetName], chemicalTypeHasData(sheetName
     }
 //console.log('lastInstanceNo ',lastInstanceNo);			
 //console.log(selectedMeas);
+console.log('about to display sample map');
     sampleMap(selectedMeas);
     filenameDisplay();
 }
 
-function displayPsdSplits(sums, sheetName, instanceNo, unitTitle, subTitle) {
+function displayPsdSplits(sortedSamples, sums, sheetName, instanceNo, unitTitle, subTitle) {
 //    console.log(sums);
     createCanvas(instanceNo);
+//Bodge lost data for unitTitle
+    if (unitTitle === undefined || unitTitle === null) {
+        unitTitle = 'Particle size distribution (% at 0.5 phi intervals)'; //bodge 
+    }
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
     instanceType[instanceNo] = 'PSD splits by ' + subTitle;
     instanceSheet[instanceNo] = sheetName;
-    const allSamples = Object.keys(sums);
+//    const allSamples = Object.keys(sums);
+    const allSamples = sortedSamples; // Use the sorted samples from the retData
     const allParticles = Object.keys(sums[allSamples[0]]); // Assuming all samples have the particles
     const datasets = allParticles.map((particle, index) => {
         const data = allSamples.map(sample => sums[sample][particle]);
@@ -186,14 +193,15 @@ function createResetChart(instanceNo) {
         
 
 function displayCharts(sheetName, instanceNo) {
+    let scatterData = {};
     //    totalAreasAvailable = true;
     if(sheetName === 'Physical Data') {
         retData = dataForPSDCharting(sheetName);
         unitTitle = retData['unitTitle'];
-//console.log('unitTitle displayCharts ',unitTitle);
+console.log('unitTitle displayCharts ',unitTitle);
         sizes = retData['ptsSizes'];
         selectedMeas = retData['measChart'];
-fred=selectedMeas;
+//fred=selectedMeas;
         selectedMeasRelativeArea = retData['measChartRelativeArea'];
         selectedMeasArea = retData['measChartArea'];
         splitWeights = retData['splitWeights'];
@@ -201,6 +209,7 @@ fred=selectedMeas;
         splitAreas = retData['splitAreas'];
         cumWeights = retData['cumWeights'];
         cumAreas = retData['cumAreas'];
+        sortedSamples = retData['allSamples'];
 //console.log(sizes);	            
 //console.log('selectedMeas ', selectedMeas);
         instanceNo += 1;
@@ -214,11 +223,13 @@ fred=selectedMeas;
         instanceNo += 1;
         displayPSDChart(sizes, cumAreas, sheetName, instanceNo, unitTitle, 'Cumulative by Area');
         instanceNo += 1;
-        displayPsdSplits(splitWeights, sheetName, instanceNo, unitTitle, 'Weight');
+        displayPsdSplits(sortedSamples, splitWeights, sheetName, instanceNo, unitTitle, 'Weight');
         instanceNo += 1;
-        displayPsdSplits(splitRelativeAreas, sheetName, instanceNo, unitTitle, 'Relative Area');
+        displayPsdSplits(sortedSamples, splitRelativeAreas, sheetName, instanceNo, unitTitle, 'Relative Area');
         instanceNo += 1;
-        displayPsdSplits(splitAreas, sheetName, instanceNo, unitTitle, 'Absolute Area');
+        displayPsdSplits(sortedSamples, splitAreas, sheetName, instanceNo, unitTitle, 'Absolute Area');
+        instanceNo += 1;
+        displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTitle, 'Total Solids % and Organic Carbon %');
         if (resuspensionSize>0) {
             instanceNo += 1;
             displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, instanceNo, unitTitle, 'Fractions');
@@ -226,7 +237,7 @@ fred=selectedMeas;
     } else {
         retData = dataForCharting(sheetName);
         unitTitle = retData['unitTitle'];
-console.log('unitTitle displayCharts ',unitTitle);
+//console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
 //console.log('dataForCharting - selectedMeas ', selectedMeas);
         selectedMeasArea = {};
@@ -260,11 +271,34 @@ console.log('unitTitle displayCharts ',unitTitle);
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
-console.log(sheetName);
-console.log(selectedMeas);
-console.log(instanceNo);
-console.log(unitTitle);
+//console.log(sheetName);
+//console.log(selectedMeas);
+//console.log(instanceNo);
+//console.log(unitTitle);
 console.log(sheetName, selectedMeas, instanceNo, unitTitle);
+            if (sheetName === 'BDE data') {
+                let selectedMeasOrganicC = selectedMeas;
+                for (chemical in selectedMeasOrganicC) {
+                    for (sample in selectedMeasOrganicC[chemical]) {
+console.log('selectedMeasOrganicC',selectedMeasOrganicC[chemical][sample],chemical,sample);
+                        let parts = sample.split(": ");
+                        if (parts.length>2) {
+                            parts[1] = parts[1] + ': ' + parts[2];
+                        }
+//                        if (selectedSampleMeasurements?.[parts[0]]?.['Physical Data']?.samples[parts[1]]?.['Organic matter (total organic carbon)'] !== undefined) {
+//                            if (selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'] > 0) {
+//                                let organicC = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'];
+                                let organicC = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'];
+console.log('selectedMeasOrganicC',selectedMeasOrganicC[chemical][sample], organicC,);
+                                selectedMeasOrganicC[chemical][sample] = 2.5 * selectedMeas[chemical][sample] / organicC;
+console.log('selectedMeasOrganicC',selectedMeasOrganicC[chemical][sample], organicC);
+                            //}
+                        //}
+                    }
+                }   
+                instanceNo += 1;
+                displaySampleChart(selectedMeasOrganicC, sheetName + ' Organic Carbon Normalised', instanceNo, unitTitle + ' / Organic Carbon');
+            }
 /*            if(sheetName === 'PAH data') {
 //This is where to create the buttons which show different PAH groups
 console.log('PAH data reset');
@@ -297,6 +331,32 @@ console.log('PAH data reset');
                 if (subsToDisplay['relationareadensity']) {
                     instanceNo += 1;
                     displayChemicalChart(selectedMeas, sheetName, instanceNo, unitTitle + ' / Area', false);
+                }
+            }
+        }
+        if (subsToDisplay['pcaanalysis']) {
+            instanceNo += 1;
+            pcaChart(selectedMeas, sheetName, determinands[sheetName], instanceNo);
+            if (sheetName === 'PAH data') {
+                if (subsToDisplay['pcalmw']) {
+                    instanceNo += 1;
+                    pcaChart(selectedMeas, sheetName + ' LMW Subset', determinands.pah.lmw, instanceNo);
+                }
+                if (subsToDisplay['pcahmw']) {
+                    instanceNo += 1;
+                    pcaChart(selectedMeas, sheetName + ' HMW Subset', determinands.pah.hmw, instanceNo);
+                }
+                if (subsToDisplay['pcaepa']) {
+                    instanceNo += 1;
+                    pcaChart(selectedMeas, sheetName + ' EPA Subset', determinands.pah.epa, instanceNo);
+                }
+                if (subsToDisplay['pcasmallpts']) {
+                    instanceNo += 1;
+                    pcaChart(selectedMeas, sheetName + ' Small Particles Subset', determinands.pah.smallpts, instanceNo);
+                }
+                if (subsToDisplay['pcaorganiccarbon']) {
+                    instanceNo += 1;
+                    pcaChart(selectedMeas, sheetName + ' Organic Carbon Subset', determinands.pah.organicc, instanceNo);
                 }
             }
         }
@@ -346,7 +406,9 @@ console.log('PAH data reset');
             for (const c in chemicalData) {
                 instanceNo += 1;
 //console.log(c,scatterData, chemicalData[c]);
-                displayScatterChart(scatterData, chemicalData[c], sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
+sampleNames = Object.keys(chemicalData[c]);
+//                displayScatterChart(scatterData, chemicalData[c], sampleNames, sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
+                displayScatterChartLL(scatterData, chemicalData[c], sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
                 i += 1;
             }
         }
@@ -389,10 +451,6 @@ console.log('PAH data reset');
             instanceNo
         );
 
-
-
-//    }
-
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
             const properties = Object.keys(chemInfo[chemicalNames[0]]);
@@ -408,7 +466,7 @@ console.log('PAH data reset');
                         sortedSelectedMeas[chemical] = selectedMeas[chemical];
                     }
                 });
-//    console.log(sortedSelectedMeas);
+//console.log(sortedSelectedMeas);
                 instanceNo += 1;
                 displaySampleChart(sortedSelectedMeas, sheetName + ': Sorted by ' + properties[i], instanceNo, unitTitle);
                 instanceNo += 1;
@@ -468,6 +526,10 @@ console.log('PAH data reset');
             selectedSums = retData['measChart'];
             displaySimpleRatios(selectedSums, sheetName, instanceNo, unitTitle);
         }
+/*        if (sheetName === 'PAH data') {//} && subsToDisplay['simpleratios']) {
+            instanceNo += 1;
+            PCAchart(datesSampled, canvasElement, selectedSampleMeasurements);
+        }*/
         if (sheetName === 'PCB data' && subsToDisplay['congenertest']) {
             instanceNo += 1;
             selectedSums = sumsForCongenerCharting();
@@ -510,8 +572,8 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
         const { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors } = retData;
 //console.log('dataForTotalScatterCharting scatterData, chemicalData ',scatterData, chemicalData);
         if (unitTitle === 'No data') {
-    return instanceNo
-}
+            return instanceNo
+        }
         const allChemicals = Object.keys(chemicalData);
 
         instanceNo += 1;
@@ -543,6 +605,8 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
 
         instanceNo = startInstanceNo;
         for (const c in chemicalData) {
+            let sampleNames = Object.keys(fitConcentration[c]);
+//console.log('sampleNames', sampleNames);
 //console.log(sheetName, c);
             const data = fitConcentration ? 
                 concentrationFitter(fitConcentration[c], fitPredictors[c], 'Chart Analysis') : 
@@ -552,6 +616,7 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
             displayScatterChart(
                 scatterData[c],
                 chemicalData[c],
+                sampleNames,
                 sheetName,
                 instanceNo,
                 `${c} : ${data.R_squared.toFixed(4)}`,
@@ -579,6 +644,67 @@ function setBlanksForCharting() {
     return
 }
 
+function heatmapColor(value, alpha = 1) {
+  // Clamp value to [0, 1]
+  value = Math.max(0, Math.min(1, value));
+
+  let r = 0, g = 0, b = 0;
+
+  if (value <= 0.25) {
+    // Blue to Cyan
+    let t = value / 0.25;
+    r = 0;
+    g = Math.round(255 * t);
+    b = 255;
+  } else if (value <= 0.5) {
+    // Cyan to Green
+    let t = (value - 0.25) / 0.25;
+    r = 0;
+    g = 255;
+    b = Math.round(255 * (1 - t));
+  } else if (value <= 0.75) {
+    // Green to Yellow
+    let t = (value - 0.5) / 0.25;
+    r = Math.round(255 * t);
+    g = 255;
+    b = 0;
+  } else {
+    // Yellow to Red
+    let t = (value - 0.75) / 0.25;
+    r = 255;
+    g = Math.round(255 * (1 - t));
+    b = 0;
+  }
+
+  return `rgb(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function heatColor(value, alpha = 1) {
+  // Clamp value to [0, 1]
+  value = Math.max(0, Math.min(1, value));
+
+  let r, g, b;
+
+  if (value < 0.5) {
+    // Green to Orange
+    // Green: (0, 255, 0)
+    // Orange: (255, 165, 0)
+    let t = value / 0.5;
+    r = Math.round(255 * t);
+    g = Math.round(255 - (90 * t)); // from 255 to 165
+    b = 0;
+  } else {
+    // Orange to Red
+    // Orange: (255, 165, 0)
+    // Red: (255, 0, 0)
+    let t = (value - 0.5) / 0.5;
+    r = 255;
+    g = Math.round(165 * (1 - t));
+    b = 0;
+  }
+
+  return `rgb(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 // Function to interpolate between two colors based on the value
 function colorGradient(value, color1, color2) {
@@ -665,7 +791,7 @@ function displayCombinedScatterChart(meas, sheetName, instanceNo, unitTitle) {
 //    console.log(ddatasets);
 }
 
-function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo) {
+function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo) {
 //console.log(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
     lastScatterInstanceNo = instanceNo;
     legends[instanceNo] = false;
@@ -701,6 +827,7 @@ function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, un
                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
                     borderColor:
                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+                       pointStyle: 'cross',
                        pointRadius: function(context) {
                         return convas.width / 70
                        }
@@ -765,7 +892,174 @@ function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, un
 /*    if (largeInstanceNo > 1) {
         createToggleFocusChart(convas, chartInstance[instanceNo], instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
     }*/
-    document.getElementById('chart' + instanceNo).addEventListener('click', () => displayScatterChart(scatterData, oneChemical, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1));
+    document.getElementById('chart' + instanceNo).addEventListener('click', () => displayScatterChartLL(scatterData, oneChemical, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1));
+    Chart.register({
+        id: 'selectSample',
+        afterDraw: function (chart, args, options) {
+            const highlightedSample = chart.options.plugins.selectSample.highlightedSample;
+
+            if (highlightedSample) {
+    //console.log('highlightedSample ', highlightedSample);				
+                const datasetIndex = chart.data.datasets.findIndex(dataset => dataset.label === highlightedSample);
+                    if (datasetIndex !== -1) {
+                    const dataset = chart.data.datasets[datasetIndex];
+                    dataset.borderWidth = 4;
+                    dataset.borderColor = 'red';
+                }
+            }
+        },
+    });
+}
+
+
+
+function displayScatterChart(scatterData, oneChemical, sampleNames, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo) {
+//console.log(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
+    lastScatterInstanceNo = instanceNo;
+    legends[instanceNo] = false;
+    ylinlog[instanceNo] = false;
+    stacked[instanceNo] = false;
+    const convas = document.getElementById("chart" + instanceNo);
+    convas.style.display = "block";
+    instanceType[instanceNo] = 'Scatter ' + unitTitle;
+    instanceSheet[instanceNo] = sheetName;
+    const color1 = '#00ff00'; // Start of gradient (red)
+    const color2 = '#ff0000'; // End of gradient (green)
+      allSamples = Object.keys(oneChemical);
+      allConcs = Object.values(oneChemical);
+//console.log(allSamples, allConcs);
+//console.log(allConcs);
+      minConc = Math.min(...allConcs);
+      maxConc = Math.max(...allConcs);
+//console.log(minConc,maxConc);
+//console.log(oneChemical);
+//      oneChemical = (oneChemical - minConc) / (maxConc - minConc);
+      scaledChemical = {};
+      for (s in oneChemical) {
+        scaledChemical[s] = (oneChemical[s] - minConc) / (maxConc - minConc);
+//console.log(oneChemical[s]);
+      }
+//console.log(oneChemical);
+    // Chart configuration
+
+//        data: {
+//            datasets: finalChartDatasets
+//        },
+//console.log('scatterData', scatterData);
+scatterData[0].backgroundColor ='rgba(63, 50, 50, 0.72)'; // Set background color to transparent
+scatterData[0].backgroundColor.pointStyle = 'cross';
+//console.log('scatterData', scatterData);
+    const chartConfig = {
+        type: 'scatter',
+        data: {
+//                  datasets: Object.values(scatterData)/*[{
+                  datasets: [{
+                    data: scatterData[0].data,
+                    label: 'fred',
+//                    backgroundColor:
+//                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+//                       allSamples.map(sample => heatmapColor(scaledChemical[sample])),
+                    borderColor:
+                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+//                       allSamples.map(sample => heatmapColor(scaledChemical[sample])),
+                       pointRadius: function(context) {
+                        return convas.width / 70
+                       },
+                       pointStyle: 'rect',
+                    }]
+        },
+        options: {
+            plugins: {
+                repsonsive: true,
+                colors: {
+                    enabled: true,
+                    forceOverride: false
+                },
+                title: {
+                    display: true,
+                    text: unitTitle,
+                    onEvent: function() {
+                        console.log('this is fed');
+                        resizeChart(chartInstance[instanceNo]);
+                    }
+                },
+                subtitle: {
+                    display: true,
+                    text: 'Min: ' + minConc + ' Max: ' + maxConc
+                },
+                legend: {
+                    display: false, 
+                    position: 'bottom', 
+                    labels: {
+                        font: {  // Customize legend label font
+                           size: 14,
+                            weight: 'italic',
+                            padding: 10
+                        }
+                    }
+                },
+
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            // Show the set name (dataset label) as the tooltip title
+                            if (tooltipItems.length > 0) {
+//                                return tooltipItems[0].dataset.label;
+                                return tooltipItems[0].dataset.label;
+                            }
+                            return '';
+                        },
+                        label: function(context) {
+                            const dataPoint = context.raw; // This contains {x, y, label: fullSampleName}
+                            let pointLabel = dataPoint.label || ''; // Full sample name
+                            if (pointLabel) {
+                                pointLabel = pointLabel.split(':').pop().trim(); // Show only part after colon
+                                pointLabel += ': ';
+                            }
+//console.log(dataPoint);
+                            // Add the x and y values to the label
+                            pointLabel += `(X: ${dataPoint.x.toFixed(2)}, Y: ${dataPoint.y.toFixed(2)})`;
+                            return pointLabel;
+                        }
+                    }
+                },
+
+                // Add a custom plugin for interactivity
+                selectSample: {
+                    highlightedSample: null,
+                },
+            },
+                scales: {
+                    x: {
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: xAxisTitle
+                            }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: yAxisTitle
+                            }
+                        }
+                    },
+        }
+    };
+//console.log(chartConfig);
+    const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
+    if (chartInstance[instanceNo]) {
+        chartInstance[instanceNo].destroy();
+    }
+    chartInstance[instanceNo] = new Chart(ctx, chartConfig);
+//console.log(chartConfig);
+
+//    createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
+//console.log(largeInstanceNo,oneChemical);
+/*    if (largeInstanceNo > 1) {
+        createToggleFocusChart(convas, chartInstance[instanceNo], instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
+    }*/
+    document.getElementById('chart' + instanceNo).addEventListener('click', () => displayScatterChart(scatterData, oneChemical, sampleNames, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1));
     Chart.register({
         id: 'selectSample',
         afterDraw: function (chart, args, options) {
@@ -786,6 +1080,10 @@ function displayScatterChart(scatterData, oneChemical, sheetName, instanceNo, un
 
 function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle) {
 //console.log(sizes, meas, sheetName, instanceNo, unitTitle, subTitle);
+//Bodge lost data for unitTitle
+    if (unitTitle === undefined || unitTitle === null) {
+        unitTitle = 'Particle size distribution (% at 0.5 phi intervals)'; //bodge 
+    }
     legends[instanceNo] = false;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
@@ -929,6 +1227,18 @@ function removePSDHighlight() {
     chartInstance.update();
 }
 
+patternNames = ['plus', 'diamond-box', 'weave', 'cross', 'dash', 'cross-dash', 'dot',
+                'zigzag-vertical', 'diagonal', 'dot-dash', 'disc', 'ring', //'line', 
+                'line-vertical', 'zigzag', 'diagonal-right-left', 'square', 'box', 
+                'triangle', 'triangle-inverted', 'diamond'];
+patterns = {};
+for (let i = 0; i < 40; i++) {
+//for (let i = 0; i < patternNames.length; i++) {
+    patterns[i] =  pattern.draw(patternNames[i], 'rgba(0.1,0.1,0.1,1)');
+}
+
+shapeNames = ['circle', 'cross', 'crossRot', 'dash', 'line', 'rect', 'rectRounded', 'rectRot', 'star', 'triangle'];
+
 function displaySampleChart(meas, sheetName, instanceNo, unitTitle) {
 //console.log(meas, sheetName, instanceNo, unitTitle);
     createCanvas(instanceNo);
@@ -939,19 +1249,33 @@ function displaySampleChart(meas, sheetName, instanceNo, unitTitle) {
 //console.log(meas);
     const allChemicals = Object.keys(meas);
     const allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals
+    let i= -1;
     const datasets = allChemicals.map((chemical, index) => {
+        i += 1;
         const data = allSamples.map(sample => meas[chemical][sample]); // Using the first concentration value for simplicity
-        return {
-            label: chemical,
-            data: data,
-            borderWidth: 1,
-            yAxisID: 'y',
-        };
+        if (lookSetting === 'colour') {
+            return {
+                label: chemical,
+                data: data,
+                borderWidth: 1,
+                yAxisID: 'y',
+//                backgroundColor: getRandomColor(),
+//                backgroundColor: pattern.draw('square',getRandomColor()),
+            };
+        } else {
+            return {
+                label: chemical,
+                data: data,
+                borderWidth: 1,
+                yAxisID: 'y',
+                backgroundColor: patterns[i],
+            };
+        }
     });
     displayAnySampleChart(meas, allSamples,datasets,instanceNo,sheetName,unitTitle,false);
     if(sheetName === 'PAH data') {
         //This is where to create the buttons which show different PAH groups
-        console.log('PAH data reset');
+//console.log('PAH data reset');
         createDisplayChemicals(instanceNo, 'EPA');
         createDisplayChemicals(instanceNo, 'LMW');
         createDisplayChemicals(instanceNo, 'HMW');
@@ -1144,6 +1468,18 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
         };
 //console.log(stanGraph);
     };
+    if (title.includes('Organic')) {
+        stanGraph.options.scales.y1 = {
+            beginAtZero: true,
+            position: 'right',
+            title: {
+                display: true,
+                text: 'Organic matter (total organic carbon)',
+                position: 'right',
+            }
+        };
+//console.log(stanGraph);
+    };
     chartInstance[instanceNo] = new Chart(ctx, stanGraph);
     createResetZoomButton(chartInstance[instanceNo], instanceNo);
     createToggleLegendButton(chartInstance[instanceNo], instanceNo);
@@ -1169,7 +1505,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                 if (x >= left + (right * i) && x <= left + (right * (i + 1))) {
                     console.log('x label', i);
                     const regexPattern = /^(.+): (.+)$/;
-console.log(all[i]);
+//console.log(all[i]);
                     const matchResult = all[i].match(regexPattern);
                     if (matchResult) {
                         // Extracted parts
@@ -1319,6 +1655,56 @@ function chartLabel(instanceNo,xValue,yValue,borderColor,label) {
       }
     };
 }
+
+function displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTitle, subTitle) {
+    createCanvas(instanceNo);
+    const convas = document.getElementById("chart" + instanceNo);
+    convas.style.display = "block";
+    instanceType[instanceNo] = 'totsolorgc';
+    instanceSheet[instanceNo] = sheetName;
+    let index = 0;
+    const allSamples = sortedSamples; // Use the sorted samples from the retData
+    let totalSolids = [];
+    let organicC = [];
+    allSamples.forEach((sampleName, i) => {
+        const parts = sampleName.split(": ");
+        if (parts.length >2) {
+            parts[1] = parts[1] + ': ' + parts[2];
+        }
+        totalSolids[i] = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Total solids (% total sediment)'];
+        organicC[i] = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'];
+    });
+
+    datasets = [
+        {
+            label: 'Total Solids %',
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            data: totalSolids,
+            yAxisID: 'y',
+        },
+        {
+            label: 'Organic Carbon %',
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1,
+            data: organicC,
+            yAxisID: 'y1',
+        },
+    ];
+
+    console.log(datasets);
+
+    displayAnySampleChart(totalSolids, allSamples, datasets, instanceNo, sheetName + ': Total Solids % and Organic Carbon %', 'Total solids (% total sediment)', true);
+    // Update the chart
+    chartInstance[instanceNo].options.plugins.legend.display = true;
+    legends[instanceNo] = true;
+    chartInstance[instanceNo].update();
+}
+
+
+
 
 function displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, instanceNo, unitTitle, subTitle) {
     createCanvas(instanceNo);
@@ -1822,5 +2208,639 @@ function removeChartHighlight(meas, instanceNo, dateSampled, item) {
   chartInstance[instanceNo].update();
 }
 
+/**
+ * Performs PCA on selected measurements for a given chemical group (sheetName)
+ * and plots the first two principal components using Chart.js.
+ *
+ * @param {object} selectMeas Data structure: selectMeas[chemicalName][sampleName] = concentration.
+ * @param {string} sheetName Type of chemical data (e.g., 'PAH data').
+ * @param {array} chemicalNames An array of chemical names.
+ * @param {string|number} instanceNo A unique identifier for this chart instance.
+ */
+
+/*
+function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
+    console.log(`pcaChart called for sheet: ${sheetName}, instance: ${instanceNo}`);
+
+    // --- 1. Validate Prerequisites & Inputs ---
+    if (typeof Chart === 'undefined') {
+        console.error("Chart.js library is not loaded.");
+        alert("Error: Chart.js library is not loaded. PCA chart cannot be created.");
+        return;
+    }
+    if (typeof PCA === 'undefined') {
+        console.error("PCA library (pca-js) is not loaded.");
+        alert("Error: PCA library (pca-js) is not loaded. PCA chart cannot be created.");
+        return;
+    }
+    if (typeof createCanvas !== 'function') {
+        console.error("createCanvas function is not defined.");
+        alert("Error: createCanvas function is not defined. PCA chart cannot be created.");
+        return;
+    }
+     if (!instanceType || typeof instanceType !== 'object') {
+        console.error("Global 'instanceType' object is not defined or not an object.");
+        // Potentially proceed but log warning, as this is for tracking
+    }
+    if (!instanceSheet || typeof instanceSheet !== 'object') {
+        console.error("Global 'instanceSheet' object is not defined or not an object.");
+        // Potentially proceed but log warning
+    }
+
+    if (!selectMeas || typeof selectMeas !== 'object' || Object.keys(selectMeas).length === 0) {
+        console.error("selectMeas data is empty or not a valid object.");
+        alert("Error: No measurement data provided. PCA chart cannot be created.");
+        return;
+    }
+
+    // --- 2. Canvas Setup ---
+    createCanvas(instanceNo); // Call your existing function to create the canvas DOM element
+    const convas = document.getElementById("chart" + instanceNo);
+
+    if (!convas) {
+        console.error(`Canvas element with ID "chart${instanceNo}" not found after createCanvas call.`);
+        alert(`Error: Canvas "chart${instanceNo}" not found. PCA chart cannot be created.`);
+        return;
+    }
+    convas.style.display = "block"; // Make it visible
+
+    // Store instance information (assuming instanceType and instanceSheet are global arrays/objects)
+    if (instanceType) instanceType[instanceNo] = 'PCA';
+    if (instanceSheet) instanceSheet[instanceNo] = sheetName;
+
+    // --- 3. Data Extraction and Preparation ---
+    const dataMatrix = [];
+    const sampleLabels = [];
+
+    // First, identify all unique sample names across all specified chemicals
+    const allSampleNamesSet = new Set();
+    for (const chemName of chemicalNames) {
+        if (selectMeas[chemName]) {
+            Object.keys(selectMeas[chemName]).forEach(sampleName => {
+                allSampleNamesSet.add(sampleName);
+            });
+        }
+    }
+    const allSampleNames = Array.from(allSampleNamesSet);
+console.log("Chemical names:", chemicalNames);
+console.log("Unique sample names found:", allSampleNamesSet);
+console.log("All sample names found:", allSampleNames);
+
+    if (allSampleNames.length === 0) {
+        console.error(`No samples found in selectMeas for the chemicals in "${sheetName}".`);
+        alert(`Error: No samples found for chemicals in "${sheetName}". PCA chart cannot be created.`);
+        return;
+    }
+
+    // Now, build the dataMatrix: rows are samples, columns are chemicals in order of `chemicalNames`
+    for (const sampleName of allSampleNames) {
+
+        const sampleConcentrations = [];
+        let hasDataForSample = false;
+        for (const chemName of chemicalNames) {
+            let concentration = 0; // Default for missing data
+            if (selectMeas[chemName] && selectMeas[chemName][sampleName] !== undefined) {
+                const val = parseFloat(selectMeas[chemName][sampleName]);
+                if (!isNaN(val)) {
+                    concentration = val;
+                    hasDataForSample = true;
+                } else {
+                    console.warn(`Invalid concentration for ${chemName} in ${sampleName}: ${selectMeas[chemName][sampleName]}. Using 0.`);
+                }
+            } else {
+                // console.log(`Missing data for ${chemName} in ${sampleName}. Using 0.`);
+            }
+            sampleConcentrations.push(concentration);
+        }
+        
+        // Only add sample if it had at least one valid data point (optional, but good practice)
+        // Or, you might decide to include it even if all are zeros if that's meaningful
+        if (hasDataForSample || chemicalNames.length > 0) { // ensure vector of correct length if no data
+             dataMatrix.push(sampleConcentrations);
+             sampleLabels.push(sampleName);
+        } else {
+            console.warn(`Sample ${sampleName} had no valid data for any specified chemicals. It will be excluded from PCA.`);
+        }
+    }
+    
+    if (dataMatrix.length === 0) {
+        console.error("No valid data extracted for PCA after processing samples.");
+        alert("Error: No data to process for PCA. Check your input data and chemical list.");
+        return;
+    }
+    if (dataMatrix.length < 2) {
+        console.error(`PCA requires at least two data points (samples). Found: ${dataMatrix.length}`);
+        alert(`Error: PCA requires at least two samples. Only ${dataMatrix.length} found.`);
+        return;
+    }
+    if (dataMatrix[0].length < 2) {
+        console.error(`PCA requires at least two variables (chemicals). Found: ${dataMatrix[0].length}`);
+        alert(`Error: PCA requires at least two chemicals. Only ${dataMatrix[0].length} found for sheet "${sheetName}".`);
+        return;
+    }
+
+    console.log("Data matrix prepared for PCA:", dataMatrix.length, "samples,", dataMatrix[0].length, "chemicals.");
+
+    // --- 4. PCA Calculation ---
+    let vectors;
+    let projectedData;
+
+//srg scale the data matrix all sums to 100
+console.log('dataMatrix ',dataMatrix);
+    for (let i = 0; i < dataMatrix.length; i++) {
+        let sum = 0;
+        const sample = dataMatrix[i];
+        for (let j = 0; j < sample.length; j++) {
+            sum += sample[j];
+        }
+        if (sum > 0) {
+            for (let j = 0; j < sample.length; j++) {
+                sample[j] = (sample[j] / sum) * 100; // Scale to 100
+            }
+            dataMatrix[i] = sample; // Update the dataMatrix with scaled values
+        } else {
+            console.warn(`Sample ${i} has a sum of 0. Skipping scaling for this sample.`);
+            // Optionally handle this case, e.g., set to NaN or leave as is
+        }
+    }
+console.log('dataMatrix after scaling ',dataMatrix);
 
 
+// ... inside pcaChart function
+try {
+    vectors = PCA.getEigenVectors(dataMatrix);
+
+    // --- Rigorous checks for vectors (keep these from previous advice) ---
+    if (!vectors || vectors.length < 2) {
+        console.error("PCA did not return enough eigenvectors. Need at least 2.");
+        alert("Error: PCA could not compute two principal components.");
+        return;
+    }
+    // Ensure vectors[0] and vectors[1] and their .vector properties are valid arrays
+    if (!vectors[0] || !vectors[0].vector || !Array.isArray(vectors[0].vector) || vectors[0].vector.length === 0) {
+        console.error("First principal component vector is missing, not an array, or empty.", vectors[0]);
+        alert("Error: Invalid structure for the first principal component.");
+        return;
+    }
+    if (!vectors[1] || !vectors[1].vector || !Array.isArray(vectors[1].vector) || vectors[1].vector.length === 0) {
+        console.error("Second principal component vector is missing, not an array, or empty.", vectors[1]);
+        alert("Error: Invalid structure for the second principal component.");
+        return;
+    }
+    const numFeatures = dataMatrix[0].length;
+    if (vectors[0].vector.length !== numFeatures || vectors[1].vector.length !== numFeatures) {
+        console.error("Eigenvector length does not match number of features.");
+        alert("Error: Mismatch in eigenvector dimensions.");
+        return;
+    }
+    // Optionally check for NaN/non-numeric in vectors here
+
+    const pc1_vec = vectors[0].vector;
+    const pc2_vec = vectors[1].vector;
+
+    console.log("Eigenvectors pc1_vec and pc2_vec appear valid. Proceeding with MANUAL projection.");
+
+    projectedData = [];
+    for (let i = 0; i < dataMatrix.length; i++) {
+        const sample = dataMatrix[i];
+        if (sample.length !== numFeatures) { // Should have been caught by dataMatrix validation earlier
+            console.error(`Sample <span class="math-inline">\{i\} length \(</span>{sample.length}) does not match feature count (${numFeatures}). Skipping.`);
+            projectedData.push([NaN, NaN]); // Or handle error more strictly
+            continue;
+        }
+        let pc1_val = 0;
+        let pc2_val = 0;
+        for (let j = 0; j < numFeatures; j++) {
+            // Ensure sample[j] and vector elements are numbers before multiplying
+            const sampleVal = typeof sample[j] === 'number' ? sample[j] : 0;
+            const pc1VecVal = typeof pc1_vec[j] === 'number' ? pc1_vec[j] : 0;
+            const pc2VecVal = typeof pc2_vec[j] === 'number' ? pc2_vec[j] : 0;
+
+            pc1_val += sampleVal * pc1VecVal;
+            pc2_val += sampleVal * pc2VecVal;
+        }
+        projectedData.push([pc1_val, pc2_val]);
+    }
+    console.log("Manual projection results (first few):", projectedData.slice(0, 3));
+
+} catch (error) {
+    console.error(`Error during PCA's getEigenVectors or manual projection:`, error);
+    alert(`PCA processing failed: ${error.message}. Check console for details.`);
+    return;
+}
+
+if (!projectedData || projectedData.length === 0) {
+    console.error("Projection resulted in no data.");
+    alert("Error: PCA projection failed to produce data points.");
+    return;
+}
+// ... rest of your charting code ...
+
+
+    console.log("PCA projection successful.");
+console.log("Projected data:", projectedData);
+    // --- 5. Chart.js Plotting ---
+    const chartDataPoints = projectedData.map((point, index) => ({
+        x: point[0], // Projection on PC1
+        y: point[1], // Projection on PC2
+        label: sampleLabels[index] // sample identifier
+    }));
+
+/*    // Destroy existing chart instance if it exists on the canvas
+    const existingChart = Chart.getChart(canvas); // Use the canvas object directly
+    if (existingChart) {
+        existingChart.destroy();
+    }
+*/
+/*        const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
+ 
+    new Chart(convas, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: `Samples (${sheetName})`,
+                data: chartDataPoints,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)', // Blue
+                borderColor: 'rgba(54, 162, 235, 1)',
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+//            maintainAspectRatio: false, // Good for fitting in dynamic containers
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Principal Component 1'
+                    },
+                    grid: { display: true }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Principal Component 2'
+                    },
+                    grid: { display: true }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const dataPoint = context.raw;
+                            let label = dataPoint.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += `(PC1: ${dataPoint.x.toFixed(2)}, PC2: ${dataPoint.y.toFixed(2)})`;
+                            return label;
+                        }
+                        // If you want to show original data in tooltip, you'd need to pass it
+                        // or re-fetch it based on dataPoint.label
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `PCA of ${sheetName} Concentrations`
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                }
+            }
+        }
+    });
+    console.log(`PCA chart for ${sheetName} (Instance ${instanceNo}) rendered successfully.`);
+}
+*/
+
+/**
+ * Performs PCA on selected measurements for a given chemical group (sheetName)
+ * and plots the first two principal components using Chart.js, with points
+ * color-coded by sample set.
+ *
+ * @param {object} selectMeas Data structure: selectMeas[chemicalName][sampleName] = concentration.
+ * @param {string} sheetName Type of chemical data (e.g., 'PAH data').
+ * @param {array} chemicalNames An array of chemical names.
+ * @param {string|number} instanceNo A unique identifier for this chart instance.
+ */
+function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
+//console.log(`pcaChart called for sheet: ${sheetName}, instance: ${instanceNo}`);
+
+    // --- 1. Validate Prerequisites & Inputs ---
+    if (typeof Chart === 'undefined') {
+        console.error("Chart.js library is not loaded.");
+        alert("Error: Chart.js library is not loaded. PCA chart cannot be created.");
+        return;
+    }
+    if (typeof PCA === 'undefined') {
+        // Assuming PCA is a global object from pca-js or a similar library
+        console.error("PCA library (pca-js) is not loaded.");
+        alert("Error: PCA library (pca-js) is not loaded. PCA chart cannot be created.");
+        return;
+    }
+    if (typeof createCanvas !== 'function') {
+        console.error("createCanvas function is not defined.");
+        alert("Error: createCanvas function is not defined. PCA chart cannot be created.");
+        return;
+    }
+    // Assuming instanceType and instanceSheet are global objects for tracking
+    if (typeof instanceType !== 'object') {
+        console.warn("Global 'instanceType' object is not defined or not an object.");
+    }
+    if (typeof instanceSheet !== 'object') {
+        console.warn("Global 'instanceSheet' object is not defined or not an object.");
+    }
+    if (!chemicalNames || !Array.isArray(chemicalNames) || chemicalNames.length === 0) {
+        console.error("chemicalNames array is missing, not an array, or empty.");
+        alert("Error: Chemical names not provided. PCA chart cannot be created.");
+        return;
+    }
+    if (!selectMeas || typeof selectMeas !== 'object' || Object.keys(selectMeas).length === 0) {
+        console.error("selectMeas data is empty or not a valid object.");
+        alert("Error: No measurement data provided. PCA chart cannot be created.");
+        return;
+    }
+
+    // --- 2. Canvas Setup ---
+    createCanvas(instanceNo); // Call your existing function
+    const convas = document.getElementById("chart" + instanceNo); // User's variable name
+
+    if (!convas) {
+        console.error(`Canvas element with ID "chart${instanceNo}" not found after createCanvas call.`);
+        alert(`Error: Canvas "chart${instanceNo}" not found. PCA chart cannot be created.`);
+        return;
+    }
+    convas.style.display = "block";
+
+    if (instanceType) instanceType[instanceNo] = 'PCA';
+    if (instanceSheet) instanceSheet[instanceNo] = sheetName;
+
+    // --- 3. Data Extraction and Preparation ---
+    const dataMatrix = [];
+    const sampleLabels = []; // Will store the full sample names
+
+    const allSampleNamesSet = new Set();
+    for (const chemName of chemicalNames) {
+        if (selectMeas[chemName]) {
+            Object.keys(selectMeas[chemName]).forEach(sampleName => {
+                allSampleNamesSet.add(sampleName);
+            });
+        }
+    }
+    const allSampleNames = Array.from(allSampleNamesSet);
+//console.log("Chemical names used for PCA:", chemicalNames);
+//console.log("Unique sample names found:", allSampleNames);
+
+    if (allSampleNames.length === 0) {
+        console.error(`No samples found in selectMeas for the chemicals in "${sheetName}".`);
+        alert(`Error: No samples found for chemicals in "${sheetName}". PCA chart cannot be created.`);
+        return;
+    }
+
+    for (const sampleName of allSampleNames) {
+        const sampleConcentrations = [];
+        let hasDataForSample = false;
+        for (const chemName of chemicalNames) {
+            let concentration = 0;
+            if (selectMeas[chemName] && selectMeas[chemName][sampleName] !== undefined) {
+                const val = parseFloat(selectMeas[chemName][sampleName]);
+                if (!isNaN(val)) {
+                    concentration = val;
+                    hasDataForSample = true;
+                } else {
+                    console.warn(`Invalid concentration for ${chemName} in ${sampleName}: ${selectMeas[chemName][sampleName]}. Using 0.`);
+                }
+            }
+            sampleConcentrations.push(concentration);
+        }
+        if (hasDataForSample || chemicalNames.length > 0) {
+            dataMatrix.push(sampleConcentrations);
+            sampleLabels.push(sampleName);
+        } else {
+            console.warn(`Sample ${sampleName} had no valid data for any specified chemicals. It will be excluded from PCA.`);
+        }
+    }
+    
+    if (dataMatrix.length === 0) {
+        console.error("No valid data extracted for PCA.");
+        alert("Error: No data to process for PCA.");
+        return;
+    }
+    if (dataMatrix.length < 2) {
+        console.error(`PCA requires at least two samples. Found: ${dataMatrix.length}`);
+        alert(`Error: PCA requires at least two samples. Only ${dataMatrix.length} found.`);
+        return;
+    }
+    if (dataMatrix[0].length < 2) {
+        console.error(`PCA requires at least two chemicals. Found: ${dataMatrix[0].length}`);
+        alert(`Error: PCA requires at least two chemicals. Only ${dataMatrix[0].length} found.`);
+        return;
+    }
+    console.log("Data matrix prepared for PCA:", dataMatrix.length, "samples,", dataMatrix[0].length, "chemicals.");
+
+    // --- 4. Data Scaling & PCA Calculation ---
+    // User's scaling: make each sample's chemical profile sum to 100
+//console.log('Original dataMatrix (first sample):', dataMatrix.length > 0 ? JSON.stringify(dataMatrix[0]) : 'empty');
+    if (subsToDisplay['pcanormalise']) {
+        for (let i = 0; i < dataMatrix.length; i++) {
+            let sum = 0;
+            const sample = dataMatrix[i];
+            for (let j = 0; j < sample.length; j++) {
+                sum += sample[j];
+            }
+            if (sum > 0) {
+                for (let j = 0; j < sample.length; j++) {
+                    sample[j] = (sample[j] / sum) * 100;
+                }
+                // dataMatrix[i] = sample; // sample is already a reference to dataMatrix[i]
+            } else {
+                console.warn(`Sample ${sampleLabels[i]} has a sum of 0. Skipping scaling for this sample.`);
+            }
+        }
+    }
+    console.log('DataMatrix after scaling (first sample):', dataMatrix.length > 0 ? JSON.stringify(dataMatrix[0]) : 'empty');
+
+    let vectors;
+    let projectedData;
+    try {
+        vectors = PCA.getEigenVectors(dataMatrix);
+        if (!vectors || vectors.length < 2) {
+            console.error("PCA did not return enough eigenvectors.");
+            alert("Error: PCA could not compute two principal components.");
+            return;
+        }
+        if (!vectors[0] || !vectors[0].vector || !Array.isArray(vectors[0].vector) || vectors[0].vector.length === 0 ||
+            !vectors[1] || !vectors[1].vector || !Array.isArray(vectors[1].vector) || vectors[1].vector.length === 0) {
+            console.error("Principal component vector structure is invalid.", vectors);
+            alert("Error: Invalid structure for principal components.");
+            return;
+        }
+        const numFeatures = dataMatrix[0].length;
+        if (vectors[0].vector.length !== numFeatures || vectors[1].vector.length !== numFeatures) {
+            console.error("Eigenvector length does not match number of features.");
+            alert("Error: Mismatch in eigenvector dimensions.");
+            return;
+        }
+
+        const pc1_vec = vectors[0].vector;
+        const pc2_vec = vectors[1].vector;
+        console.log("Eigenvectors pc1_vec and pc2_vec appear valid. Proceeding with MANUAL projection.");
+
+        projectedData = [];
+        for (let i = 0; i < dataMatrix.length; i++) {
+            const sample = dataMatrix[i];
+            let pc1_val = 0;
+            let pc2_val = 0;
+            for (let j = 0; j < numFeatures; j++) {
+                const sampleVal = typeof sample[j] === 'number' && isFinite(sample[j]) ? sample[j] : 0;
+                const pc1VecVal = typeof pc1_vec[j] === 'number' && isFinite(pc1_vec[j]) ? pc1_vec[j] : 0;
+                const pc2VecVal = typeof pc2_vec[j] === 'number' && isFinite(pc2_vec[j]) ? pc2_vec[j] : 0;
+                pc1_val += sampleVal * pc1VecVal;
+                pc2_val += sampleVal * pc2VecVal;
+            }
+            projectedData.push([pc1_val, pc2_val]);
+        }
+        console.log("Manual projection results (first few):", projectedData.slice(0, 3));
+
+    } catch (error) {
+        console.error(`Error during PCA's getEigenVectors or manual projection:`, error);
+        alert(`PCA processing failed: ${error.message}. Check console for details.`);
+        return;
+    }
+
+    if (!projectedData || projectedData.length !== sampleLabels.length) {
+        console.error("Projection resulted in no data or mismatched length.");
+        alert("Error: PCA projection failed to produce valid data points for all samples.");
+        return;
+    }
+    console.log("PCA projection successful. Number of projected points:", projectedData.length);
+
+    // --- 5. Prepare Data for Chart.js with Color Coding by Set ---
+    const setColors = {}; 
+//    const onePattern = pattern.draw('square', 'rgba(255, 99, 132, 0.7)');
+    const colorPalette = [
+        'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(75, 192, 192, 0.7)',
+        'rgba(255, 206, 86, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
+        'rgba(199, 199, 199, 0.7)', 'rgba(83, 102, 255, 0.7)', 'rgba(40, 159, 64, 0.7)',
+        'rgba(210, 99, 132, 0.7)', 'rgba(128, 0, 0, 0.7)', 'rgba(0, 128, 0, 0.7)',
+        'rgba(0, 0, 128, 0.7)', 'rgba(128, 128, 0, 0.7)', 'rgba(128, 0, 128, 0.7)'
+    ];
+    let nextColorIndex = 0;
+    const datasetsBySet = {};
+
+    projectedData.forEach((point, index) => {
+        const fullSampleName = sampleLabels[index];
+        const parts = fullSampleName.split(':');
+        const setName = parts.length > 1 ? parts[0].trim() : "Unknown Set";
+
+        if (!setColors[setName]) {
+            setColors[setName] = colorPalette[nextColorIndex % colorPalette.length];
+            nextColorIndex++;
+        }
+        const pointColor = setColors[setName];
+        // Create a slightly more opaque version for the border
+//        const borderColor = pointColor.replace(/rgba\((\d+,\s*\d+,\s*\d+),\s*[\d\.]+\)/, `rgba($1, 1)`);
+          const borderColor = pointColor;
+//console.log(`Point color for set "${setName}":`, pointColor, "Border color:", borderColor);
+
+        if (!datasetsBySet[setName]) {
+            datasetsBySet[setName] = {
+//                label: setName, // This will be shown in the legend
+                label: selectedSampleInfo[setName].label, // This will be shown in the legend
+                data: [],
+                backgroundColor: pointColor,
+                borderColor: borderColor,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                borderWidth: 1 // Optional: explicitly set border width
+            };
+        }
+        
+        // Ensure point data is valid before pushing
+        if (isFinite(point[0]) && isFinite(point[1])) {
+            datasetsBySet[setName].data.push({
+                x: point[0],
+                y: point[1],
+                label: fullSampleName // Store full name for tooltip
+            });
+        } else {
+            console.warn(`Skipping invalid data point for ${fullSampleName}: PC1=${point[0]}, PC2=${point[1]}`);
+        }
+    });
+//console.log("Datasets by set prepared for chart:", datasetsBySet);
+    const finalChartDatasets = Object.values(datasetsBySet);
+    console.log("Final datasets for chart:", finalChartDatasets);
+
+    // Destroy existing chart instance if it exists on the canvas
+    // This is important if the function can be called multiple times for the same canvas
+    const existingChart = Chart.getChart(convas);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+ 
+    new Chart(convas, {
+        type: 'scatter',
+        data: {
+            datasets: finalChartDatasets
+        },
+        options: {
+            responsive: true,
+            // maintainAspectRatio: false, // User had this commented out, respecting that
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Principal Component 1'
+                    },
+                    grid: { display: true }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Principal Component 2'
+                    },
+                    grid: { display: true }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            // Show the set name (dataset label) as the tooltip title
+                            if (tooltipItems.length > 0) {
+//                                return tooltipItems[0].dataset.label;
+                                return tooltipItems[0].dataset.label;
+                            }
+                            return '';
+                        },
+                        label: function(context) {
+                            const dataPoint = context.raw; // This contains {x, y, label: fullSampleName}
+                            let pointLabel = dataPoint.label || ''; // Full sample name
+                            if (pointLabel) {
+                                pointLabel = pointLabel.split(':').pop().trim(); // Show only part after colon
+                                pointLabel += ': ';
+                            }
+                            pointLabel += `(PC1: ${dataPoint.x.toFixed(2)}, PC2: ${dataPoint.y.toFixed(2)})`;
+                            return pointLabel;
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `PCA of ${sheetName} Concentrations`
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true, // Makes legend markers match point style
+                    }
+                }
+            }
+        }
+    });
+    console.log(`PCA chart for ${sheetName} (Instance ${instanceNo}) rendered successfully with color coding.`);
+}

@@ -636,7 +636,7 @@ function getselectedSampleMeasurements(selectedSamples) {
                             selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
                             selectedMeas[dateSampled][chemicalType].sizes = sampleMeasurements[dateSampled][chemicalType].sizes;
                             //console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
-                        } else {
+                        } //else {
                             if (!selectedMeas[dateSampled][chemicalType]) {
                                 selectedMeas[dateSampled][chemicalType] = {};
                                 selectedMeas[dateSampled][chemicalType].samples = {};
@@ -656,7 +656,7 @@ function getselectedSampleMeasurements(selectedSamples) {
                             selectedMeas[dateSampled][chemicalType].samples[sample].cumWeights = sampleMeasurements[dateSampled][chemicalType].samples[sample].cumWeights;
                             selectedMeas[dateSampled][chemicalType].samples[sample].psdRelativeAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].psdRelativeAreas;
                             selectedMeas[dateSampled][chemicalType].samples[sample].splitRelativeAreas = sampleMeasurements[dateSampled][chemicalType].samples[sample].splitRelativeAreas;*/
-                        }
+//                        }
                     }
                 }
 
@@ -749,14 +749,16 @@ function getselectedSampleMeasurements(selectedSamples) {
             }
         }
     }
-    // console.log(selectedMeas); // Output each cell value to console
+//console.log(selectedMeas); // Output each cell value to console
     return selectedMeas;
 }
 
 function getSelectedSamples(selectedSamples) {
     selectedSamps = {};
+let numberNow = 0;
     for (const dateSampled in selectedSampleInfo) {
         for (const sample in selectedSampleInfo[dateSampled].position) {
+numberNow += 1;
             if (selectedSamples.includes(dateSampled + ': ' + sample)) {
                 // console.log('a point ' + dateSampled + ': ' + sample);
                 if (!selectedSamps[dateSampled]) {
@@ -791,7 +793,8 @@ function getSelectedSamples(selectedSamples) {
             }
         }
     }
-    // console.log(selectedSamps); // Output each cell value to console
+console.log(selectedSamps); // Output each cell value to console
+console.log('numberNow',numberNow);
     return selectedSamps;
 }
 

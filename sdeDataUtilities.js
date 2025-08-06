@@ -30,6 +30,242 @@ Array.prototype.sortSamples = function(ds) {
     });
 };
 
+/*
+// Extend the Array prototype to include a custom sortSamples method
+Array.prototype.sortComplexSamples = function() {
+    // Create a shallow copy of the array to avoid modifying the original
+    const newArray = [...this];
+
+    // Use the built-in sort method on the new array
+    return newArray.sort((a, b) => {
+        // ... (your existing comparison logic) ...
+        const partsA = a.split(": ");
+        if (partsA.length >2) {
+            partsA[1] = partsA[1] + ': ' + partsA[2];
+        }
+        const partsB = b.split(": ");
+        if (partsB.length >2) {
+            partsB[1] = partsB[1] + ': ' + partsB[2];
+        }
+
+        // Sorting by datesampled and label
+        if (xAxisSort === 'normal') {
+            const valueA = (selectedSampleInfo[partsA[0]]['label'] + selectedSampleInfo[partsA[0]].position[partsA[1]]['label']).toLowerCase();
+            const valueB = (selectedSampleInfo[partsB[0]]['label'] + selectedSampleInfo[partsB[0]].position[partsB[1]]['label']).toLowerCase();
+            return valueA.localeCompare(valueB);
+        }
+        // Sorting by latitude
+        if (xAxisSort === 'latitude') {
+            const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
+            const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
+            return valueA - valueB;
+        }
+        
+        // Sorting by longitude
+        if (xAxisSort === 'longitude') {
+            const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
+            const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
+            return valueA - valueB;
+        }
+        
+        // Sorting by totalSolids
+        if (xAxisSort === 'totalsolids') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]]['Total solids (% total sediment)'];
+            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]]['Total solids (% total sediment)'];
+            return valueA - valueB;
+        }
+
+        // Sorting by totalArea
+        if (xAxisSort === 'totalarea') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
+            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
+            return valueA - valueB;
+        }
+
+        // Sorting by totalHC
+        if (xAxisSort === 'totalhcsort') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].totalHC[partsA[1]];
+            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].totalHC[partsB[1]];
+            return valueA - valueB;
+        }
+
+        // Sorting by LMW
+        if (xAxisSort === 'lmw') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].lmwSum;
+            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].lmwSum;
+            return valueA - valueB;
+        }
+
+        // Sorting by HMW
+        if (xAxisSort === 'hmw') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].hmwSum;
+            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].hmwSum;
+            return valueA - valueB;
+        }
+
+        // Sorting by ICES7
+        if (xAxisSort === 'ices7') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].ICES7;
+            const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].ICES7;
+            return valueA - valueB;
+        }
+
+        // Sorting by All PCBs
+        if (xAxisSort === 'allpcbs') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].All;
+            const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].All;
+            return valueA - valueB;
+        }
+
+        // Sorting by gravel
+        if (xAxisSort === 'gravel') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Gravel'];
+            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Gravel'];
+            return valueA - valueB;
+        }
+
+        // Sorting by silt
+        if (xAxisSort === 'silt') {
+            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Silt And Clay'];
+            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Silt And Clay'];
+            return valueA - valueB;
+        }
+
+        // Sorting by sand
+        if (xAxisSort === 'sand') {
+            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
+            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
+            const valueA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
+                          splitWeightsA['Very Coarse And Coarse Sand'];
+            const valueB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
+                          splitWeightsB['Very Coarse And Coarse Sand'];
+                          return valueA - valueB;
+                        }
+
+        // Sorting by sand
+        if (xAxisSort === 'slitsand') {
+            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
+            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
+            const valueA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
+                          splitWeightsA['Very Coarse And Coarse Sand'] + splitWeightsA['Silt And Clay'];
+            const valueB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
+                          splitWeightsB['Very Coarse And Coarse Sand'] + splitWeightsB['Silt And Clay'];
+            return valueA - valueB;
+        }
+
+        // Sorting by datelatitude
+        if (xAxisSort === 'datelatitude') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
+                const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+        
+        // Sorting by datelongitude
+        if (xAxisSort === 'datelongitude') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
+                const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+
+        // Sorting by datetototalarea
+        if (xAxisSort === 'datetotalarea') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
+                const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+
+        // Sorting by datelmw
+        if (xAxisSort === 'datelmw') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].lmwSum;
+                const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].lmwSum;
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+        
+        // Sorting by datehmw
+        if (xAxisSort === 'datehmw') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].hmwSum;
+                const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].hmwSum;
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+        
+        // Sorting by dateices7
+        if (xAxisSort === 'dateices7') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].ICES7;
+                const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].ICES7;
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+        
+        // Sorting by dateallpcbs
+        if (xAxisSort === 'dateallpcbs') {
+            if (partsA[0] === partsB[0]) {
+                const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].All;
+                const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].All;
+                return valueA - valueB;
+            } else {
+                if (partsA[0] > partsB[0]) {
+                    return 1
+                } else {
+                    return -1
+                }
+            }
+        }
+        
+        // Default case if no valid sort key is provided
+        // Usorted
+        return 0;
+    });
+};
+*/
+
+
 // Extend the Array prototype to include a custom sortSamples method
 Array.prototype.sortComplexSamples = function() {
     // Use the built-in sort method on the array
@@ -68,6 +304,22 @@ Array.prototype.sortComplexSamples = function() {
             return valueA - valueB;
         }
         
+        // Sorting by totalSolids
+        if (xAxisSort === 'totalsolids') {
+//console.log(partsA,partsB);
+            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]]['Total solids (% total sediment)'];
+            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]]['Total solids (% total sediment)'];
+            return valueA - valueB;
+        }
+
+        // Sorting by organicmatter
+        if (xAxisSort === 'organicmatter') {
+//console.log(partsA,partsB);
+            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]]['Organic matter (total organic carbon)'];
+            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]]['Organic matter (total organic carbon)'];
+            return valueA - valueB;
+        }
+
         // Sorting by totalArea
         if (xAxisSort === 'totalarea') {
             const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
@@ -258,6 +510,8 @@ Array.prototype.sortComplexSamples = function() {
     });
 };
 
+
+
 // Define ranges for different materials for standard MMO template
 let ranges = {
     'Gravel': [0, 9],
@@ -356,6 +610,7 @@ function sumInRange(psd, range) {
 }
 
 function psdSplit(psd) {
+    // Define the split object = silt and clay to gravel
     let split = {};
     // Calculate sums for each category
     split['Silt And Clay'] = sumInRange(psd, ranges['Silt And Clay']);
@@ -365,6 +620,20 @@ function psdSplit(psd) {
     split['Gravel'] = sumInRange(psd, ranges['Gravel']);
     return split
 }
+
+/*function psdSplit(psd) {
+    // Define the split object = gravel to silt and clay
+    let split = {};
+    // Calculate sums for each category
+    split['Gravel'] = sumInRange(psd, ranges['Gravel']);
+    split['Very Coarse And Coarse Sand'] = sumInRange(psd, ranges['Very Coarse And Coarse Sand']);
+    split['Medium Sand'] = sumInRange(psd, ranges['Medium Sand']);
+    split['Fine And Very Fine Sand'] = sumInRange(psd, ranges['Fine And Very Fine Sand']);
+    split['Silt And Clay'] = sumInRange(psd, ranges['Silt And Clay']);
+    return split
+}
+*/
+
 
 standard_phiSizes = [-5.5,-5.0,-4.5,-4.0,-3.5,-3.0,-2.5,-2.0,-1.5,-1.0,-0.5,0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,10.5,11.0,11.5,12.0,12.5,13.0,13.5,14.0,14.5];
 standard_ptsSizes = standard_phiSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
@@ -756,3 +1025,4 @@ function disableRadioButtons(radioButtonsToChange,state)  {
         }
     });
 }
+
