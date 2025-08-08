@@ -1011,7 +1011,7 @@ function concentrationFitter(concentration, predictors, ignoreSamples = []) {
     return { beta, R_squared };
 }
 
-// IDs of radio buttons to disable
+/*// IDs of radio buttons to disable
 function disableRadioButtons(radioButtonsToChange,state)  {
 //console.log(radioButtonsToChange);
     // Disable each radio button
@@ -1024,5 +1024,29 @@ function disableRadioButtons(radioButtonsToChange,state)  {
             document.querySelector("label[for='"+id+"']").style.color = "black";
         }
     });
-}
+}*/
 
+function disableRadioButtons(radioButtonsToChange, state) {
+    // Disable each radio button
+    radioButtonsToChange.forEach(id => {
+        const inputElement = document.getElementById(id);
+
+        // Check if the element exists to prevent errors
+        if (inputElement) {
+            inputElement.disabled = state;
+
+            // Find the parent <label> of the input element
+            const label = inputElement.parentElement;
+
+            // Check if the parent is a LABEL and then change its color
+            if (label && label.tagName === 'LABEL') {
+                if (state) {
+                    label.style.color = "lightgrey";
+                } else {
+                    // Reverts to the default text color from the stylesheet
+                    label.style.color = ""; 
+                }
+            }
+        }
+    });
+}

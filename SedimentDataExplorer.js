@@ -740,18 +740,20 @@ function importData() {
                 everythingMaps.style.display = 'inline';
             }
             if(!features.includes('noninter')) {
-                const everything = document.getElementById('everything');
-                everything.style.display = 'inline';
+//                const everything = document.getElementById('controls-sidebar');
+//                everything.style.display = 'inline';
+                toggleSideBar();
             }
         } else {
             const everythingMaps = document.getElementById('everything-maps');
             everythingMaps.style.display = 'inline';
-            const everything = document.getElementById('everything');
-            everything.style.display = 'inline';
+            toggleSideBar();
+//            const everything = document.getElementById('controls-sidebar');
+//            everything.style.display = 'inline';
         }
-//console.log(suppliedParams);
+console.log(suppliedParams);
         const durlParam = suppliedParams.get('durl');
-//console.log(durlParam);
+console.log(durlParam);
         if (durlParam) {
 /*            var urlInputDD = document.getElementById('urlInputDD');
             urlInputDD.value = durlParam;

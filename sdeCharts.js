@@ -26,7 +26,8 @@ function updateOptions() {
         subName = subChartNames[i];
         subsToDisplay[subName] = document.getElementById(subName).checked ? true : false; // Check the checkbox state
     }
-    xAxisSort = document.querySelector('input[name="sorting"]:checked').value;
+//    xAxisSort = document.querySelector('input[name="sorting"]:checked').value; //radio buttons
+    xAxisSort = document.getElementById('sorting-select').value; //dropdown
     lookSetting = document.querySelector('input[name="look"]:checked').value;
     resuspensionSize = parseFloat(document.getElementById('resuspensionsize').value);
     if (isNaN(resuspensionSize)) {
@@ -1369,7 +1370,12 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
     const ctx = document.getElementById('chart' + instanceNo);
-    //console.log(sheetName, instanceNo);
+
+    // Get the current sorting value.
+    // This assumes xAxisSort is a global or accessible variable.
+//    const xAxisSort = document.getElementById('sorting-select').value;
+//    const selectedSortText = sortSelect.options[sortSelect.selectedIndex].text;
+
     stanGraph = {
         type: 'bar',
         data: {
@@ -1386,6 +1392,20 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                     display: true,
                     text: title
                 },
+
+                // The caption now uses the descriptive text.
+                subtitle: {
+                    display: true,
+                    text: 'Samples ordered by: ' + xAxisSort,
+                    color: '#666',
+                    font: {
+                        size: 12,
+                        style: 'italic'
+                    },
+/*                    padding: {
+                        top: 10
+                    }*/
+                },
                 legend: {
                     display: showLegend,
                     position: 'top',
@@ -1399,17 +1419,14 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                 },
                 zoom: {
                     pan: {
-                        // pan options and/or events
                         enabled: true,
                         mode: 'xy',
                         modifierKey: 'shift',
                     },
                     limits: {
                         y: { min: 0 }
-                        // axis limits
                     },
                     zoom: {
-                        // zoom options and/or events
                         wheel: {
                             enabled: true,
                         },
@@ -1454,7 +1471,6 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                 position: 'right',
             }
         };
-//console.log(stanGraph);
     };
     if (title.includes('factor')) {
         stanGraph.options.scales.y1 = {
@@ -1466,7 +1482,6 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                 position: 'right',
             }
         };
-//console.log(stanGraph);
     };
     if (title.includes('Organic')) {
         stanGraph.options.scales.y1 = {
@@ -1478,7 +1493,6 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                 position: 'right',
             }
         };
-//console.log(stanGraph);
     };
     chartInstance[instanceNo] = new Chart(ctx, stanGraph);
     createResetZoomButton(chartInstance[instanceNo], instanceNo);
@@ -1487,32 +1501,23 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
     createStackedButton(chartInstance[instanceNo], instanceNo);
     createExportButton(chartInstance[instanceNo], instanceNo);
     function clickableScales(chart, canvas, click) {
-        //console.log(chart);
         const height = chart.scales.x.height;
         const top = chart.scales.x.top;
         const bottom = chart.scales.x.bottom;
         const left = chart.scales.x.left;
         const right = chart.scales.x.maxWidth / chart.scales.x.ticks.length;
-        //console.log('click scales - height,top,bottom,left,right', height,top,bottom,left,right);
         let resetCoordinates = canvas.getBoundingClientRect();
-        //console.log('click - raw x y', click.clientX, click.clientY);
         const x = click.clientX - resetCoordinates.left;
         const y = click.clientY - resetCoordinates.top;
-        //console.log('click - corrrected x y', x, y);
-        //console.log('chart.scales.x.ticks.length',chart.scales.x.ticks.length);
         if (y >= top && y <= bottom) {
             for (let i = 0; i < chart.scales.x.ticks.length; i++) {
                 if (x >= left + (right * i) && x <= left + (right * (i + 1))) {
                     console.log('x label', i);
                     const regexPattern = /^(.+): (.+)$/;
-//console.log(all[i]);
                     const matchResult = all[i].match(regexPattern);
                     if (matchResult) {
-                        // Extracted parts
                         const dateSampled = matchResult[1];
                         const sample = matchResult[2];
-
-                        // Output the results
                         console.log("Date Sampled: ", dateSampled);
                         console.log("Sample:", sample);
                         createHighlights(meas, dateSampled, all[i], null);
@@ -1535,7 +1540,6 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
         });
     });
 }
-
 
 function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs) {
     createCanvas(instanceNo);

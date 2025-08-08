@@ -3,29 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sediment Data Explorer</title>
-    <style>
-        .checkbox-container {
-            display: inline-block;
-            margin-right: 20px;
-            /* Adjust the margin as needed */
-        }
-    </style>
-    <style>
-        #map {
-            height: 500px;
-        }
-        /* Style for the labels */
-        .custom-label {
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            padding: 2px 5px;
-            font-size: 12px;
-            color: #333;
-            white-space: nowrap;
-        }
-    </style>
+    
+    <!-- External Scripts and Styles (Unchanged) -->
     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>
     <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -35,349 +16,515 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.4/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="https://harrywood.co.uk/maps/examples/leaflet/leaflet-plugins/layer/vector/KML.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pca-js@1.0.0/pca.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
+
+    <!-- UI Styles -->
+    <style>
+        :root {
+            --primary-color: #005A9C;
+            --secondary-color: #003366;
+            --background-color: #f4f7fa;
+            --surface-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #dce1e6;
+            --hover-color: #e9eff5;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Prevent body scroll */
+        }
+        
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .controls-sidebar {
+            width: 380px;
+            flex-shrink: 0; /* Prevent sidebar from shrinking */
+            background-color: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            padding: 1rem;
+            overflow-y: auto;
+            transition: width 0.3s ease, padding 0.3s ease;
+            position: relative;
+        }
+
+        .output-area {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        /* Collapsible Sidebar Styles */
+        .controls-sidebar.collapsed {
+            width: 0;
+            padding: 1rem 0;
+            border-right: none;
+            overflow: hidden;
+        }
+        
+        .controls-sidebar.collapsed > * {
+            display: none;
+        }
+
+        #sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Header */
+        header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+        }
+        
+        /* General Controls Styling */
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        button.secondary {
+             background-color: #6c757d;
+        }
+
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            padding: 0.25rem;
+        }
+
+        /* Fieldset for Grouping */
+        fieldset {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        legend {
+            font-weight: 600;
+            padding: 0 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .checkbox-group label, .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: normal;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            margin: 10% auto;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 700px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--secondary-color);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        /* Map and Chart Containers */
+        #map {
+            height: 500px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+    </style>
 </head>
 
 <body>
-    <div id="everything" style="display: none;">
-        <h1>Sediment Data Explorer - v0.20250806</h1>
-        MMO Templates -
-        <input type="file" id="fileInput" multiple onchange="importData()"> <!-- Allow multiple file selection -->
-        <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
-        <!-- Accept comma-separated URLs -->
-        <button onclick="importData()">Import Data</button>
-        <button onclick="updateChart()">(Re)Plot Chart</button>
-        <button onclick="exportCharts()">Export Chart</button>
-        <button onclick="clearData()">Clear Data</button>
-        <br>
-        CEFAS Sediment Data - 
-        <button onclick="openCEFASSelection()">Select CEFAS Data Sets</button>
-        <div id="sedDredgeData" style="display: none;">
-        </div>
-            <div id="sedDataModal" style="display: none;">
-            <h2>Select Data Sets</h2>
-            <label for="fileInputDD">CEFAS dredge data file</label>
-            <input type="file" id="fileInputDD" onchange="importDredgeData()"> <!-- Could allow multiple file selection -->
-            <input type="text" id="urlInputDD" placeholder="URL" onchange="importDredgeData()">
-            <!-- Would accept comma-separated URLs -->
-             <br>
-            <input type="text" id="mlApplications" placeholder="MLA ids comma-separated">
-            <button onclick="closeCEFASSelection()">Finish CEFAS Selection</button>
-            <br>
-            <label for="centreLatitude">Centre Latitude:</label>
-            <input type="number" id="centreLatitude">
-            <label for="centreLongitude">Centre Longitude:</label>
-            <input type="number" id="centreLongitude">
-            <label for="radius">Radius (m):</label>
-            <input type="number" id="radius">
-            <br>
-            <label for="startDate">Start Date</label>
-            <input type="date" id="startDate">
-            <label for="finishDate">Finish Date</label>
-            <input type="date" id="finishDate">
-            <br>
-            <button onclick="closeCEFASSearch()">Search CEFAS Selection</button>
-        </div>
+    <!-- This div is kept for JS compatibility but is not used for layout -->
+    <div id="everything" style="display: none;"></div>
 
-        <br>
-        Selection tools -
-        <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
-        <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
-        <button onclick="openChemicalSelection()">Select Chemicals</button>
-        <button onclick="clearSelections()">Clear Selections</button>
-
-        <div id="datasetModal" style="display: none;">
-            Must have -
-            <input type="checkbox" id="tracemetaldataset" unchecked>
-            <label for="tracemetaldataset">Trace metal data</label>
-            <input type="checkbox" id="pahdataset">
-            <label for="pahdataset">PAH data</label>
-            <input type="checkbox" id="pcbdataset">
-            <label for="pcbdataset">PCB data</label>
-            <input type="checkbox" id="bdedataset">
-            <label for="bdedataset">BDE data</label>
-            <input type="checkbox" id="organotinsdataset">
-            <label for="organotinsdataset">Organotins data</label>
-            <input type="checkbox" id="organochlorinedataset">
-            <label for="organochlorinedataset">Organochlorine data</label>
-            <input type="checkbox" id="physicaldataset">
-            <label for="physicaldataset">Physical data</label>
-            <br>
-            <button onclick="applyDatasetFilter()">Apply Dataset Selection</button>
+    <header>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250806</small></h1>
+        <div class="header-actions">
+            <button onclick="updateChart()">(Re)Plot Chart</button>
+            <button onclick="exportCharts()" class="secondary">Export Chart</button>
+            <button onclick="clearData()" class="secondary">Clear Data</button>
         </div>
+    </header>
 
-        <div id="sampleModal" style="display: none;">
+    <div class="app-container">
+        <!-- Sidebar starts collapsed -->
+        <aside id="controls-sidebar" class="controls-sidebar collapsed">
+
+            <fieldset>
+                <legend>Data Sources</legend>
+                <div class="input-group">
+                    <label for="fileInput">MMO Templates (Local Files)</label>
+                    <input type="file" id="fileInput" multiple onchange="importData()">
+                </div>
+                <div class="input-group">
+                    <label for="urlInput">MMO Templates (URLs)</label>
+                    <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
+                </div>
+                <button onclick="importData()">Import MMO Data</button>
+                <hr>
+                <button onclick="openCEFASSelection()">Select CEFAS Data</button>
+                <button onclick="openAdditionalInfoModal()">Additional Information</button>
+            </fieldset>
+
+            <fieldset>
+                <legend>Selection Tools</legend>
+                <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
+                <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
+                <button onclick="openChemicalSelection()">Select Chemicals</button>
+                <button onclick="clearSelections()" class="secondary">Clear All Selections</button>
+            </fieldset>
+
+            <fieldset>
+                <legend>Chart Customisation</legend>
+                <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
+                <button onclick="openSampleLabels()">Enter Sample Labels</button>
+                <button onclick="openChartModifiersModal()">Chart Modifiers</button>
+                <hr>
+                <div class="input-group">
+                    <label for="sorting-select">Sort Samples By:</label>
+                    <select name="sorting" id="sorting-select">
+                        <option id="unsorted" value="unsorted" selected>Unsorted</option>
+                        <option id="longitude" value="longitude">Longitude</option>
+                        <option id="latitude" value="latitude">Latitude</option>
+                        <option id="totalarea" value="totalarea">Total surface area</option>
+                        <option id="totalsolids" value="totalsolids">Total solids</option>
+                        <option id="organicmatter" value="organicmatter">Organic matter</option>
+                        <option id="lmw" value="lmw">LMW PAHs Sum</option>
+                        <option id="hmw" value="hmw">HMW PAHs Sum</option>
+                        <option id="totalhcsort" value="totalhcsort">Total hydrocarbon</option>
+                        <option id="ices7" value="ices7">ICES7 PCBs Sum</option>
+                        <option id="allpcbs" value="allpcbs">All PCBs Sum</option>
+                        <option id="silt" value="silt">Silt & Clay Fraction</option>
+                        <option id="siltsand" value="siltsand">Silt, Clay & Fine Sand</option>
+                        <option id="sand" value="sand">Sand Fraction</option>
+                        <option id="gravel" value="gravel">Gravel Fraction</option>
+                        <option id="normal" value="normal">Date of sampling</option>
+                        <option id="datelongitude" value="datelongitude">Date then longitude</option>
+                        <option id="datelatitude" value="datelatitude">Date then latitude</option>
+                        <option id="datetotalarea" value="datetotalarea">Date then total area</option>
+                        <option id="datetotalhc" value="datetotalhc">Date then total hydrocarbon</option>
+                        <option id="datelmw" value="datelmw">Date then LMW sum</option>
+                        <option id="datehmw" value="datehmw">Date then HMW sum</option>
+                        <option id="dateices7" value="dateices7">Date then ICES7 sum</option>
+                        <option id="dateallpcbs" value="dateallpcbs">Date then All PCBs sum</option>
+                    </select>
+                 </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Chart Configuration</legend>
+                <p><strong>Sheetnames to Include:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
+                    <label><input type="checkbox" id="pahdata" checked> PAH data</label>
+                    <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
+                    <label><input type="checkbox" id="bdedata" checked> BDE data</label>
+                    <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
+                    <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
+                    <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
+                </div>
+                <hr>
+                <p><strong>Chart Types:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
+                    <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
+                    <label><input type="checkbox" id="positionplace" checked> Plot by position</label>
+                    <label><input type="checkbox" id="pcaanalysis" checked> PCA analysis</label>
+                </div>
+                <button onclick="openAdditionalChartsModal()">Additional Charts</button>
+                <button onclick="openPcaOptionsModal()">PCA Options</button>
+                 <hr>
+                 <p><strong>Relations:</strong></p>
+                 <div class="checkbox-group">
+                    <label><input type="checkbox" id="relationareadensity" checked> Area density</label>
+                    <label><input type="checkbox" id="relationhc" checked> Total hydrocarbons</label>
+                    <label><input type="checkbox" id="relationtotalsolids" checked> Total solids</label>
+                    <label><input type="checkbox" id="relationorganiccarbon" checked> Organic Carbon</label>
+                 </div>
+                 <button onclick="openParticleSizeModal()">Particle Size Details</button>
+            </fieldset>
+
+            <fieldset>
+                <legend>Save / Load State</legend>
+                <div class="input-group">
+                    <label for="fileSave">Save Snapshot</label>
+                    <input type="text" id="fileSave" placeholder="Enter file name to save" onchange="saveSnapShot()">
+                </div>
+                <div class="input-group">
+                    <label for="fileLoad">Load Snapshot from File</label>
+                    <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
+                </div>
+                <div class="input-group">
+                    <label for="urlLoad">Load Snapshot from URL</label>
+                    <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
+                </div>
+            </fieldset>
+        </aside>
+
+        <main class="output-area">
+            <!-- Button starts with right arrow -->
+            <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
+
+            <button onclick="toggleFileDisplay()">Toggle File Display</button>
+            <div id="fileDisplay"></div>
+            <div id="sample-info-table-container"></div>
+            <div id="everything-maps" style="display: none; margin-top: 1rem;">
+                <div id="map"></div>
+                Radar Popup: <div id="radarPlots"></div>
+            </div>
+            <div id="chartContainer"></div>
+            <div id="chartsForMapContainer"></div>
+        </main>
+    </div>
+
+    <!-- Existing Modals (Unchanged) -->
+    <div id="sedDataModal" class="modal">
+        <div class="modal-content">
+            <h2>Select CEFAS Data Sets</h2>
+            <div class="input-group"><label for="fileInputDD">CEFAS dredge data file</label><input type="file" id="fileInputDD" onchange="importDredgeData()"></div>
+            <div class="input-group"><label for="urlInputDD">CEFAS dredge data URL</label><input type="text" id="urlInputDD" placeholder="URL" onchange="importDredgeData()"></div>
+            <div class="input-group"><label for="mlApplications">MLA IDs (comma-separated)</label><input type="text" id="mlApplications" placeholder="e.g., MLA/2023/00123"></div>
+            <hr>
+            <div class="input-group"><label>Search by Area</label><input type="number" id="centreLatitude" placeholder="Center Latitude"><input type="number" id="centreLongitude" placeholder="Center Longitude"><input type="number" id="radius" placeholder="Radius (m)"></div>
+            <div class="input-group"><label>Search by Date</label><input type="date" id="startDate"><input type="date" id="finishDate"></div>
+            <div class="modal-footer"><button onclick="closeCEFASSearch()">Search CEFAS Selection</button><button onclick="closeCEFASSelection()" class="secondary">Finish & Close</button></div>
+        </div>
+    </div>
+    <div id="datasetModal" class="modal">
+        <div class="modal-content">
+            <h2>Filter Datasets</h2>
+            <p>Select datasets that <strong>must</strong> be present for a sample to be included.</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="tracemetaldataset"> Trace metal data</label>
+                <label><input type="checkbox" id="pahdataset"> PAH data</label>
+                <label><input type="checkbox" id="pcbdataset"> PCB data</label>
+                <label><input type="checkbox" id="bdedataset"> BDE data</label>
+                <label><input type="checkbox" id="organotinsdataset"> Organotins data</label>
+                <label><input type="checkbox" id="organochlorinedataset"> Organochlorine data</label>
+                <label><input type="checkbox" id="physicaldataset"> Physical data</label>
+            </div>
+            <div class="modal-footer"><button onclick="applyDatasetFilter()">Apply Dataset Selection</button></div>
+        </div>
+    </div>
+    <div id="sampleModal" class="modal">
+        <div class="modal-content">
             <h2>Select Samples</h2>
-            <button onclick="flipSampleSelections(true)">Select All</button>
-            <button onclick="flipSampleSelections(false)">Select None</button>
-            <button onclick="selectHighlighted()">Select Highlighted</button>
-            <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
-            <br>
-            Must have non-zero - 
-            <input type="checkbox" id="tracemetaldatasample">
-            <label for="tracemetaldatasample">Trace metal data</label>
-            <input type="checkbox" id="pahdatasample">
-            <label for="pahdatasample">PAH data</label>
-            <input type="checkbox" id="pcbdatasample">
-            <label for="pcbdatasample">PCB data</label>
-            <input type="checkbox" id="bdedatasample">
-            <label for="bdedatasample">BDE data</label>
-            <input type="checkbox" id="organotinsdatasample">
-            <label for="organotinsdatasample">Organotins data</label>
-            <input type="checkbox" id="organochlorinedatasample">
-            <label for="organochlorinedatasample">Organochlorine data</label>
-            <input type="checkbox" id="physicaldatasample">
-            <label for="physicaldatasample">Physical data</label>
-            <br>
-            <label for="centreLat">Centre latitude:</label>
-            <input type="number" id="centreLat" placeholder="Leave blank for location">
-            <label for="centreLon">Centre longitude:</label>
-            <input type="number" id="centreLon" placeholder="Leave blank for location">
-            <label for="centreDist">Distance (m):</label>
-            <input type="number" id="centreDist" placeholder="Select 1 location">
-            <br>
-            <label for="minDepth">Minimum depth:</label>
-            <input type="number" id="minDepth">
-            <label for="maxDepth">Maximum depth:</label>
-            <input type="number" id="maxDepth">
-            <label for="containsText">Contains Text:</label>
-            <input type="text" id="containsText">
-            <button onclick="applySampleFilter()">Apply</button>
-            <div id="sampleCheckboxes"></div>
-            <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipSampleSelections(true)">Select All</button><button onclick="flipSampleSelections(false)">Select None</button><button onclick="selectHighlighted()">Select Highlighted</button></div>
+            <hr>
+            <p><strong>Filter Samples:</strong></p>
+            <div class="input-group"><label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText"></div>
+            <button onclick="applySampleFilter()">Apply Filter</button>
+            <hr>
+            <div id="sampleCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;"></div>
+            <div class="modal-footer"><button onclick="closeSampleSelection()">Confirm Selections and Close</button></div>
+            <div style="display:none;">Must have non-zero - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label><input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label><input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label><input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label><input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label><input type="checkbox" id="organochlorinedatasample"><label for="organochlorinedatasample">Organochlorine data</label><input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label><label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location"><label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location"><label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location"><label for="minDepth">Minimum depth:</label><input type="number" id="minDepth"><label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth"></div>
         </div>
-
-        <div id="chemicalModal" style="display: none;">
+    </div>
+    <div id="chemicalModal" class="modal">
+        <div class="modal-content">
             <h2>Select Chemicals</h2>
-            <button onclick="flipChemicalSelections(true)">Select All</button>
-            <button onclick="flipChemicalSelections(false)">Select None</button>
-            <br>
-            <label for="containsTextChemical">Contains Text:</label>
-            <input type="text" id="containsTextChemical">
-            <button onclick="applyChemicalFilter()">Apply</button>
-            <div id="chemicalCheckboxes"></div>
-            <button onclick="closeChemicalSelection()">Confirm Selection</button>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipChemicalSelections(true)">Select All</button><button onclick="flipChemicalSelections(false)">Select None</button></div>
+            <hr>
+            <p><strong>Filter Chemicals:</strong></p>
+            <div class="input-group"><label for="containsTextChemical">Filter by name (contains text):</label><input type="text" id="containsTextChemical"></div>
+            <button onclick="applyChemicalFilter()">Apply Filter</button>
+            <hr>
+            <div id="chemicalCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;"></div>
+            <div class="modal-footer"><button onclick="closeChemicalSelection()">Confirm Selection</button></div>
         </div>
-
-        <br>
-        <button onclick="openDatasetLabels()">Enter alternate labels for datasets</button>
-        <button onclick="openSampleLabels()">Enter alternate labels for samples</button>
-
-        <div id="datasetLabels" style="display: none;">
+    </div>
+    <div id="datasetLabels" class="modal">
+        <div class="modal-content">
+            <h2>Enter Alternate Labels for Datasets</h2>
             <form id="datasetLabelsForm"></form>
-            <br>
-            <button onclick="updateDatasetLabels()">Confirm Labels and Close</button>
-            <button onclick="closeDatasetLabels()">Cancel</button>
+            <div class="modal-footer"><button onclick="updateDatasetLabels()">Confirm Labels</button><button onclick="closeDatasetLabels()" class="secondary">Cancel</button></div>
         </div>
-
-        <div id="sampleLabels" style="display: none;">
+    </div>
+    <div id="sampleLabels" class="modal">
+        <div class="modal-content">
+            <h2>Enter Alternate Labels for Samples</h2>
             <form id="sampleLabelsForm"></form>
-            <br>
-            <button onclick="updateSampleLabels()">Confirm Labels and Close</button>
-            <button onclick="closeSampleLabels()">Cancel</button>
-        </div>
-
-        <div>
-            Sheetanmes -
-            <input type="checkbox" id="tracemetaldata" checked>
-            <label for="tracemetaldata">Trace metal data</label>
-            <input type="checkbox" id="pahdata" checked>
-            <label for="pahdata">PAH data</label>
-            <input type="checkbox" id="pcbdata" checked>
-            <label for="pcbdata">PCB data</label>
-            <input type="checkbox" id="bdedata" checked>
-            <label for="bdedata">BDE data</label>
-            <input type="checkbox" id="organotinsdata" checked>
-            <label for="organotinsdata">Organotins data</label>
-            <input type="checkbox" id="organochlorinedata" checked>
-            <label for="organochlorinedata">Organochlorine data</label>
-            <input type="checkbox" id="physicaldata" checked>
-            <label for="physicaldata">Physical data</label>
-        </div>
-
-        <div>
-            <div>
-                Chart types -
-                <input type="checkbox" id="samplegroup" checked>
-                <label for="samplegroup">Group by sample</label>
-                <input type="checkbox" id="chemicalgroup" checked>
-                <label for="chemicalgroup">Group by chemical</label>
-                <input type="checkbox" id="positionplace" checked>
-                <label for="positionplace">Plot by position</label>
-                <input type="checkbox" id="pcaanalysis" checked>
-                <label for="pcaanalysis">PCA analysis</label>
-            </div>
-            <div>
-                Relations -
-                <input type="checkbox" id="relationareadensity" checked>
-                <label for="relationareadensity">Area density</label>
-                <input type="checkbox" id="relationhc" checked>
-                <label for="relationhc">Total hydrocarbons</label>
-                <input type="checkbox" id="relationtotalsolids" checked>
-                <label for="relationtotalsolids">Total solids</label>
-                <input type="checkbox" id="relationorganiccarbon" checked>
-                <label for="relationorganiccarbon">Organic Carbon</label>
-            </div>
-            <div>
-                PCA analysis -
-                <input type="checkbox" id="pcanormalise" checked>
-                <label for="pcanormalise">Normalise to 100</label>
-                <input type="checkbox" id="pcalmw" checked>
-                <label for="pcalmw">PAH LMW</label>
-                <input type="checkbox" id="pcahmw" checked>
-                <label for="pcahmw">PAH HMW</label>
-                <input type="checkbox" id="pcaepa" checked>
-                <label for="pcaepa">PAH EPA</label>
-                <input type="checkbox" id="pcasmallpts" checked>
-                <label for="pcasmallpts">Small particles</label>
-                <input type="checkbox" id="pcaorganiccarbon" checked>
-                <label for="pcaorganiccarbon">Organic carbon</label>
-            </div>
-            <div>
-                Resuspension by overflow % or particle size (µm) -
-                <label for="overflowpercent">Percentage overflow:</label>
-                <input type="number" id="overflowpercent" placeholder="0 set by pt size">
-                <label for="resuspensionsize">Maximum resuspension size (µm):</label>
-                <input type="number" id="resuspensionsize" placeholder="0 set by overflow %">
-            </div>
-            <div>
-            PAH specific
-            <input type="checkbox" id="gorhamtest" checked>
-            <label for="gorhamtest">PAH - Gorham Test Protocol</label>
-            <input type="checkbox" id="totalhc" checked>
-            <label for="totalhc">PAH - Total hydrocarbons & Total PAHs/THC</label>
-            <input type="checkbox" id="pahratios" checked>
-            <label for="pahratios">PAH - Ratios</label>
-            <input type="checkbox" id="ringfractions" checked>
-            <label for="ringfractions">PAH - Ring Fractions</label>
-            <input type="checkbox" id="eparatios" checked>
-            <label for="eparatios">PAH - EPA Ratios</label>
-            <input type="checkbox" id="simpleratios" checked>
-            <label for="simpleratios">PAH - Simple Ratios</label>
-            </div>
-            <div>
-            Other data options
-            <input type="checkbox" id="congenertest" checked>
-            <label for="congenertest">PCB - Congener test</label>
-<!--            <input type="checkbox" id="scaleType">
-            <label for="scaleType">Logarithmic Scale</label> -->
-            </div>
-        </div>
-
-        <div>
-            Sample sorting for charts
-            <input type="radio" name="sorting" id="unsorted" value="unsorted" checked>
-            <label for="unsorted">Unsorted</label>
-            <input type="radio" name="sorting" id="longitude" value="longitude">
-            <label for="longitude">Longitude</label>
-            <input type="radio" name="sorting" id="latitude" value="latitude">
-            <label for="latitude">Latitude</label>
-            <input type="radio" name="sorting" id="totalarea" value="totalarea">
-            <label for="totalarea">Total surface area of particles</label>
-            <input type="radio" name="sorting" id="totalsolids" value="totalsolids">
-            <label for="totalarea">Total solids</label>
-            <input type="radio" name="sorting" id="organicmatter" value="organicmatter">
-            <label for="totalarea">Organic matter</label>
-            <input type="radio" name="sorting" id="lmw" value="lmw">
-            <label for="lmw">LMW PAHs Gorham-Test sum</label>
-            <input type="radio" name="sorting" id="hmw" value="hmw">
-            <label for="hmw">HMW PAHs Gorham-Test sum</label>
-            <input type="radio" name="sorting" id="totalhcsort" value="totalhcsort">
-            <label for="totalhcsort">Total hydrocarbon</label>
-            <input type="radio" name="sorting" id="ices7" value="ices7">
-            <label for="ices7">ICES7 PCBs sum</label>
-            <input type="radio" name="sorting" id="allpcbs" value="allpcbs">
-            <label for="allpcbs">All PCBs sum</label>
-            <input type="radio" name="sorting" id="silt" value="silt">
-            <label for="silt">Weight fraction silt and clay</label>
-            <input type="radio" name="sorting" id="siltsand" value="siltsand">
-            <label for="siltsand">Weight fraction of silt, clay and fine sand</label>
-            <input type="radio" name="sorting" id="sand" value="sand">
-            <label for="sand">Weight fraction of sand</label>
-            <input type="radio" name="sorting" id="gravel" value="gravel">
-            <label for="gravel">Weight fraction of gravel</label>
-            <input type="radio" name="sorting" id="normal" value="normal">
-            <label for="normal">Date of sampling</label>
-            <input type="radio" name="sorting" id="datelongitude" value="datelongitude">
-            <label for="datelongitude">Date of sampling then longitude</label>
-            <input type="radio" name="sorting" id="datelatitude" value="datelatitude">
-            <label for="datelatitude">Date of sampling then latitude</label>
-            <input type="radio" name="sorting" id="datetotalarea" value="datetotalarea">
-            <label for="datetotalarea">Date of sampling then total area</label>
-            <input type="radio" name="sorting" id="datetotalhc" value="datetotalhc">
-            <label for="datetotalhc">Date of sampling then total hydrocarbon</label>
-            <input type="radio" name="sorting" id="datelmw" value="datelmw">
-            <label for="datelmw">Date of sampling then LMW Gorham-Test sum</label>
-            <input type="radio" name="sorting" id="datehmw" value="datehmw">
-            <label for="datehmw">Date of sampling then HMW Gorham-Test sum</label>
-            <input type="radio" name="sorting" id="dateices7" value="dateices7">
-            <label for="dateices7">Date of sampling then ICES7 PCBs sum</label>
-            <input type="radio" name="sorting" id="dateallpcbs" value="dateallpcbs">
-            <label for="dateallpcbs">Date of sampling then All PCBs sum</label>
-        </div>
-
-        <div>
-            Location co-ordinate files -
-            <input type="file" id="fileLocations" multiple> <!-- Allow multiple file selection -->
-            <input type="text" id="urlLocations" placeholder="Enter comma-separated URLs">
-            <!-- Accept comma-separated URLs -->
-            <button onclick="importLocations()">Import Locations</button>
-        </div>
-
-        <div>
-            Shape files -
-            <input type="file" id="fileShapes" multiple> <!-- Allow multiple file selection -->
-            <input type="text" id="urlShapes" placeholder="Enter comma-separated URLs">
-            <!-- Accept comma-separated URLs -->
-            <button onclick="importShapes()">Import shape files (kml)</button>
-        </div>
-
-        <div>
-            ChemInfo files
-            <input type="file" id="fileChemInfo" multiple> <!-- Allow multiple file selection -->
-            <input type="text" id="urlChemInfo" placeholder="Enter comma-separated URLs">
-            <!-- Accept comma-separated URLs -->
-            <button onclick="importChemInfo()">Import Chem Info</button>
-        </div>
-
-        <div>
-            Status -
-            <label for="fileSave">Save - </label>
-            <input type="text" id="fileSave" placeholder="Enter file name" onchange="saveSnapShot()">
-
-            Load -
-            <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
-            <label for="urlLoad">Web </label>
-            <input type="text" id="urlLoad" placeholder="Enter URL" onchange="loadSnapShotURL()">
-        </div>
-
-        <div>
-            Look
-            <input type="radio" name="look" id="colour" value="colour" checked>
-            <label for="colour">Colour</label>
-            <input type="radio" name="look" id="blackandwhite" value="blackandwhite">
-            <label for="blackandwhite">Black and White</label>
+            <div class="modal-footer"><button onclick="updateSampleLabels()">Confirm Labels</button><button onclick="closeSampleLabels()" class="secondary">Cancel</button></div>
         </div>
     </div>
-    <br>
-    <button onclick="toggleFileDisplay()">Toggle File Display</button>
-    <br>
-    <div id="fileDisplay">
+    
+    <!-- NEW MODALS -->
+    <div id="additionalInfoModal" class="modal">
+        <div class="modal-content">
+            <h2>Additional Information Files</h2>
+            <div class="input-group"><label for="fileLocations">Location co-ordinate files</label><input type="file" id="fileLocations" multiple><input type="text" id="urlLocations" placeholder="Enter comma-separated URLs"><button onclick="importLocations()">Import Locations</button></div>
+            <hr>
+            <div class="input-group"><label for="fileShapes">Shape files (kml)</label><input type="file" id="fileShapes" multiple><input type="text" id="urlShapes" placeholder="Enter comma-separated URLs"><button onclick="importShapes()">Import shape files</button></div>
+            <hr>
+            <div class="input-group"><label for="fileChemInfo">ChemInfo files</label><input type="file" id="fileChemInfo" multiple><input type="text" id="urlChemInfo" placeholder="Enter comma-separated URLs"><button onclick="importChemInfo()">Import Chem Info</button></div>
+            <div class="modal-footer"><button onclick="closeAdditionalInfoModal()" class="secondary">Close</button></div>
+        </div>
     </div>
-    <div id="sample-info-table-container"></div>
-    <div id="everything-maps" style="display: none;">
-        <div id="map" style="height: 800px;"></div>
-        Radar Popup: <div id="radarPlots"></div>
+
+    <div id="chartModifiersModal" class="modal">
+        <div class="modal-content">
+            <h2>Chart Modifiers</h2>
+            <div class="radio-group">
+                <label><input type="radio" name="look" id="colour" value="colour" checked> Colour</label>
+                <label><input type="radio" name="look" id="blackandwhite" value="blackandwhite"> Black and White</label>
+            </div>
+            <div class="modal-footer"><button onclick="closeChartModifiersModal()" class="secondary">Close</button></div>
+        </div>
     </div>
-    <div id="chartContainer"></div>
-    <div id="chartsForMapContainer"></div>
+
+    <div id="additionalChartsModal" class="modal">
+        <div class="modal-content">
+            <h2>Additional Chart Options</h2>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="gorhamtest" checked> PAH - Gorham Test Protocol</label>
+                <label><input type="checkbox" id="totalhc" checked> PAH - Total hydrocarbons & Total PAHs/THC</label>
+                <label><input type="checkbox" id="pahratios" checked> PAH - Ratios</label>
+                <label><input type="checkbox" id="ringfractions" checked> PAH - Ring Fractions</label>
+                <label><input type="checkbox" id="eparatios" checked> PAH - EPA Ratios</label>
+                <label><input type="checkbox" id="simpleratios" checked> PAH - Simple Ratios</label>
+                <label><input type="checkbox" id="congenertest" checked> PCB - Congener test</label>
+            </div>
+            <div class="modal-footer"><button onclick="closeAdditionalChartsModal()" class="secondary">Close</button></div>
+        </div>
+    </div>
+
+    <div id="pcaOptionsModal" class="modal">
+        <div class="modal-content">
+            <h2>PCA Options</h2>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="pcanormalise" checked> Normalise to 100</label>
+                <label><input type="checkbox" id="pcalmw" checked> PAH LMW</label>
+                <label><input type="checkbox" id="pcahmw" checked> PAH HMW</label>
+                <label><input type="checkbox" id="pcaepa" checked> PAH EPA</label>
+                <label><input type="checkbox" id="pcasmallpts" checked> Small particles</label>
+                <label><input type="checkbox" id="pcaorganiccarbon" checked> Organic carbon</label>
+            </div>
+            <div class="modal-footer"><button onclick="closePcaOptionsModal()" class="secondary">Close</button></div>
+        </div>
+    </div>
+
+    <div id="particleSizeModal" class="modal">
+        <div class="modal-content">
+            <h2>Particle Size Details</h2>
+            <p>Resuspension by overflow % or particle size (µm)</p>
+            <div class="input-group"><label for="overflowpercent">Percentage overflow:</label><input type="number" id="overflowpercent" placeholder="0 set by pt size"></div>
+            <div class="input-group"><label for="resuspensionsize">Maximum resuspension size (µm):</label><input type="number" id="resuspensionsize" placeholder="0 set by overflow %"></div>
+            <div class="modal-footer"><button onclick="closeParticleSizeModal()" class="secondary">Close</button></div>
+        </div>
+    </div>
+    
+    <!-- Local JS files (Unchanged) -->
     <script src="os-transform.js"></script>
     <script src="sdeDataUtilities.js"></script>
     <script src="sdeDredgeData.js"></script>
@@ -387,6 +534,33 @@
     <script src="sdeSelections.js"></script>
     <script src="sdeMaps.js"></script>
     <script src="sdeTables.js"></script>
+    
+    <!-- New and Existing Javascript for UI Interactivity -->
+    <script>
+        // --- Sidebar Toggle ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('controls-sidebar');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            sidebar.classList.toggle('collapsed');
+            toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
+        }
+
+        // --- New Modal Functions ---
+        function openAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'block'; }
+        function closeAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'none'; }
+
+        function openChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'block'; }
+        function closeChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'none'; }
+
+        function openAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'block'; }
+        function closeAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'none'; }
+
+        function openPcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'block'; }
+        function closePcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'none'; }
+        
+        function openParticleSizeModal() { document.getElementById('particleSizeModal').style.display = 'block'; }
+        function closeParticleSizeModal() { document.getElementById('particleSizeModal').style.display = 'none'; }
+    </script>
 </body>
 
 </html>
