@@ -710,6 +710,17 @@ console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
             .trim();                                // Remove spaces at the beginning and end of the string
     }
 
+// --- Sidebar Toggle ---
+function toggleSidebar() {
+    const sidebar = document.getElementById('controls-sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    sidebar.classList.toggle('collapsed');
+    toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
+}
+
+
+
+
 function importData() {
     var urls = {};
     if (firstTime) {
@@ -742,12 +753,13 @@ function importData() {
             if(!features.includes('noninter')) {
 //                const everything = document.getElementById('controls-sidebar');
 //                everything.style.display = 'inline';
-                toggleSideBar();
+//            sidebar.classList.toggle('collapsed');
+                toggleSidebar();
             }
         } else {
             const everythingMaps = document.getElementById('everything-maps');
             everythingMaps.style.display = 'inline';
-            toggleSideBar();
+            toggleSidebar();
 //            const everything = document.getElementById('controls-sidebar');
 //            everything.style.display = 'inline';
         }

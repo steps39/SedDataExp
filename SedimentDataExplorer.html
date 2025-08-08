@@ -249,7 +249,7 @@
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250806</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250809</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
@@ -537,14 +537,6 @@
     
     <!-- New and Existing Javascript for UI Interactivity -->
     <script>
-        // --- Sidebar Toggle ---
-        function toggleSidebar() {
-            const sidebar = document.getElementById('controls-sidebar');
-            const toggleBtn = document.getElementById('sidebar-toggle');
-            sidebar.classList.toggle('collapsed');
-            toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
-        }
-
         // --- New Modal Functions ---
         function openAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'block'; }
         function closeAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'none'; }
