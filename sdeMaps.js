@@ -1,55 +1,59 @@
 //import { kml } from "https://unpkg.com/@tmcw/togeojson?module";
 
+let permanentTooltipLayer;
+
 function sampleMap(meas) {
     // Check if there's an existing map and remove it
     if (map) {
         map.remove();
     }
 
+    allMapMarkers = [];
+
+//    permanentTooltipLayer = L.layerGroup.collision({margin: 5});
+
     var currentTime = new Date();
-    var year = currentTime.getFullYear()
+    var year = currentTime.getFullYear();
 
     //Ordnance Survey
-	var apiKey = 'WYvhmkLwjzAF0LgSL14P7y1v5fySAYy9';
-    //var apiKey = 'JGALcz384ZnN2rL4hFGEsG0U99jegLbp';
-	var serviceUrl = 'https://api.os.uk/maps/raster/v1/zxy';
-    
+    var apiKey = 'WYvhmkLwjzAF0LgSL14P7y1v5fySAYy9';
+    var serviceUrl = 'https://api.os.uk/maps/raster/v1/zxy';
+
     var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//        attribution: '© OpenStreetMap'
     });
 
     var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,	
+        maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.'
-});
+    });
+
     var OS_Road = L.tileLayer(serviceUrl + '/Road_3857/{z}/{x}/{y}.png?key=' + apiKey, {
-        maxZoom: 19,	
+        maxZoom: 19,
         attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year
     });
 
     var OS_Outdoor = L.tileLayer(serviceUrl + '/Outdoor_3857/{z}/{x}/{y}.png?key=' + apiKey, {
-        maxZoom: 19,	
+        maxZoom: 19,
         attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year
     });
 
-
-    
     var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
-    
+        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'
+    });
+
     var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
-    });    
-    
+    });
+
     var osSensorCommunity = L.tileLayer('https://osmc3.maps.sensor.community/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © Sensor Community'
-    });    
-    
+    });
+
     var mapLayers = {
         "OpenStreetMap": osm,
         "WorldImagery": Esri_WorldImagery,
@@ -66,7 +70,6 @@ function sampleMap(meas) {
         layers: [osm]
     });
 
-
     // SampleInfo data structure
     latSum = 0;
     lonSum = 0;
@@ -79,357 +82,198 @@ function sampleMap(meas) {
     markers = [];
     marker = null;
 
-    var greenIcon = L.icon({
-        iconUrl: markerPath + 'blue-marker-icon.png', // Replace with the path to your marker icon
-        shadowUrl: markerPath + 'marker-shadow.png',
+    const markerColors = [
+        '#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF',
+        '#FFC300', '#33FFA1', '#C70039', '#900C3F'
+    ];
 
-        iconSize: [38, 95], // size of the icon
-        shadowSize: [50, 64], // size of the shadow
-        iconAnchor: [22, 94], // point of the icon which will correspond to marker's location
-        shadowAnchor: [4, 62],  // the same for the shadow
-        popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
-    });
-
-    // Define a custom marker icon with a specific color
-    var CustomIcon = L.Icon.extend({
-        options: {
-            shadowUrl: markerPath + 'marker-shadow.png',
-            iconSize: [25, 41], // Replace with the size of your marker icon
-            iconAnchor: [12, 41], // Replace with the anchor point of your marker icon
-            popupAnchor: [1, -34], // Replace with the popup anchor point of your marker icon
-        }
-    });
-
- /*   // Add known locations to the map
-    if(namedLocations) {
-        // Loop through the named locations and add them to the map
-        for (const locationName in namedLocations) {
-            const location = namedLocations[locationName];
-            const label = location.label;
-            const latitude = location.latitude;
-            const longitude = location.longitude;
-
-            // Add an invisble marker with a popup displaying the location name
-            L.marker([latitude, longitude], {
-                icon: L.divIcon({
-                    className: 'custom-label',
-                    html: `<span>${label}</span>`,
-                    iconSize: [0, 0] // Make the icon itself invisible
-                })
-            }).addTo(map);
-        }
-    }*/
-
-    // Add markers for each sample
-    iconNo = 0;
+    const highlightStyle = {
+        radius: 10,
+        fillColor: '#FFFF00', // A bright yellow for highlighting
+        color: '#000000',     // Black outline
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 1
+    };
+    
     sampleNo = -1;
-    const highlightIcon = new CustomIcon({ iconUrl: markerPath + 'marker-icon-highlight.png' });
     const datesSampled = Object.keys(selectedSampleInfo);
-
 
     noSamples = 0;
     allSamples = [];
-    icons = [];
-    iconNos = [];
+    const dateColors = {}; 
+    let colorIndex = 0;   
     markers = {};
-//srg250308    datesSampled.sort();
+
     datesSampled.forEach(dateSampled => {
         markers[dateSampled] = {};
-        iconNos[dateSampled] = iconNo;
-        currentIcon = new CustomIcon({ iconUrl: markerPath + markerPngs[iconNo] });
-//console.log(iconNo,currentIcon);
-        iconNo = (iconNo + 1) % 9;
-        icons.push(currentIcon);
-//        noSamples = 0;
-//        for (const dateSampled in selectedSampleInfo) {
+        dateColors[dateSampled] = markerColors[colorIndex];
+        colorIndex = (colorIndex + 1) % markerColors.length;
         noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
-//        }
-        //console.log('noSamples', noSamples);
-        //        for (const sample in selectedSampleInfo[dateSampled].position) {
+        
         dsSamples = (Object.keys(selectedSampleInfo[dateSampled].position));
         dsSamples.forEach(sample => {
             allSamples.push(dateSampled + ": " + sample);
-        })
+        });
     });
-//srg250308    allSamples.sort();
+
+    // --- SORT and POPULATE LEGEND DATA ---
+    // Sort the datasets alphabetically by their label for a consistent order.
+    datesSampled.sort((a, b) => {
+        const labelA = selectedSampleInfo[a].label || a;
+        const labelB = selectedSampleInfo[b].label || b;
+        return labelA.localeCompare(labelB);
+    });
+
+    const legendData = [];
+    datesSampled.forEach(dateSampled => {
+        const color = dateColors[dateSampled];
+        const label = selectedSampleInfo[dateSampled].label || dateSampled;
+        // Create an SVG circle as a Data URL to represent the marker
+        const svgIcon = `<svg height="18" width="18" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="7" stroke="black" stroke-width="1" fill="${color}" /></svg>`;
+        const iconUrl = `data:image/svg+xml;base64,${btoa(svgIcon)}`;
+        legendData.push({ label: label, iconUrl: iconUrl });
+    });
+    // Call the function from the main HTML file to build the legend
+    populateMapLegend(legendData);
+    // --- END ---
+
+
     if (!(xAxisSort === 'normal')) {
         allSamples.sortComplexSamples();
     }
     highlighted = Array(noSamples).fill(false);
-//console.log(iconNos,icons);
-//console.log(allSamples);
 
-    allSamples.forEach(fullSample => {
-        parts = fullSample.split(": ");
-        if (parts.length > 2){
-            parts[1] = parts[1] + ': ' + parts[2];
-        }
-        dateSampled = parts[0];
-        sample = parts[1];
-        iconNo = iconNos[dateSampled];
-        currentIcon = icons[iconNo];
-//console.log(dateSampled,sample,iconNo,currentIcon);
-        
-
-
-/*    datesSampled.sort();
-    datesSampled.forEach(dateSampled => {
-        currentIcon = new CustomIcon({ iconUrl: markerPath + markerPngs[iconNo] });
-        iconNo = (iconNo + 1) % 9;
-        noSamples = 0;
-//        for (const dateSampled in selectedSampleInfo) {
-            noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
-//        }
-        //console.log('noSamples', noSamples);
-        highlighted = Array(noSamples).fill(false);
-        //        for (const sample in selectedSampleInfo[dateSampled].position) {
-        const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
-        allSamples.sort();
-        allSamples.forEach(sample => {*/
-//            if (selectedSampleInfo[dateSampled].position[sample]['Position latitude']) {
-//console.log(dateSampled,sample);
-            if (selectedSampleInfo[dateSampled].position[sample].hasOwnProperty('Position latitude')) {
-                lat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
-                lon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];
-                // Create a marker for each sample
-                if (lat !== undefined && lon !== undefined) {
-                    lat = parseFloat(lat);
-                    lon = parseFloat(lon);
-                    if (maxLat === null) {
-                        minLat = lat;
-                        maxLat = lat;
-                        minLon = lon;
-                        maxLon = lon;
-                    } else {
-                        if (lat > maxLat) {
-                            maxLat = lat;
-                        } else if (lat < minLat) {
-                            minLat = lat;
-                        }
-                        if (lon > maxLon) {
-                            maxLon = lon;
-                        } else if (lon < minLon) {
-                            minLon = lon;
-                        }
-                    }
-                    sampleNo += 1;
-                    // Create a marker for each sample
-                    //						const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                    const popupStatic = '<p style="height:200px; width:200px">static content</p>';
-                    //                    let popup = marker.getPopup();
-                    let chart_div = document.getElementById("c_radar_" + dateSampled + ": " + sample);
-                    //  just bodge to allow display of position                  const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(chart_div,{autoClose:false,closeOnClick:false});
-                    //                    popup.setContent(chart_div);
-                    //const marker = L.marker([lat, lon], { icon: currentIcon }, {title: `${dateSampled}: ${sample}`}, {riseOnHover: true} ).
-                    /*const marker = L.marker([lat, lon], { icon: currentIcon }).
-                    addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`).bindTooltip(`${dateSampled}: ${sample}`);*/
-                    var markerPopup = L.popup({
-                        closeOnClick: false,
-                        autoClose: false
-                        }).setContent(`${dateSampled}: ${sample}`);
-/*                    const marker = L.marker([lat, lon], { icon: currentIcon }).
-                        addTo(map).bindPopup(markerPopup).bindTooltip(`${dateSampled}: ${sample}`);*/
-                    marker = L.marker([lat, lon], { icon: currentIcon }).
-                        bindPopup(markerPopup).bindTooltip(`${dateSampled}: ${sample}`);
-                    //                    const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map);
-                    //const marker = L.marker([lat, lon], { icon: currentIcon }).addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}<br>${popupStatic,autoClose:false}`);
-                    /*						const marker = L.circleMarker([lat, lon],
-                                                            {radius: 4, color: 'white', fillColor: 'red', fillOpacity: 1}
-                                                            ).addTo(map).bindPopup(`<b>${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                                                            marker.bindTooltip(sample, { permanent: false, direction: 'top' });*/
-                    marker.isMarked = false;
-//console.log(sampleNo, dateSampled, sample);
-
-                    // Add a click event listener to the static marker
-                    marker.on('click', function (e) {
-                        //                        hoveredSample = sample;
-//console.log('alert',e.latlng);
-
-/*                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
-                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];*/
-                        const centreLat = e.latlng.lat;
-                        const centreLon = e.latlng.lng;
-//console.log(centreLat,centreLon);
-                        for (const ds in selectedSampleInfo) {
-                            for (const s in selectedSampleInfo[ds].position) {
-                                const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
-                                const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
-                                distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-//console.log('distance1',distance);
-                                if (distance <= 10) {
-                                    hoveredSample = ds + ': ' + s;
-//console.log(meas);
-//console.log(ds);
-//console.log(hoveredSample);
-                                    createHighlights(meas, ds, hoveredSample);
-//console.log(popupInstance);
-                                    if (hoveredSample in popupInstance) {
-                                        popupInstance[hoveredSample].update();
-                                    }
-                                    let popup = marker.getPopup();
-                                    let chart_div = document.getElementById("c_radar_" + hoveredSample);
-                                    if (!(chart_div === null || chart_div ==undefined)) {
-//console.log(chart_div);
-                                        chart_div.style.height = '300px';
-                                        chart_div.style.width = '250px';
-                                        /*                                    popup.options.closeOnClick = false;
-                                                                            popup.options.autoClose = false;*/
-                                        popup.setContent(chart_div);
-                                    }
-//console.log(popup);
-                                }
-                            }
-                        }
-
-
-
-                        //                        hoveredSample = dateSampled + ': ' + sample;
-                        //                        createHighlights(meas, dateSampled, hoveredSample);
-                        // Update the chart - in routintes
-                        //console.log('update ',sample,i);
-                        //							chartInstance[i].update();
-                    });
-
-                    // Create a highlight for each sample
-                    //console.log(sampleNo,lat,lon);
-                    highlightMarkers[sampleNo] = new L.marker(new L.LatLng(lat, lon), { icon: highlightIcon });
-                    //                    addTo(map).bindPopup(`<b>${dateSampled}: ${sample}</b><br>Latitude: ${lat}<br>Longitude: ${lon}`);
-                    highlightMarkers[sampleNo].bindTooltip(`${dateSampled}: ${sample}`);
-//console.log(sampleNo);
-
-                    // Add a click event listener to the highlight marker
-                    highlightMarkers[sampleNo].on('click', function (e) {
-//console.log('alert',e.latlng);
-                        // Mark not just the clicked position but any things which are in the same place
-/*                        const centreLat = selectedSampleInfo[dateSampled].position[sample]['Position latitude'];
-                        const centreLon = selectedSampleInfo[dateSampled].position[sample]['Position longitude'];*/
-                        const centreLat = e.latlng.lat;
-                        const centreLon = e.latlng.lng;
-                        for (const ds in selectedSampleInfo) {
-                            for (const s in selectedSampleInfo[ds].position) {
-                                const sampleLat = sampleInfo[ds].position[s]['Position latitude'];
-                                const sampleLon = sampleInfo[ds].position[s]['Position longitude'];
-                                distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
-//console.log('distance2',distance);
-                                if (distance <= 10) {
-                                    hoveredSample = ds + ': ' + s;
-                                    console.log(meas, ds, hoveredSample);
-                                    createHighlights(meas, ds, hoveredSample);
-                                    console.log(popupInstance);
-                                    if (hoveredSample in popupInstance) {
-                                        popupInstance[hoveredSample].update();
-                                    }
-                                    popup = marker.getPopup();
-                                    chart_div = document.getElementById("c_radar_" + hoveredSample);
-                                    /*                                    chart_div.style.height = '200px';
-                                                                        chart_div.style.width = '400px';*/
-                                    /*popup.options.closeOnClick = false;
-                                    popup.options.autoClose = false;*/
-                                    popup.setContent(chart_div);
-                                }
-                            }
-                        }
-                    });
-                    noLocations += 1;
-                    latSum += parseFloat(lat);
-                    lonSum += parseFloat(lon);
-                };
-            } else {
-                // Missing lat and lon so don't create a marker but do update the sampleNo so that it still aligns with chart samples
-                sampleNo += 1;
-                highlightMarkers[sampleNo] = null;
-            }
-            markers[dateSampled][fullSample] = marker;
-        });
-//console.log(iconNo, dateSampled);
-//    });
-
-    var exteriorStyle = {
-        "color": "#ffffff",
-        "weight": 0,
-        "fillOpacity": .75
+    const hoverStyle = {
+        radius: 10,
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 1
     };
 
+    allSamples.forEach(fullSample => {
+        let parts = fullSample.split(": ");
+        if (parts.length > 2) {
+            parts[1] = parts[1] + ': ' + parts[2];
+        }
+        const dateSampled = parts[0];
+        const sample = parts[1];
+        
+        const currentColor = dateColors[dateSampled];
+        
+        if (selectedSampleInfo[dateSampled].position[sample].hasOwnProperty('Position latitude')) {
+            const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
+            const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
+            
+            if (!isNaN(lat) && !isNaN(lon)) {
+                if (maxLat === null) { minLat = lat; maxLat = lat; minLon = lon; maxLon = lon; } 
+                else { if (lat > maxLat) maxLat = lat; else if (lat < minLat) minLat = lat; if (lon > maxLon) maxLon = lon; else if (lon < minLon) minLon = lon; }
+
+                sampleNo += 1;
+
+                const dateLabel = selectedSampleInfo[dateSampled].label;
+                const sampleLabel = selectedSampleInfo[dateSampled].position[sample].label;
+                const alternateName = `${dateLabel}: ${sampleLabel}`;
+                
+                const originalCircleOptions = {
+                    radius: 7,
+                    fillColor: currentColor,
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                };
+
+                marker = L.circleMarker([lat, lon], originalCircleOptions)
+                    .bindTooltip(alternateName);
+
+                marker.options.customId = fullSample;
+                marker.options.originalStyle = originalCircleOptions;
+
+                marker.on({
+                    mouseover: function (e) {
+                        const layer = e.target;
+                        layer.setStyle(hoverStyle);
+                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                            layer.bringToFront();
+                        }
+                    },
+                    mouseout: function (e) {
+                        e.target.setStyle(e.target.options.originalStyle);
+                    }
+                });
+
+                marker.on('click', function (e) {
+                    const clickedId = e.target.options.customId;
+                    createHighlights(meas, clickedId);
+                });
+
+                highlightMarkers[sampleNo] = L.circleMarker(new L.LatLng(lat, lon), highlightStyle);
+                highlightMarkers[sampleNo].bindTooltip(alternateName);
+                highlightMarkers[sampleNo].options.customId = fullSample;
+                highlightMarkers[sampleNo].on('click', function (e) {
+                    const clickedId = e.target.options.customId;
+                    createHighlights(meas, clickedId);
+                });
+
+                noLocations += 1;
+                latSum += lat;
+                lonSum += lon;
+            }
+        } else {
+            sampleNo += 1;
+            highlightMarkers[sampleNo] = null;
+        }
+        markers[dateSampled][fullSample] = marker;
+        if (marker) {
+            allMapMarkers.push(marker);
+        }
+        if (marker) {
+            const alternateName = marker.getTooltip().getContent();
+            const permanentMarkerStyle = { ...marker.options.originalStyle, interactive: false };
+            const permanentMarker = L.circleMarker(marker.getLatLng(), permanentMarkerStyle);
+            permanentMarker.bindTooltip(alternateName, { 
+                permanent: true, 
+                direction: 'auto',
+                className: 'no-overlap-tooltip'
+            });
+        }
+    });
 
     let markerLayers = {};
     datesSampled.forEach(dateSampled => {
         markerLayers[dateSampled] = [];
         allSamples = Object.keys(markers[dateSampled]);
         allSamples.forEach(sample => {
-            markerLayers[dateSampled].push(markers[dateSampled][sample]);
+            if (markers[dateSampled][sample]) {
+                markerLayers[dateSampled].push(markers[dateSampled][sample]);
+            }
         });
     });
-//console.log(markers);
-//console.log(datesSampled,markerLayers);
-/*    var mapLayers = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-    });*/
     
     markerLayer = {};
     datesSampled.forEach(dateSampled => {
-console.log(dateSampled,markerLayers[dateSampled]);        
         markerLayer[dateSampled] = L.layerGroup(markerLayers[dateSampled]).addTo(map);
     });
-//console.log(markerLayer,markerLayers);
-
-
-/*    var kmlLayer = new L.KML("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml", {async: true});
-console.log(kmlLayer);
-    for (filename in kmlLayers) {
-        kmlLayer = kmlLayers[filename];
-    }
-console.log(kmlLayer);
-    kmlLayer.on("loaded", function(e) {
-    map.fitBounds(e.target.getBounds());
-//fred = kmlLayer;
-    
-    // Access nested layers and apply styles
-    const mainLayer = Object.values(kmlLayer._layers)[0];
-    if (mainLayer && mainLayer._layers) {
-        Object.values(mainLayer._layers).forEach(function(layer) {
-            if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
-                layer.setStyle({
-                    color: "#FF0000",       // Set line color to red
-                    weight: 2,              // Set line thickness
-                    opacity: 0.5,           // Set line opacity
-                    fillColor: "#FF0000",   // Set fill color to red
-                    fillOpacity: 0.2        // Set fill opacity for polygons
-                });
-            }
-        });
-    }
-});
-//console.log(markers,markerLayers);
-//    var shapeOverlay =  {'MLA/2015/00088' : kmlLayer};
-    var shapeOverlay =  {'MLA_2015_00088-LOCATIONS.kml' : kmlLayer};
-    datesSampled.forEach(dateSampled => {
-        shapeOverlay[dateSampled] = markerLayer[dateSampled];
-    });*/
 
     var shapeOverlay = {};
-    let kmlColors = [];
-    kmlColors[0] = '#FF0000';
-    kmlColors[1] = '#00FF00';
-    kmlColors[2] = '#0000FF';
-    colorNo = 0;
+    let kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
+    let colorNo = 0;
 
     for (filename in kmlLayers) {
         url = kmlLayers[filename];
         kmlLayer = new L.KML(url, {async: true});
         kmlLayer.on("loaded", function (e) {
-//            map.fitBounds(e.target.getBounds());
-            // Access nested layers and apply styles
             const mainLayer = Object.values(e.target._layers)[0];
             if (mainLayer && mainLayer._layers) {
                 Object.values(mainLayer._layers).forEach(function (layer) {
                     if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
                         layer.setStyle({
-                            color: kmlColors[colorNo],       // Set line color to red
-                            weight: 2,              // Set line thickness
-                            opacity: 0.5,           // Set line opacity
-                            fillColor: kmlColors[colorNo],   // Set fill color to red
-                            fillOpacity: 0.2        // Set fill opacity for polygons
+                            color: kmlColors[colorNo],
+                            weight: 2,
+                            opacity: 0.5,
+                            fillColor: kmlColors[colorNo],
+                            fillOpacity: 0.2
                         });
                     }
                 });
@@ -446,36 +290,14 @@ console.log(kmlLayer);
         shapeOverlay[dateSampled] = markerLayer[dateSampled];
     });
 
-
-
-//console.log(shapeOverlay,mapLayers);
     if (noLocations > 0) {
         const centreLat = latSum / noLocations;
         const centreLon = lonSum / noLocations;
         var bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
         map.fitBounds(bounds);
-        //console.log('lat,lon ',minLat,minLon, maxLat,maxLon);
     }
 
-var layerControl = L.control.layers(mapLayers, shapeOverlay).addTo(map);
-var bounds = L.latLngBounds();
-/*for (let layerName in shapeOverlay) {
-    bounds.extend(shapeOverlay[layerName].getLatLng());
-}*/
-//map.fitBounds(bounds);
-//map.fitBounds(shapeOverlay.getBounds());
-/*layerControl.on("loaded", function(e) {
-    map.fitBounds(e.target.getBounds());map.fitBounds(e.target.getBounds());
-});*/
-
-/*    fetch("https://northeastfc.uk/RiverTees/Planning/MLA_2015_00088/MLA_2015_00088-LOCATIONS.kml")
-      .then(function (response) {
-        return response.text();
-      })
-      .then(function (xml) {
-        geoJSONThing = kml(new DOMParser().parseFromString(xml, "text/xml"));
-        L.geoJSON(geoJSONThing).addTo(map);
-    });*/
+    var layerControl = L.control.layers(mapLayers, shapeOverlay).addTo(map);
 }
 
 function randomColor() {
@@ -488,12 +310,55 @@ function exportCharts() {
             exportChart(i);
         }
     }
-/*      leafletImage(map, function(err, canvas) {
-// 'canvas' now contains an image of the map
-const img = document.createElement('img');
-img.src = canvas.toDataURL();
-document.body.appendChild(img);
-});*/
+}
+
+let allMapMarkers = [];
+let tooltipsAreVisible = false;
+
+function isOverlapping(el1, el2) {
+    if (!el1 || !el2) return false;
+    const rect1 = el1.getBoundingClientRect();
+    const rect2 = el2.getBoundingClientRect();
+    return !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+    );
+}
+
+function toggleAllTooltips() {
+    if (!allMapMarkers || allMapMarkers.length === 0) {
+        return;
+    }
+
+    tooltipsAreVisible = !tooltipsAreVisible;
+    const button = document.getElementById('toggleTooltipsBtn');
+
+    if (tooltipsAreVisible) {
+        if (button) button.textContent = 'Hide All Sample Names';
+        allMapMarkers.forEach(marker => marker.openTooltip());
+        const visibleTooltips = [];
+        allMapMarkers.forEach(marker => {
+            const currentTooltip = marker.getTooltip();
+            if (!currentTooltip) return;
+            let hasOverlap = false;
+            for (const visibleTooltip of visibleTooltips) {
+                if (isOverlapping(currentTooltip._container, visibleTooltip._container)) {
+                    hasOverlap = true;
+                    break;
+                }
+            }
+            if (hasOverlap) {
+                marker.closeTooltip();
+            } else {
+                visibleTooltips.push(currentTooltip);
+            }
+        });
+    } else {
+        if (button) button.textContent = 'Show All Sample Names';
+        allMapMarkers.forEach(marker => marker.closeTooltip());
+    }
 }
 
 function exportChart(currentInstanceNo) {
@@ -501,7 +366,7 @@ function exportChart(currentInstanceNo) {
     const formattedDate = now
         .toISOString()
         .slice(2, 16)
-        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
+        .replace(/[-T:]/g, '');
     canvas = document.getElementById('chart' + currentInstanceNo);
     const url = canvas.toDataURL('image/png');
     exportLink = document.createElement('a');
@@ -511,132 +376,14 @@ function exportChart(currentInstanceNo) {
     exportLink.click();
 }
 
-
-function neweexportChart() {
-    const now = new Date();
-    const formattedDate = now
-        .toISOString()
-        .slice(2, 16)
-        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
-
-        currentInstanceNo = 0;
-
-    for (let i = 1; i < lastInstanceNo + 1; i++) {
-        currentInstanceNo = i;
-        const chartType = instanceType[i];
-        
-        if (chartType.includes('Scatter')) {
-            chartLink = document.getElementById('chart' + i);
-            chartLink.click();
-            currentInstanceNo = lastScatterInstanceNo;
-            const chartElementId = 'chart' + currentInstanceNo;
-            const canvas = document.getElementById(chartElementId);
-
-            // Assuming you have access to each Chart instance here, e.g., in an array of charts
-//            const chartInstance = Chart.getChart(canvas); // or however you reference the Chart.js instance for each chart
-            const currentInstance = chartInstance[currentInstanceNo];
-
-console.log('exportChart part way in on scatter');
-
-            // Define the export logic as a separate function
-            const exportChartImage = () => {
-console.log('exportchartimage');
-                const url = canvas.toDataURL('image/png');
-                const exportLink = document.createElement('a');
-                const filename = `${formattedDate}-${instanceSheet[i]}-${chartType}.png`;
-                
-                exportLink.href = url;
-                exportLink.download = filename;
-                exportLink.click();
-                // Remove the hook to prevent repeated execution
-                currentInstance.options.animation.onComplete = null;
-            };
-
-
-            // Check if currentInstance exists and set onComplete callback
-            if (currentInstance) {
-console.log('setting animation');
-                // Set onComplete only for one-time execution
-                currentInstance.options.animation = currentInstance.options.animation || {};
-console.log('setting oncomplete',currentInstance.options.animation);
-                currentInstance.options.animation.onComplete = exportChartImage;
-console.log('set oncomplete',currentInstance.options.animation.onComplete);
-/*                currentInstance.options.plugins = currentInstance.options.plugins || {};
-                currentInstance.options.plugins.onComplete = exportChartImage;*/
-
-                // Redraw the chart to trigger the onComplete callback
-                currentInstance.update();
-            }
-/*console.log('doing chartLink click');
-            chartLink = document.getElementById('chart' + i);
-            chartLink.click();*/
-        }
-    }
-}
-
-
-
-
-function eexportChart() {
-    const now = new Date();
-    const formattedDate = now
-        .toISOString()
-        .slice(2, 16)
-        .replace(/[-T:]/g, ''); // Format: yymmddhhmm
-
-    for (let i = 1; i < lastInstanceNo + 1; i++) {
-        const chartType = instanceType[i];
-        
-        if (chartType.includes('Scatter')) {
-            const chartElementId = 'chart' + i;
-            const canvas = document.getElementById(chartElementId);
-
-            // Assuming you have access to each Chart instance here, e.g., in an array of charts
-            const chartInstance = Chart.getChart(canvas); // or however you reference the Chart.js instance for each chart
-
-            // Define the export logic as a separate function
-            const exportChartImage = () => {
-                const url = canvas.toDataURL('image/png');
-                const exportLink = document.createElement('a');
-                const filename = `${formattedDate}-${instanceSheet[i]}-${chartType}.png`;
-                
-                exportLink.href = url;
-                exportLink.download = filename;
-                exportLink.click();
-            };
-
-            // Check if chartInstance exists and set onComplete callback
-            if (chartInstance) {
-                chartInstance.options.plugins = chartInstance.options.plugins || {};
-                chartInstance.options.plugins.onComplete = exportChartImage;
-
-                // Redraw the chart to trigger the onComplete callback
-                chartInstance.update();
-            }
-        }
-    }
-}
-
-
-
-
-
-
-
-
 function parseCoordinate(input) {
-    // Check if the input is undefined or null
     if (input == undefined || input == null) {
         return null;
     }
-
-    // Check if the input is already in digital format (e.g., 54.1 or -1.7)
     const digitalFormatRegex = /^[-+]?\d+(\.\d+)?$/;
     if (digitalFormatRegex.test(input)) {
         return parseFloat(input);
     }
-
-    // Check if the input is in degrees minutes digital seconds format (e.g., 54 10 9.6 N)
     const dmsRegex = /^(\d+)\s+(\d+)\s+([\d.]+)\s*([NSEW])$/i;
     const dmsMatch = input.match(dmsRegex);
     if (dmsMatch) {
@@ -644,41 +391,28 @@ function parseCoordinate(input) {
         const minutes = parseFloat(dmsMatch[2]);
         const seconds = parseFloat(dmsMatch[3]);
         const direction = dmsMatch[4].toUpperCase();
-
         let result = degrees + minutes / 60 + seconds / 3600;
-
-        // Ensure negative for S or W directions
         if (direction === 'S' || direction === 'W') {
             result = -result;
         }
-
         return result;
     }
-
-    // Check if the input is in degrees digital minutes format (e.g., 54:10.67983432N)
     const dmRegex = /^(\d+)[\s\:]+([\d.]+)\s*([NSEW])$/i;
     const dmMatch = input.match(dmRegex);
     if (dmMatch) {
         const degrees = parseFloat(dmMatch[1]);
         const minutes = parseFloat(dmMatch[2]);
         const direction = dmMatch[3].toUpperCase();
-
         let result = degrees + minutes / 60;
-        // Ensure negative for S or W directions
         if (direction === 'S' || direction === 'W') {
             result = -result;
         }
-
         return result;
     }
-
-    // If the input doesn't match any recognized format, return null or handle accordingly
     return null;
 }
 
 function parseCoordinates(latitude, longitude) {
-//console.log('parseCoordinates',latitude,longitude);
-    // If only latitude is provided, handle UK National Grid Reference System (as in your original logic)
     if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
         const en = os.Transform.fromGridRef(latitude);
         if (en.ea === undefined || en.ea === null) {
@@ -691,20 +425,14 @@ function parseCoordinates(latitude, longitude) {
         }
         return { latitude: latlong.lat, longitude: latlong.lng };
     }
-
-    // Handle undefined/null inputs
     if ((latitude == undefined || latitude == null) && (longitude == undefined || longitude == null)) {
         return null;
     }
-
-    // Crude check for easting and northing (British National Grid)
     if (latitude > 360) {
         proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
         const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
         return { latitude: point[1], longitude: point[0] };
     }
-
-    // Handle digital degrees with direction (N/S and E/W)
     const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
     const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
     if (digitalDegreesMatch) {
@@ -712,28 +440,19 @@ function parseCoordinates(latitude, longitude) {
         const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
         return { latitude: latValue, longitude: lonValue };
     }
-
-    // Handle degree digital minutes with direction (N/S and E/W)
     const digitalMinutesRegex = /^(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*$/i;
     const digitalMinutesMatch = `${latitude} ${longitude}`.match(digitalMinutesRegex);
-//console.log(digitalMinutesMatch);
     if (digitalMinutesMatch) {
         const latValue = (parseInt(digitalMinutesMatch[1]) + parseFloat(digitalMinutesMatch[2])/60) * (digitalMinutesMatch[3].toUpperCase() === 'S' ? -1 : 1);
         const lonValue = (parseInt(digitalMinutesMatch[4]) + parseFloat(digitalMinutesMatch[5])/60) * (digitalMinutesMatch[6].toUpperCase() === 'W' ? -1 : 1);
         return { latitude: latValue, longitude: lonValue };
     }
-
-    // Crude check of whether easting and northing
     if (latitude > 360) {
-        // Use proj4js library to convert British National Grid to latitude and longitude
         proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
         const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
-
         return { latitude: point[1], longitude: point[0] };
     } else {
         return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
     }
-
-    // If no valid format matched, return null
     return null;
 }

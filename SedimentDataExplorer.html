@@ -20,6 +20,7 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="https://harrywood.co.uk/maps/examples/leaflet/leaflet-plugins/layer/vector/KML.js"></script>
+    <script src="https://unpkg.com/leaflet.layergroup.collision@0.2.0/dist/leaflet.layergroup.collision-src.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pca-js@1.0.0/pca.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
 
@@ -87,7 +88,7 @@
 
         #sidebar-toggle {
             position: fixed;
-            left: 10px;
+            left: 10px; 
             top: 50%;
             transform: translateY(-50%);
             z-index: 100;
@@ -100,6 +101,7 @@
             justify-content: center;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             border: 1px solid var(--border-color);
+            transition: left 0.3s ease;
         }
 
         /* Header */
@@ -221,6 +223,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            position: relative;
         }
         
         .modal-content h2 {
@@ -235,21 +238,110 @@
             margin-top: 1rem;
         }
         
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
         /* Map and Chart Containers */
         #map {
             height: 500px;
             border-radius: 6px;
             border: 1px solid var(--border-color);
         }
+
+        #chartContainer button {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            margin: 0 4px 8px 0;
+        }
+        
+        /* Tab container styles */
+        .tab-buttons {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .tab-buttons button {
+            background-color: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-color);
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+            margin-bottom: -2px;
+        }
+
+        .tab-buttons button:hover {
+            color: var(--primary-color);
+            background-color: var(--hover-color);
+        }
+
+        .tab-buttons button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: var(--surface-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* NEW: Map Legend Styles */
+        .map-legend-container {
+            position: absolute;
+            bottom: 80px; /* Position above map buttons */
+            right: 20px;
+            z-index: 1000; /* Ensure it's on top of the map */
+            background: rgba(255, 255, 255, 0.85);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .map-legend-container h4 {
+            margin: 0 0 5px 0;
+            text-align: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-item img {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+        }
     </style>
 </head>
 
 <body>
-    <!-- This div is kept for JS compatibility but is not used for layout -->
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250809</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250811</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
@@ -258,9 +350,7 @@
     </header>
 
     <div class="app-container">
-        <!-- Sidebar starts collapsed -->
         <aside id="controls-sidebar" class="controls-sidebar collapsed">
-
             <fieldset>
                 <legend>Data Sources</legend>
                 <div class="input-group">
@@ -373,22 +463,31 @@
         </aside>
 
         <main class="output-area">
-            <!-- Button starts with right arrow -->
             <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
-
-            <button onclick="toggleFileDisplay()">Toggle File Display</button>
+            <div id="sedDredgeData" style="display: none;"></div>
             <div id="fileDisplay"></div>
             <div id="sample-info-table-container"></div>
             <div id="everything-maps" style="display: none; margin-top: 1rem;">
                 <div id="map"></div>
-                Radar Popup: <div id="radarPlots"></div>
+                <!-- NEW: Map Legend Container -->
+                <div id="map-legend" class="map-legend-container" style="display: none;">
+                    <h4>Legend</h4>
+                    <!-- Legend items will be populated here by Javascript -->
+                </div>
+                <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
+                    <button onclick="toggleFileDisplay()">Toggle File Display</button>
+                    <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
+                    <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
+                    <!-- NEW: Toggle Legend Button -->
+                    <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
+                </div>
             </div>
             <div id="chartContainer"></div>
             <div id="chartsForMapContainer"></div>
         </main>
     </div>
 
-    <!-- Existing Modals (Unchanged) -->
+    <!-- Modals -->
     <div id="sedDataModal" class="modal">
         <div class="modal-content">
             <h2>Select CEFAS Data Sets</h2>
@@ -419,16 +518,28 @@
     </div>
     <div id="sampleModal" class="modal">
         <div class="modal-content">
+            <span class="close-button" onclick="cancelSampleSelection()">&times;</span>
             <h2>Select Samples</h2>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipSampleSelections(true)">Select All</button><button onclick="flipSampleSelections(false)">Select None</button><button onclick="selectHighlighted()">Select Highlighted</button></div>
             <hr>
             <p><strong>Filter Samples:</strong></p>
-            <div class="input-group"><label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText"></div>
+            <div class="input-group">
+                <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
+                <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
+                <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
+                <br>
+                <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
+                <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
+                <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
+            </div>
             <button onclick="applySampleFilter()">Apply Filter</button>
             <hr>
             <div id="sampleCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;"></div>
-            <div class="modal-footer"><button onclick="closeSampleSelection()">Confirm Selections and Close</button></div>
-            <div style="display:none;">Must have non-zero - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label><input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label><input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label><input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label><input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label><input type="checkbox" id="organochlorinedatasample"><label for="organochlorinedatasample">Organochlorine data</label><input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label><label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location"><label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location"><label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location"><label for="minDepth">Minimum depth:</label><input type="number" id="minDepth"><label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth"></div>
+            <div class="modal-footer">
+                <button onclick="cancelSampleSelection()" class="secondary">Cancel</button>
+                <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
+            </div>
+            <div style="display:none;">Must have non-zero - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label><input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label><input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label><input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label><input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label><input type="checkbox" id="organochlorinedataset"><label for="organochlorinedataset">Organochlorine data</label><input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label></div>
         </div>
     </div>
     <div id="chemicalModal" class="modal">
@@ -458,8 +569,6 @@
             <div class="modal-footer"><button onclick="updateSampleLabels()">Confirm Labels</button><button onclick="closeSampleLabels()" class="secondary">Cancel</button></div>
         </div>
     </div>
-    
-    <!-- NEW MODALS -->
     <div id="additionalInfoModal" class="modal">
         <div class="modal-content">
             <h2>Additional Information Files</h2>
@@ -471,7 +580,6 @@
             <div class="modal-footer"><button onclick="closeAdditionalInfoModal()" class="secondary">Close</button></div>
         </div>
     </div>
-
     <div id="chartModifiersModal" class="modal">
         <div class="modal-content">
             <h2>Chart Modifiers</h2>
@@ -479,10 +587,13 @@
                 <label><input type="radio" name="look" id="colour" value="colour" checked> Colour</label>
                 <label><input type="radio" name="look" id="blackandwhite" value="blackandwhite"> Black and White</label>
             </div>
+            <hr>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="useTabs"> Display charts in tabs</label>
+            </div>
             <div class="modal-footer"><button onclick="closeChartModifiersModal()" class="secondary">Close</button></div>
         </div>
     </div>
-
     <div id="additionalChartsModal" class="modal">
         <div class="modal-content">
             <h2>Additional Chart Options</h2>
@@ -498,7 +609,6 @@
             <div class="modal-footer"><button onclick="closeAdditionalChartsModal()" class="secondary">Close</button></div>
         </div>
     </div>
-
     <div id="pcaOptionsModal" class="modal">
         <div class="modal-content">
             <h2>PCA Options</h2>
@@ -513,7 +623,6 @@
             <div class="modal-footer"><button onclick="closePcaOptionsModal()" class="secondary">Close</button></div>
         </div>
     </div>
-
     <div id="particleSizeModal" class="modal">
         <div class="modal-content">
             <h2>Particle Size Details</h2>
@@ -523,8 +632,18 @@
             <div class="modal-footer"><button onclick="closeParticleSizeModal()" class="secondary">Close</button></div>
         </div>
     </div>
+    <div id="radarModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeRadarSelectionModal()">&times;</span>
+            <h2>Select Radar Plot for Map Popups</h2>
+            <p>Choose which dataset to display as a radar chart when you click on a map marker.</p>
+            <div id="radarPlots" class="radio-group"></div>
+            <div class="modal-footer">
+                <button onclick="closeRadarSelectionModal()" class="secondary">Close</button>
+            </div>
+        </div>
+    </div>
     
-    <!-- Local JS files (Unchanged) -->
     <script src="os-transform.js"></script>
     <script src="sdeDataUtilities.js"></script>
     <script src="sdeDredgeData.js"></script>
@@ -535,24 +654,82 @@
     <script src="sdeMaps.js"></script>
     <script src="sdeTables.js"></script>
     
-    <!-- New and Existing Javascript for UI Interactivity -->
     <script>
-        // --- New Modal Functions ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('controls-sidebar');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            sidebar.classList.toggle('collapsed');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                toggleBtn.innerHTML = '&#9654;';
+                toggleBtn.style.left = '10px';
+            } else {
+                toggleBtn.innerHTML = '&#9664;';
+                toggleBtn.style.left = '364px'; 
+            }
+        }
+
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        function toggleMapLegend() {
+            const legend = document.getElementById('map-legend');
+            const button = document.getElementById('toggleMapLegendBtn');
+            if (legend.style.display === 'none' || legend.style.display === '') {
+                legend.style.display = 'block';
+                button.textContent = 'Hide Legend';
+            } else {
+                legend.style.display = 'none';
+                button.textContent = 'Show Legend';
+            }
+        }
+
+        // Placeholder to be called from sdeMaps.js
+        // markersInfo should be an array like: [{ label: 'Dataset 1', iconUrl: 'path/to/icon1.png' }]
+        function populateMapLegend(markersInfo) {
+            const legendContainer = document.getElementById('map-legend');
+            legendContainer.innerHTML = '<h4>Legend</h4>'; // Clear existing items
+
+            markersInfo.forEach(info => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `<img src="${info.iconUrl}" alt="marker"> <span>${info.label}</span>`;
+                legendContainer.appendChild(item);
+            });
+        }
+
         function openAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'block'; }
         function closeAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'none'; }
-
         function openChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'block'; }
         function closeChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'none'; }
-
         function openAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'block'; }
         function closeAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'none'; }
-
         function openPcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'block'; }
         function closePcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'none'; }
-        
         function openParticleSizeModal() { document.getElementById('particleSizeModal').style.display = 'block'; }
         function closeParticleSizeModal() { document.getElementById('particleSizeModal').style.display = 'none'; }
+        function cancelSampleSelection() { document.getElementById('sampleModal').style.display = 'none'; }
+        function openRadarSelectionModal() { document.getElementById('radarModal').style.display = 'block'; }
+        function closeRadarSelectionModal() { document.getElementById('radarModal').style.display = 'none'; }
+
+        window.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const radarModal = document.getElementById('radarModal');
+                if (radarModal && radarModal.style.display === 'block') {
+                    closeRadarSelectionModal();
+                }
+            }
+        });
     </script>
 </body>
-
 </html>

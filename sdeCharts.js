@@ -192,17 +192,71 @@ function createResetChart(instanceNo) {
 }
     
         
-
 function displayCharts(sheetName, instanceNo) {
+    // If this is the first chart of a new plot, clear the container.
+    // This prevents old tabs from remaining when replotting.
+    if (instanceNo === 0) {
+        document.getElementById('chartContainer').innerHTML = '';
+    }
+
+    const useTabs = document.getElementById('useTabs').checked;
+    const mainChartContainer = document.getElementById('chartContainer');
+    let targetContainer; // This will hold the charts for the current sheet.
+
+    // --- Tab Logic ---
+    if (useTabs) {
+        // Find or create the tab button container.
+        let tabButtonsContainer = document.getElementById('chart-tab-buttons');
+        if (!tabButtonsContainer) {
+            tabButtonsContainer = document.createElement('div');
+            tabButtonsContainer.id = 'chart-tab-buttons';
+            tabButtonsContainer.className = 'tab-buttons';
+            mainChartContainer.appendChild(tabButtonsContainer);
+        }
+
+        const sanitizedSheetName = sheetName.replace(/[^a-zA-Z0-9]/g, '-');
+        const tabContentId = 'tab-' + sanitizedSheetName;
+
+        // Create the button and content panel for the current sheet.
+        const tabButton = document.createElement('button');
+        tabButton.className = 'tab-button';
+        tabButton.textContent = sheetName;
+        tabButton.onclick = (event) => openTab(event, tabContentId);
+        tabButtonsContainer.appendChild(tabButton);
+
+        const tabContentPanel = document.createElement('div');
+        tabContentPanel.id = tabContentId;
+        tabContentPanel.className = 'tab-content';
+        mainChartContainer.appendChild(tabContentPanel);
+        
+        // Make the first tab active by default.
+        if (tabButtonsContainer.children.length === 1) {
+            tabButton.classList.add('active');
+            tabContentPanel.classList.add('active');
+        }
+        
+        targetContainer = tabContentPanel;
+
+    } else {
+        // If not using tabs, create a simple container for this sheet's charts.
+        targetContainer = document.createElement('div');
+        targetContainer.className = 'chart-sheet-container';
+        targetContainer.innerHTML = `<h2 style="padding-top: 2rem; border-bottom: 1px solid #ccc;">${sheetName}</h2>`;
+        mainChartContainer.appendChild(targetContainer);
+    }
+    
+    // Temporarily swap IDs so child functions find the correct container.
+    const originalChartContainerId = 'chartContainer';
+    mainChartContainer.id = 'chartContainer-placeholder';
+    targetContainer.id = originalChartContainerId;
+
+    // --- Original function logic starts here ---
     let scatterData = {};
-    //    totalAreasAvailable = true;
     if(sheetName === 'Physical Data') {
         retData = dataForPSDCharting(sheetName);
         unitTitle = retData['unitTitle'];
-console.log('unitTitle displayCharts ',unitTitle);
         sizes = retData['ptsSizes'];
         selectedMeas = retData['measChart'];
-//fred=selectedMeas;
         selectedMeasRelativeArea = retData['measChartRelativeArea'];
         selectedMeasArea = retData['measChartArea'];
         splitWeights = retData['splitWeights'];
@@ -211,8 +265,6 @@ console.log('unitTitle displayCharts ',unitTitle);
         cumWeights = retData['cumWeights'];
         cumAreas = retData['cumAreas'];
         sortedSamples = retData['allSamples'];
-//console.log(sizes);	            
-//console.log('selectedMeas ', selectedMeas);
         instanceNo += 1;
         displayPSDChart(sizes, selectedMeas, sheetName, instanceNo, unitTitle, 'Relative Weight');
         instanceNo += 1;
@@ -238,13 +290,10 @@ console.log('unitTitle displayCharts ',unitTitle);
     } else {
         retData = dataForCharting(sheetName);
         unitTitle = retData['unitTitle'];
-//console.log('unitTitle displayCharts ',unitTitle);
         selectedMeas = retData['measChart'];
-//console.log('dataForCharting - selectedMeas ', selectedMeas);
         selectedMeasArea = {};
         concentrateMeas = {};
         concentrateFactor = {};
-//        totalAreasAvailable = true;
         if (completeSheet['Physical Data']) {
             if (resuspensionSize > 0) {
                 retData= recalculateConcentration(selectedMeas);
@@ -272,44 +321,33 @@ console.log('unitTitle displayCharts ',unitTitle);
         if (subsToDisplay['samplegroup']) {
             instanceNo += 1;
             displaySampleChart(selectedMeas, sheetName, instanceNo, unitTitle);
-//console.log(sheetName);
-//console.log(selectedMeas);
-//console.log(instanceNo);
-//console.log(unitTitle);
-console.log(sheetName, selectedMeas, instanceNo, unitTitle);
             if (sheetName === 'BDE data') {
+                let organicCPresent = true;
                 let selectedMeasOrganicC = selectedMeas;
                 for (chemical in selectedMeasOrganicC) {
                     for (sample in selectedMeasOrganicC[chemical]) {
-console.log('selectedMeasOrganicC',selectedMeasOrganicC[chemical][sample],chemical,sample);
                         let parts = sample.split(": ");
-                        if (parts.length>2) {
+                        if (parts.length > 2) {
                             parts[1] = parts[1] + ': ' + parts[2];
                         }
-//                        if (selectedSampleMeasurements?.[parts[0]]?.['Physical Data']?.samples[parts[1]]?.['Organic matter (total organic carbon)'] !== undefined) {
-//                            if (selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'] > 0) {
-//                                let organicC = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'];
+                        if (selectedSampleMeasurements?.[parts[0]]?.['Physical Data']?.samples[parts[1]]?.['Organic matter (total organic carbon)'] !== undefined) {
+                            if (selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'] > 0) {
                                 let organicC = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'];
-console.log('selectedMeasOrganicC',selectedMeasOrganicC[chemical][sample], organicC,);
                                 selectedMeasOrganicC[chemical][sample] = 2.5 * selectedMeas[chemical][sample] / organicC;
-console.log('selectedMeasOrganicC',selectedMeasOrganicC[chemical][sample], organicC);
-                            //}
-                        //}
+                            }
+                        }
+                        else {
+                            organicCPresent = false;
+                            break;
+                        }
                     }
-                }   
-                instanceNo += 1;
-                displaySampleChart(selectedMeasOrganicC, sheetName + ' Organic Carbon Normalised', instanceNo, unitTitle + ' / Organic Carbon');
+                }
+                if (organicCPresent) {
+                    instanceNo += 1;
+                    displaySampleChart(selectedMeasOrganicC, sheetName + ' Organic Carbon Normalised', instanceNo, unitTitle + ' / Organic Carbon');
+                }
             }
-/*            if(sheetName === 'PAH data') {
-//This is where to create the buttons which show different PAH groups
-console.log('PAH data reset');
-                createDisplayChemicals(instanceNo,'EPA');
-                createDisplayChemicals(instanceNo,'LMW');
-                createDisplayChemicals(instanceNo,'HMW');
-                createDisplayChemicals(instanceNo,'SmallPts');
-                createDisplayChemicals(instanceNo,'OrganicC');
-                createResetChart(instanceNo);
-            }*/
+
             if (completeSheet['Physical Data']) {
                 if (resuspensionSize > 0) {
                     instanceNo += 1;
@@ -365,109 +403,60 @@ console.log('PAH data reset');
         if (subsToDisplay['positionplace']) {
             retData = dataForScatterCharting(sheetName);
             unitTitle = retData['unitTitle'];
-            //console.log('unitTitle displayCharts ',unitTitle);
             scatterData = retData['scatterData'];
             chemicalData = retData['chemicalData'];
-//console.log('dataForScatterCharting scatterData, chemicalData',scatterData,chemicalData);
             const allChemicals = Object.keys(chemicalData);
             instanceNo += 1;
             displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
             largeInstanceNo = instanceNo;
 
-            // Step 1: Create a table element
             const scatterTable = document.createElement('table');
             const noCharts = allChemicals.length;
             const startInstanceNo = instanceNo;
-            // Step 2: Loop to create rows and cells for the table
             for (let i = 0; i < noCharts; i++) {
                 instanceNo += 1;
                 if (i % 4 === 0) {
-//                    console.log('created row');
-                    row = scatterTable.insertRow(); // Create a row
-//                    console.log(row);
+                    row = scatterTable.insertRow();
                 }
-                const cell = row.insertCell(); // Create a cell
-                const canvas = document.createElement('canvas'); // Create a canvas for the chart
-                canvas.id = 'chart' + instanceNo;; // Unique id for each chart canvas
-                cell.appendChild(canvas); // Append the canvas to the cell
-                //  }
+                const cell = row.insertCell();
+                const canvas = document.createElement('canvas');
+                canvas.id = 'chart' + instanceNo;
+                cell.appendChild(canvas);
             }
 
-            // Step 3: Append the table to a container element in your HTML (e.g., <div id="container"></div>)
-            const chartContainer = document.getElementById('chartContainer');
-            // first add a div for the buttons
+            const currentChartContainer = document.getElementById('chartContainer');
             if (largeInstanceNo > 1) {
                 const divContainer = document.createElement('div');
                 divContainer.id = 'chartButtons';
-                chartContainer.appendChild(divContainer);
+                currentChartContainer.appendChild(divContainer);
             }
-            chartContainer.appendChild(scatterTable);
+            currentChartContainer.appendChild(scatterTable);
             instanceNo = startInstanceNo;
             i = 0;
             for (const c in chemicalData) {
                 instanceNo += 1;
-//console.log(c,scatterData, chemicalData[c]);
-sampleNames = Object.keys(chemicalData[c]);
-//                displayScatterChart(scatterData, chemicalData[c], sampleNames, sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
+                sampleNames = Object.keys(chemicalData[c]);
                 displayScatterChartLL(scatterData, chemicalData[c], sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
                 i += 1;
             }
         }
 
-
-        // Usage
-        instanceNo = displayScatterCharts(sheetName,
-            { key: 'totalArea', sheetKey: 'Physical Data' },
-            'relationareadensity',
-            'Total Area',
-            'Concentration',
-            'chartContainer',
-            instanceNo
-        );
-
-        instanceNo = displayScatterCharts(sheetName,
-            { key: 'totalHC', sheetKey: 'PAH data' },
-            'relationhc',
-            'Total Hydrocarbon',
-            'Concentration',
-            'chartContainer',
-            instanceNo
-        );
-
-        instanceNo = displayScatterCharts(sheetName,
-            { key: 'totalSolids', sheetKey: 'Physical Data' },
-            'relationtotalsolids',
-            'Total Solids %',
-            'Concentration',
-            'chartContainer',
-            instanceNo
-        );
-
-        instanceNo = displayScatterCharts(sheetName,
-            { key: 'organicCarbon', sheetKey: 'Physical Data' },
-            'relationorganiccarbon',
-            'Organic Carbon %',
-            'Concentration',
-            'chartContainer',
-            instanceNo
-        );
+        instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'relationareadensity', 'Total Area', 'Concentration', 'chartContainer', instanceNo);
+        instanceNo = displayScatterCharts(sheetName, { key: 'totalHC', sheetKey: 'PAH data' }, 'relationhc', 'Total Hydrocarbon', 'Concentration', 'chartContainer', instanceNo);
+        instanceNo = displayScatterCharts(sheetName, { key: 'totalSolids', sheetKey: 'Physical Data' }, 'relationtotalsolids', 'Total Solids %', 'Concentration', 'chartContainer', instanceNo);
+        instanceNo = displayScatterCharts(sheetName, { key: 'organicCarbon', sheetKey: 'Physical Data' }, 'relationorganiccarbon', 'Organic Carbon %', 'Concentration', 'chartContainer', instanceNo);
 
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
             const properties = Object.keys(chemInfo[chemicalNames[0]]);
             for (i = 0; i<14 ; i++) {
-
-                // Step 2: Sort the chemical names based on the property (e.g., molWeight)
                 chemicalNames.sort((a, b) => chemInfo[a][properties[i]] - chemInfo[b][properties[i]]);
-                
-                // Step 3-6: Iterate through the sorted chemical names and populate selectedMeas
                 const sortedSelectedMeas = {};
                 chemicalNames.forEach((chemical) => {
                     if (selectedMeas[chemical]) {
                         sortedSelectedMeas[chemical] = selectedMeas[chemical];
                     }
                 });
-//console.log(sortedSelectedMeas);
                 instanceNo += 1;
                 displaySampleChart(sortedSelectedMeas, sheetName + ': Sorted by ' + properties[i], instanceNo, unitTitle);
                 instanceNo += 1;
@@ -477,8 +466,6 @@ sampleNames = Object.keys(chemicalData[c]);
         if (sheetName === 'PAH data' && subsToDisplay['gorhamtest']) {
             unitTitle = retData['unitTitle'];
             selectedSums = sumsForGorhamCharting();
-//console.log('sumsForGorhamCharting selectedSums',selectedSums);
-//console.log(selectedSums);
             instanceNo += 1;
             displayGorhamTest(selectedSums, sheetName, instanceNo, unitTitle);
             if (resuspensionSize > 0 && completeSheet['Physical Data']) {
@@ -488,15 +475,12 @@ sampleNames = Object.keys(chemicalData[c]);
                 instanceNo += 1;
                 displayGorhamTest(concentrateSums, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize * 1000000 + 'µm');
             }
-//            retData = null;
         }
         if (sheetName === 'PAH data' && subsToDisplay['totalhc']) {
             instanceNo += 1;
             retData = sumsForTotalHCCharting();
             unitTitle = retData['unitTitle'];
             selectedSums = retData['measChart'];
-//console.log('sumsForTotalHCCharting ',selectedSums);
-            //console.log(Object.keys(selectedSums));
             displayTotalHC(selectedSums, sheetName, instanceNo, unitTitle);
         }
         if (sheetName === 'PAH data' && subsToDisplay['pahratios']) {
@@ -527,10 +511,6 @@ sampleNames = Object.keys(chemicalData[c]);
             selectedSums = retData['measChart'];
             displaySimpleRatios(selectedSums, sheetName, instanceNo, unitTitle);
         }
-/*        if (sheetName === 'PAH data') {//} && subsToDisplay['simpleratios']) {
-            instanceNo += 1;
-            PCAchart(datesSampled, canvasElement, selectedSampleMeasurements);
-        }*/
         if (sheetName === 'PCB data' && subsToDisplay['congenertest']) {
             instanceNo += 1;
             selectedSums = sumsForCongenerCharting();
@@ -544,10 +524,14 @@ sampleNames = Object.keys(chemicalData[c]);
             }
         }
     }
-    // Display the canvas
-//console.log('Display the canvas ',instanceNo);
-    return instanceNo
+    
+    // Restore the original container ID.
+    document.getElementById('chartContainer-placeholder').id = originalChartContainerId;
+    targetContainer.id = useTabs ? 'tab-' + sheetName.replace(/[^a-zA-Z0-9]/g, '-') : '';
+
+    return instanceNo;
 }
+
 
 function removeScatterTables() {
     const chartContainer = document.getElementById('chartContainer');
@@ -1520,7 +1504,9 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                         const sample = matchResult[2];
                         console.log("Date Sampled: ", dateSampled);
                         console.log("Sample:", sample);
-                        createHighlights(meas, dateSampled, all[i], null);
+                        // Corrected call with only two arguments
+                        createHighlights(meas, hoveredSample);
+//250808                        createHighlights(meas, dateSampled, all[i], null);
                     } else {
                         console.log("String format doesn't match the expected pattern.");
                     };
@@ -2076,7 +2062,7 @@ function displayTotalHC(sums, sheetName, instanceNo, unitTitle) {
 }
 
 
-function findSamplesInSameLocation(clickedMapSample) {
+/*function findSamplesInSameLocation(clickedMapSample) {
     for (ds in selectedSampleInfo) {
         for (s in selectedSampleInfo[ds].position) {
             if (clickedMapSample === s) {
@@ -2095,9 +2081,40 @@ function findSamplesInSameLocation(clickedMapSample) {
         }
     }
     return clickedMapSamples
+}*/
+
+//250808 The function has been modified to handle full sample names with date and sample name
+function findSamplesInSameLocation(clickedFullSample) {
+    let lat, lon;
+    
+    // Correctly parse the full sample name (e.g., "date: sample")
+    const parts = clickedFullSample.split(": ");
+    const datePart = parts[0];
+    // Handle sample names that might contain a colon
+    const samplePart = parts.length > 2 ? parts.slice(1).join(": ") : parts[1];
+
+    // Find coordinates of the clicked sample
+    if (selectedSampleInfo[datePart] && selectedSampleInfo[datePart].position[samplePart]) {
+        lat = selectedSampleInfo[datePart].position[samplePart]['Position latitude'];
+        lon = selectedSampleInfo[datePart].position[samplePart]['Position longitude'];
+    } else {
+        return [clickedFullSample]; // Fallback if not found
+    }
+    
+    // Now find all other samples at that exact lat/lon
+    const samplesAtLocation = [];
+    for (const ds in selectedSampleInfo) {
+        for (const s in selectedSampleInfo[ds].position) {
+            const testPos = selectedSampleInfo[ds].position[s];
+            if (testPos['Position latitude'] === lat && testPos['Position longitude'] === lon) {
+                samplesAtLocation.push(ds + ': ' + s);
+            }
+        }
+    }
+    return samplesAtLocation;
 }
 
-function createHighlights(meas, dateSampled, hoveredSample) {
+/* hidden 25/8/8 function createHighlights(meas, dateSampled, hoveredSample) {
 console.log('createHighlights',hoveredSample,dateSampled);
     noSamples = 0;
     samples = [];
@@ -2180,6 +2197,238 @@ console.log('createHighlights',hoveredSample,dateSampled);
                 // Remove highlight of marker on map
                 if (map.hasLayer(highlightMarkers[item])) {
                     map.removeLayer(highlightMarkers[item]);
+                }
+            }
+        }
+    });
+}*/
+
+/*// first try 250808 The 'dateSampled' parameter has been removed as it was causing the error
+function createHighlights(meas, hoveredSample) {
+    console.log('createHighlights', hoveredSample);
+
+    // This part rebuilds the sorted list of all samples. This logic is correct.
+    const samples = [];
+    const datesSampled = Object.keys(selectedSampleInfo);
+    datesSampled.forEach(dateSampled => {
+        const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
+        allSamples.forEach(sample => {
+            samples.push(dateSampled + ': ' + sample);
+        });
+    });
+    samples.sortComplexSamples(); // Ensure order matches the map markers
+
+    // --- FIX START ---
+
+    // Use the corrected findSamplesInSameLocation function
+    const clickedSamples = findSamplesInSameLocation(hoveredSample);
+    
+    const clickedIndexes = [];
+    // Find the index for each co-located sample efficiently
+    clickedSamples.forEach(clickedSample => {
+        const index = samples.indexOf(clickedSample);
+        if (index > -1) {
+            clickedIndexes.push(index);
+        }
+    });
+    
+    // --- FIX END ---
+
+    // The rest of the function for toggling highlights is correct
+    clickedIndexes.forEach(item => {
+        if (highlighted[item]) {
+            highlighted[item] = false;
+        } else {
+            highlighted[item] = true;
+        }
+    });
+
+    clickedIndexes.forEach(item => {
+        for (let i = 1; i < lastInstanceNo + 1; i++) {
+            // This logic correctly highlights the charts
+            if (instanceType[i] === 'gorham' || instanceType[i] === 'chemical' || instanceType[i] === 'congener' ||
+                instanceType[i] === 'totalHC' || instanceType[i] === 'pahratios' || instanceType[i] === 'ringfractions' ||
+                instanceType[i] === 'eparatios' || instanceType[i] === 'simpleratios') {
+                if (highlighted[item]) {
+                    displayChartHighlight(meas, i, null, item); // dateSampled no longer needed
+                } else {
+                    removeChartHighlight(meas, i, null, item); // dateSampled no longer needed
+                }
+            }
+        }
+        // This logic correctly highlights the map
+        if (highlighted[item]) {
+            if (highlightMarkers[item]) {
+                map.addLayer(highlightMarkers[item]);
+            }
+        } else {
+            if (highlightMarkers[item] && map.hasLayer(highlightMarkers[item])) {
+                map.removeLayer(highlightMarkers[item]);
+            }
+        }
+    });
+}*/
+
+/*function createHighlights(meas, clickedSampleIdentifier) {
+    // 1. Create the master list of all samples and sort it EXACTLY as in sampleMap.
+    // This list provides the correct order for finding the highlight marker's index.
+    const masterSampleList = [];
+    const datesSampled = Object.keys(selectedSampleInfo);
+    datesSampled.forEach(date => {
+        const samplesForDate = Object.keys(selectedSampleInfo[date].position);
+        samplesForDate.forEach(sampleName => {
+            masterSampleList.push(date + ': ' + sampleName);
+        });
+    });
+    masterSampleList.sortComplexSamples();
+
+    // 2. Find the coordinates of the sample that was actually clicked.
+    let clickedLat, clickedLon;
+    const parts = clickedSampleIdentifier.split(": ");
+    const datePart = parts[0];
+    const samplePart = parts.length > 2 ? parts.slice(1).join(": ") : parts[1]; // Handles sample names with colons
+    
+    const positionInfo = selectedSampleInfo[datePart]?.position[samplePart];
+    if (positionInfo) {
+        clickedLat = positionInfo['Position latitude'];
+        clickedLon = positionInfo['Position longitude'];
+    } else {
+        console.error("Could not find position info for clicked sample:", clickedSampleIdentifier);
+        return; // Exit if the clicked sample data is missing
+    }
+
+    // 3. Find all samples (including the clicked one) that share the same coordinates.
+    const samplesToHighlight = [];
+    if (clickedLat !== undefined && clickedLon !== undefined) {
+        // We check against the full database to find co-located points
+        for (const ds in selectedSampleInfo) {
+            for (const s in selectedSampleInfo[ds].position) {
+                const testPos = selectedSampleInfo[ds].position[s];
+                if (testPos['Position latitude'] === clickedLat && testPos['Position longitude'] === clickedLon) {
+                    samplesToHighlight.push(ds + ': ' + s);
+                }
+            }
+        }
+    }
+    
+    if (samplesToHighlight.length === 0) {
+        samplesToHighlight.push(clickedSampleIdentifier); // Fallback
+    }
+    
+    // 4. Get the index of each sample-to-be-highlighted from the master sorted list.
+    const indexesToToggle = [];
+    samplesToHighlight.forEach(sampleId => {
+        const index = masterSampleList.indexOf(sampleId);
+        if (index !== -1) {
+            indexesToToggle.push(index);
+        }
+    });
+
+    // 5. Toggle the 'highlighted' state and update the map and charts.
+    indexesToToggle.forEach(item => {
+        // Toggle the highlight state for this index
+        highlighted[item] = !highlighted[item];
+
+        // Update the map layer
+        if (highlightMarkers[item]) {
+            if (highlighted[item]) {
+                if (!map.hasLayer(highlightMarkers[item])) {
+                    map.addLayer(highlightMarkers[item]);
+                }
+            } else {
+                if (map.hasLayer(highlightMarkers[item])) {
+                    map.removeLayer(highlightMarkers[item]);
+                }
+            }
+        }
+        
+        // Update any relevant charts
+        for (let i = 1; i < lastInstanceNo + 1; i++) {
+            if (instanceType[i] === 'gorham' || instanceType[i] === 'chemical' || instanceType[i] === 'congener' ||
+                instanceType[i] === 'totalHC' || instanceType[i] === 'pahratios' || instanceType[i] === 'ringfractions' ||
+                instanceType[i] === 'eparatios' || instanceType[i] === 'simpleratios') {
+                if (highlighted[item]) {
+                    displayChartHighlight(meas, i, null, item);
+                } else {
+                    removeChartHighlight(meas, i, null, item);
+                }
+            }
+        }
+    });
+}*/
+
+function createHighlights(meas, clickedSampleIdentifier) {
+    // 1. Create the master list of all samples and sort it to match the map markers' order.
+    const masterSampleList = [];
+    const datesSampled = Object.keys(selectedSampleInfo);
+    datesSampled.forEach(date => {
+        const samplesForDate = Object.keys(selectedSampleInfo[date].position);
+        samplesForDate.forEach(sampleName => {
+            masterSampleList.push(date + ': ' + sampleName);
+        });
+    });
+    masterSampleList.sortComplexSamples();
+
+    // 2. Find the coordinates of the sample that was clicked.
+    let clickedLat, clickedLon, datePart, samplePart;
+    const delimiterIndex = clickedSampleIdentifier.lastIndexOf(': ');
+
+    if (delimiterIndex !== -1) {
+        datePart = clickedSampleIdentifier.substring(0, delimiterIndex);
+        samplePart = clickedSampleIdentifier.substring(delimiterIndex + 2);
+    } else {
+        datePart = clickedSampleIdentifier;
+        const positionKeys = Object.keys(selectedSampleInfo[datePart]?.position || {});
+        samplePart = positionKeys.length === 1 ? positionKeys[0] : "";
+    }
+    
+    const positionInfo = selectedSampleInfo[datePart]?.position[samplePart];
+    if (positionInfo) {
+        clickedLat = positionInfo['Position latitude'];
+        clickedLon = positionInfo['Position longitude'];
+    } else {
+        console.error("Could not find position info for clicked sample:", clickedSampleIdentifier);
+        return;
+    }
+
+    // 3. Find all samples that share these exact coordinates.
+    const samplesToHighlight = [];
+    for (const ds in selectedSampleInfo) {
+        for (const s in selectedSampleInfo[ds].position) {
+            const testPos = selectedSampleInfo[ds].position[s];
+            if (testPos['Position latitude'] === clickedLat && testPos['Position longitude'] === clickedLon) {
+                samplesToHighlight.push(ds + ': ' + s);
+            }
+        }
+    }
+    
+    // 4. Get the index of each sample from the master sorted list.
+    const indexesToToggle = [];
+    samplesToHighlight.forEach(sampleId => {
+        const index = masterSampleList.indexOf(sampleId);
+        if (index !== -1) {
+            indexesToToggle.push(index);
+        }
+    });
+
+    // 5. Toggle the 'highlighted' state and update the map and charts.
+    indexesToToggle.forEach(item => {
+        highlighted[item] = !highlighted[item];
+
+        if (highlightMarkers[item]) {
+            if (highlighted[item]) {
+                if (!map.hasLayer(highlightMarkers[item])) map.addLayer(highlightMarkers[item]);
+            } else {
+                if (map.hasLayer(highlightMarkers[item])) map.removeLayer(highlightMarkers[item]);
+            }
+        }
+        
+        for (let i = 1; i < lastInstanceNo + 1; i++) {
+            if (instanceType[i] === 'gorham' || /* ... other chart types ... */ instanceType[i] === 'simpleratios') {
+                if (highlighted[item]) {
+                    displayChartHighlight(meas, i, null, item);
+                } else {
+                    removeChartHighlight(meas, i, null, item);
                 }
             }
         }

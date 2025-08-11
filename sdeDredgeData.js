@@ -275,8 +275,10 @@ function extractDataFromSheet(sheetData, mlApplication) {
         sampleInfo[dateSampled].label = dateSampled;
         uniqueRows.forEach(row => {
             sampleInfo[dateSampled].position[row[CEFASsamplename]] = {
-                'Position latitude': row[CEFASlatitude], 'Position longitude': row[CEFASlongitude],
-                'Sampling depth (m)': row[CEFASdepth]
+                'Position latitude': row[CEFASlatitude],
+                'Position longitude': row[CEFASlongitude],
+                'Sampling depth (m)': row[CEFASdepth],
+                'label': row[CEFASsamplename],
             };
         });
         let meas = {};

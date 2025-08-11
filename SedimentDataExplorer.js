@@ -10,11 +10,17 @@
     // Importing the necessary library for coordinate conversion
 //    const osGridConverter = require('os-transform.js');
     const osGridConverter = window['os-transform.js'];
-    
-    markerPath = 'markers/';
+
+    // Define the colors for the circle markers. This array will be used by both the map and the file list.
+    const markerColors = [
+        '#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF',
+        '#FFC300', '#33FFA1', '#C70039', '#900C3F'
+    ];    
+
+/*    markerPath = 'markers/';
     markerPngs = ['marker-icon-red.png', 'marker-icon-orange.png', 'marker-icon-yellow.png',
     'marker-icon-green.png', 'marker-icon-blue.png', 'marker-icon-violet.png',
-    'marker-icon-grey.png', 'marker-icon-gold.png','marker-icon-black.png'];
+    'marker-icon-grey.png', 'marker-icon-gold.png','marker-icon-black.png'];*/
 
 // Define the projection for British National Grid (OSGB 1936)
     proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
@@ -1823,52 +1829,50 @@ function chemicalTypeHasData(sheetName) {
 
 function filenameDisplay() {
     const fileDisplayDiv = document.getElementById("fileDisplay");
-    // blank it each time
+    // Blank it each time
     fileDisplayDiv.innerHTML = "";
 
-    iconNo = 0;
+    let colorIndex = 0; // Use a new index for colors
     const datesSampled = Object.keys(selectedSampleInfo);
     datesSampled.sort();
-    datesSampled.forEach(dateSampled => {
 
-//    for (dateSampled in selectedSampleInfo) {
-        currentIcon = markerPath + markerPngs[iconNo];
-        iconNo = (iconNo + 1) % 9;
+    datesSampled.forEach(dateSampled => {
+        // Get the corresponding color for the dataset
+        const currentColor = markerColors[colorIndex];
+        colorIndex = (colorIndex + 1) % markerColors.length; // Loop through colors
 
         const fileURL = sampleInfo[dateSampled].fileURL;
 
-        // Create an image element for the icon
-        const iconElement = document.createElement("img");
-        iconElement.src = currentIcon;
-        iconElement.alt = "Marker Icon";
-        iconElement.style.width = "20px"; // Adjust the width as needed
+        // --- CHANGE START ---
+        // Create a span element for the colored dot instead of an image
+        const iconElement = document.createElement("span");
+        iconElement.style.height = "15px";
+        iconElement.style.width = "15px";
+        iconElement.style.backgroundColor = currentColor;
+        iconElement.style.borderRadius = "50%"; // This makes the span a circle
+        iconElement.style.display = "inline-block";
+        iconElement.style.verticalAlign = "middle";
+        iconElement.style.marginRight = "8px";
+        iconElement.style.border = "1px solid #555"; // Optional: adds a subtle outline
+        // --- CHANGE END ---
 
         // Create a link element for each file and append it to the div
         const linkElement = document.createElement("a");
         linkElement.href = fileURL;
-        // console.log(fileURL);
-        // console.log(dateSampled);
-        positions = Object.keys(selectedSampleInfo[dateSampled].position);
-        infos = '';
-//        infos = positions.length
+        
+        let infos = '';
         for (dataType in selectedSampleMeasurements[dateSampled]) {
-//console.log(dataType,dateSampled);
             if (dataType === 'Physical Data') {
                 infos += `${dataSheetAbr[dataType]} `;
             } else {
                 let allChemicals = Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals);
-//console.log(allChemicals);
-//                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals).length}x${dataSheetAbr[dataType]}s `;
-//                infos += `${allChemicals.length}x${dataSheetAbr[dataType]}s `;
-//                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals[allChemicals[0]].samples).length}x${dataSheetAbr[dataType]}s `;
-//                infos += `${allChemicals.length}x${dataSheetAbr[dataType]}s `;
-//                infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals[allChemicals[0]].samples).length}s ${allChemicals.length}c ${dataSheetAbr[dataType]}s `;
                 infos += `${Object.keys(selectedSampleMeasurements[dateSampled][dataType].chemicals[allChemicals[0]].samples).length}[${allChemicals.length}x${dataSheetAbr[dataType]}s] `;
             }
         }
-//        infos = 'PAH BDE OC OT PCB Phys TM';
-        textElement1 = document.createTextNode(`${dateSampled} has ${positions.length} samples with ${infos}:`);
-        textElement2 = document.createTextNode(`File `);
+        
+        const positions = Object.keys(selectedSampleInfo[dateSampled].position);
+        const textElement1 = document.createTextNode(`${dateSampled} has ${positions.length} samples with ${infos}:`);
+        const textElement2 = document.createTextNode(`File `);
         linkElement.textContent = `${fileURL}`;
         linkElement.target = "_blank"; // Open link in a new tab/window
 

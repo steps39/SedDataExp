@@ -410,7 +410,7 @@ function flipSampleSelections(selection) {
     });
 }
 
-function selectHighlighted(selection) {
+/*function selectHighlighted(selection) {
     const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
     index = 0;
     //        for (ds in selectedSampleInfo) {
@@ -421,6 +421,37 @@ function selectHighlighted(selection) {
     });
     //            }
     //        }
+}*/
+
+function selectHighlighted(selection) {
+    // 1. Create the master list of all samples and sort it EXACTLY as in createHighlights.
+    // This list correctly corresponds to the indices in the 'highlighted' array.
+    const masterSampleList = [];
+    const datesSampled = Object.keys(selectedSampleInfo);
+    datesSampled.forEach(date => {
+        const samplesForDate = Object.keys(selectedSampleInfo[date].position);
+        samplesForDate.forEach(sampleName => {
+            masterSampleList.push(date + ': ' + sampleName);
+        });
+    });
+    masterSampleList.sortComplexSamples(); // Use the same custom sort function
+
+    // 2. Get all checkboxes from the modal.
+    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+
+    // 3. Create a map of checkboxes by their value (which is the unique sample ID) for fast lookups.
+    const checkboxMap = new Map();
+    checkboxes.forEach(cb => checkboxMap.set(cb.value, cb));
+
+    // 4. Iterate through the master sorted list. For each sample, check if it should be highlighted.
+    masterSampleList.forEach((sampleId, index) => {
+        const checkbox = checkboxMap.get(sampleId);
+        if (checkbox) {
+            // Use the index from the sorted list to check the 'highlighted' array.
+            // This ensures the correct checkbox is updated.
+            checkbox.checked = highlighted[index] || false; // Default to false if undefined
+        }
+    });
 }
 
 function applySampleFilter() {
