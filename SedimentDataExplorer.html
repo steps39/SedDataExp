@@ -9,6 +9,7 @@
     <!-- External Scripts and Styles (Unchanged) -->
     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>
     <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
+    <script src="https://unpkg.com/chroma-js/dist/chroma.min.cjs"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
@@ -334,6 +335,34 @@
             height: 18px;
             margin-right: 8px;
         }
+        .scatter-flex-container {
+            display: flex;
+            flex-wrap: wrap;
+/*            gap: 1rem; /* Adds space between charts */
+        }
+
+        .scatter-chart-wrapper {
+            flex: 1 1 100%; /* Default to full width on small screens */
+            flex-grow: 0; /* This prevents items from growing to fill space */
+            flex-shrink: 0;
+            min-width: 140px; /* Prevents charts from becoming too small */
+/*            height: 300px; /* Crucial: Gives the container a height */
+            position: relative; /* Required for Chart.js responsiveness */
+        }
+
+        /* Media queries for responsive columns */
+        @media (min-width: 768px) {
+            .scatter-chart-wrapper {
+                flex-basis: 24%; /* 4 columns on medium screens */
+/*                flex-basis: 48%; /* 2 columns on medium screens */
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .scatter-chart-wrapper {
+                flex-basis: 23%; /* 4 columns on large screens */
+            }
+        }
     </style>
 </head>
 
@@ -368,6 +397,22 @@
             </fieldset>
 
             <fieldset>
+                <legend>Save / Load State</legend>
+                <div class="input-group">
+                    <label for="fileSave">Save Snapshot</label>
+                    <input type="text" id="fileSave" placeholder="Enter file name to save" onchange="saveSnapShot()">
+                </div>
+                <div class="input-group">
+                    <label for="fileLoad">Load Snapshot from File</label>
+                    <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
+                </div>
+                <div class="input-group">
+                    <label for="urlLoad">Load Snapshot from URL</label>
+                    <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
+                </div>
+            </fieldset>
+
+            <fieldset>
                 <legend>Selection Tools</legend>
                 <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
                 <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
@@ -382,34 +427,13 @@
                 <button onclick="openChartModifiersModal()">Chart Modifiers</button>
                 <hr>
                 <div class="input-group">
-                    <label for="sorting-select">Sort Samples By:</label>
-                    <select name="sorting" id="sorting-select">
-                        <option id="unsorted" value="unsorted" selected>Unsorted</option>
-                        <option id="longitude" value="longitude">Longitude</option>
-                        <option id="latitude" value="latitude">Latitude</option>
-                        <option id="totalarea" value="totalarea">Total surface area</option>
-                        <option id="totalsolids" value="totalsolids">Total solids</option>
-                        <option id="organicmatter" value="organicmatter">Organic matter</option>
-                        <option id="lmw" value="lmw">LMW PAHs Sum</option>
-                        <option id="hmw" value="hmw">HMW PAHs Sum</option>
-                        <option id="totalhcsort" value="totalhcsort">Total hydrocarbon</option>
-                        <option id="ices7" value="ices7">ICES7 PCBs Sum</option>
-                        <option id="allpcbs" value="allpcbs">All PCBs Sum</option>
-                        <option id="silt" value="silt">Silt & Clay Fraction</option>
-                        <option id="siltsand" value="siltsand">Silt, Clay & Fine Sand</option>
-                        <option id="sand" value="sand">Sand Fraction</option>
-                        <option id="gravel" value="gravel">Gravel Fraction</option>
-                        <option id="normal" value="normal">Date of sampling</option>
-                        <option id="datelongitude" value="datelongitude">Date then longitude</option>
-                        <option id="datelatitude" value="datelatitude">Date then latitude</option>
-                        <option id="datetotalarea" value="datetotalarea">Date then total area</option>
-                        <option id="datetotalhc" value="datetotalhc">Date then total hydrocarbon</option>
-                        <option id="datelmw" value="datelmw">Date then LMW sum</option>
-                        <option id="datehmw" value="datehmw">Date then HMW sum</option>
-                        <option id="dateices7" value="dateices7">Date then ICES7 sum</option>
-                        <option id="dateallpcbs" value="dateallpcbs">Date then All PCBs sum</option>
-                    </select>
-                 </div>
+                    <label for="primary-sorting-select">Primary Sort:</label>
+                    <select id="primary-sorting-select"></select>
+                </div>
+                <div class="input-group">
+                    <label for="secondary-sorting-select">Secondary Sort:</label>
+                    <select id="secondary-sorting-select"></select>
+                </div>
             </fieldset>
 
             <fieldset>
@@ -445,21 +469,6 @@
                  <button onclick="openParticleSizeModal()">Particle Size Details</button>
             </fieldset>
 
-            <fieldset>
-                <legend>Save / Load State</legend>
-                <div class="input-group">
-                    <label for="fileSave">Save Snapshot</label>
-                    <input type="text" id="fileSave" placeholder="Enter file name to save" onchange="saveSnapShot()">
-                </div>
-                <div class="input-group">
-                    <label for="fileLoad">Load Snapshot from File</label>
-                    <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
-                </div>
-                <div class="input-group">
-                    <label for="urlLoad">Load Snapshot from URL</label>
-                    <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
-                </div>
-            </fieldset>
         </aside>
 
         <main class="output-area">
@@ -539,7 +548,7 @@
                 <button onclick="cancelSampleSelection()" class="secondary">Cancel</button>
                 <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
             </div>
-            <div style="display:none;">Must have non-zero - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label><input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label><input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label><input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label><input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label><input type="checkbox" id="organochlorinedataset"><label for="organochlorinedataset">Organochlorine data</label><input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label></div>
+            <div>Must have non-zero - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label><input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label><input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label><input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label><input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label><input type="checkbox" id="organochlorinedatasample"><label for="organochlorinedatasample">Organochlorine data</label><input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label></div>
         </div>
     </div>
     <div id="chemicalModal" class="modal">
@@ -670,16 +679,188 @@
         }
 
         function openTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
             const tabcontent = document.getElementsByClassName("tab-content");
             for (let i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
+
+            // Get all elements with class="tab-button" and remove the class "active"
             const tablinks = document.getElementsByClassName("tab-button");
             for (let i = 0; i < tablinks.length; i++) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
-            document.getElementById(tabName).style.display = "block";
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- CORRECTED RESIZE LOGIC ---
+                // Use setTimeout to delay the resize call. This gives the browser time
+                // to render the newly visible tab panel before the chart tries to measure it.
+                setTimeout(() => {
+                    const canvases = activeTabPanel.getElementsByTagName('canvas');
+                    for (const canvas of canvases) {
+                        const chart = Chart.getChart(canvas); 
+                        
+                        if (chart) {
+                            chart.resize();
+                        }
+                    }
+                }, 0); // A 0ms delay is enough to push this to the next event cycle.
+            }
+        }
+
+        function NoTimongopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- CORRECTED RESIZE LOGIC ---
+                // After making the tab visible, find all chart instances and tell them to resize.
+                const canvases = activeTabPanel.getElementsByTagName('canvas');
+                for (const canvas of canvases) {
+                    // Use the built-in Chart.js method to get the instance directly from the canvas
+                    const chart = Chart.getChart(canvas); 
+                    
+                    if (chart) {
+                        chart.resize();
+                        console.log(`Resized chart for canvas ${canvas.id}`);
+                    } else {
+                        // This warning is now less critical, as it might just mean a canvas is empty.
+                        console.warn(`No chart instance was registered with Chart.js for canvas ${canvas.id}`);
+                    }
+                }
+            }
+        }
+
+
+
+        function WndowApproachopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- FIX: RESIZE CHARTS ON TAB CLICK ---
+                // After making the tab visible, find all chart instances inside it and tell them to resize.
+                const canvases = activeTabPanel.getElementsByTagName('canvas');
+                for (const canvas of canvases) {
+                    const chartId = canvas.id;
+                    const instanceNo = parseInt(chartId.replace('chart', ''), 10);
+                    // If a chart instance exists for this canvas, resize it.
+console .log(window.chartInstance);
+                    if (window.chartInstance && window.chartInstance[instanceNo]) {
+                        window.chartInstance[instanceNo].resize();
+    console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
+                    } else {
+                        console.warn(`No chart instance found for canvas ${chartId}`);
+                    }
+                }
+            }
+        }
+
+
+        function ReportingopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- FIX: RESIZE CHARTS ON TAB CLICK ---
+                // After making the tab visible, find all chart instances inside it and tell them to resize.
+                const canvases = activeTabPanel.getElementsByTagName('canvas');
+                for (const canvas of canvases) {
+                    const chartId = canvas.id;
+                    const instanceNo = parseInt(chartId.replace('chart', ''), 10);
+                    
+                    // If a chart instance exists for this canvas, resize it.
+                    if (window.chartInstance && window.chartInstance[instanceNo]) {
+                        window.chartInstance[instanceNo].resize();
+console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
+                    } else {
+                        console.warn(`No chart instance found for canvas ${chartId}`);
+                    }
+                }
+            }
+        }
+
+
+
+        function OLDopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            activeTabPanel.style.display = "block";
             evt.currentTarget.className += " active";
+
+            // --- NEW CODE TO FIX RESIZING ---
+            // After making the tab visible, find all chart instances inside it and tell them to resize.
+            // This ensures they render correctly.
+            const canvases = activeTabPanel.getElementsByTagName('canvas');
+            for (const canvas of canvases) {
+                const chartId = canvas.id;
+                // Extract the instance number from the canvas ID (e.g., "chart5" -> 5)
+                const instanceNo = parseInt(chartId.replace('chart', ''), 10);
+                
+                // If a chart instance exists for this canvas, resize it.
+                if (chartInstance && chartInstance[instanceNo]) {
+                    chartInstance[instanceNo].resize();
+                }
+            }
         }
 
         function toggleMapLegend() {

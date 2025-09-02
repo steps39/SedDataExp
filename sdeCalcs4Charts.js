@@ -310,9 +310,10 @@ function dataForScatterCharting(sheetName) {
             let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
             for (const s in selectedSampleMeasurements[ds][ct].chemicals[allChemicals[0]].samples) {
                 scatterData[i] = ({
+//                scatterData[ds + ' : ' + s] = ({
                     x: sampleInfo[ds].position[s]['Position longitude'],
                     y: sampleInfo[ds].position[s]['Position latitude'],
-                    label: ds + ' : ' + s,
+                    label: selectedSampleInfo[ds].label + ' ' + selectedSampleInfo[ds].position[s].label,
                 });
                 i += 1;
                 //console.log(sampleInfo[ds].position[s]['Position latitude']);
@@ -474,13 +475,13 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                     scatterData[c][j].data[ii] = {
                         x: Number(xValue),
                         y: currentChemical.samples[s],
-                        label: ds + ' : ' + s
+                        label: selectedSampleInfo[ds].label + ' ' + selectedSampleInfo[ds].position[s].label,
                     };
                     ii += 1;
-                      if (!xValue) {
+                    if (!xValue) {
 // reverted to 250502 version of test not sure why?                   if (!(typeof xValue === "number")) {
 //console.log(i, ii, j, ds, c, s);
-                        console.log('Total scatter charting not possible for ', chartType, ' as no data available');
+                        console.log('Total scatter charting not possible for ', chartType, ' as no data available', ds, s, ii, xValue);
 //console.log(xValue);
                         unitTitle = 'No data';
                         return { unitTitle };
@@ -520,7 +521,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
     //    if (chartType === "totalHC") {
     //        return { unitTitle, scatterData, chemicalData };
     //    } else {
-//console.log('scatterData', scatterData);
+console.log('scatterData', scatterData);
     return { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors };
     //    }
 }

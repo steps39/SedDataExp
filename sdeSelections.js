@@ -459,6 +459,7 @@ function applySampleFilter() {
     selectBySheet = false;
     for (i = 0; i < dataSheetNames.length; i++) {
         sheetName = dataSheetNames[i];
+console.log('sheetName',sheetName,dataSheetNamesCheckboxes[i]);
         sheetsToSelect[dataSheetNames[i]] = document.getElementById(dataSheetNamesCheckboxes[i]+'sample').checked ? true : false; // Check the checkbox state
         if (sheetsToSelect[dataSheetNames[i]]) {
             selectBySheet = true;

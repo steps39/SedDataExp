@@ -30,487 +30,151 @@ Array.prototype.sortSamples = function(ds) {
     });
 };
 
-/*
-// Extend the Array prototype to include a custom sortSamples method
-Array.prototype.sortComplexSamples = function() {
-    // Create a shallow copy of the array to avoid modifying the original
-    const newArray = [...this];
+/**
+ * A helper function that retrieves the specific value for a given sample based on a sort key.
+ */
+function getSortValue(fullSampleName, sortKey) {
+    const parts = fullSampleName.split(": ");
+    const datePart = parts[0];
+    const samplePart = parts.length > 2 ? parts.slice(1).join(": ") : parts[1];
 
-    // Use the built-in sort method on the new array
-    return newArray.sort((a, b) => {
-        // ... (your existing comparison logic) ...
-        const partsA = a.split(": ");
-        if (partsA.length >2) {
-            partsA[1] = partsA[1] + ': ' + partsA[2];
-        }
-        const partsB = b.split(": ");
-        if (partsB.length >2) {
-            partsB[1] = partsB[1] + ': ' + partsB[2];
-        }
-
-        // Sorting by datesampled and label
-        if (xAxisSort === 'normal') {
-            const valueA = (selectedSampleInfo[partsA[0]]['label'] + selectedSampleInfo[partsA[0]].position[partsA[1]]['label']).toLowerCase();
-            const valueB = (selectedSampleInfo[partsB[0]]['label'] + selectedSampleInfo[partsB[0]].position[partsB[1]]['label']).toLowerCase();
-            return valueA.localeCompare(valueB);
-        }
-        // Sorting by latitude
-        if (xAxisSort === 'latitude') {
-            const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
-            const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
-            return valueA - valueB;
-        }
-        
-        // Sorting by longitude
-        if (xAxisSort === 'longitude') {
-            const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
-            const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
-            return valueA - valueB;
-        }
-        
-        // Sorting by totalSolids
-        if (xAxisSort === 'totalsolids') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]]['Total solids (% total sediment)'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]]['Total solids (% total sediment)'];
-            return valueA - valueB;
-        }
-
-        // Sorting by totalArea
-        if (xAxisSort === 'totalarea') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
-            return valueA - valueB;
-        }
-
-        // Sorting by totalHC
-        if (xAxisSort === 'totalhcsort') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].totalHC[partsA[1]];
-            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].totalHC[partsB[1]];
-            return valueA - valueB;
-        }
-
-        // Sorting by LMW
-        if (xAxisSort === 'lmw') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].lmwSum;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].lmwSum;
-            return valueA - valueB;
-        }
-
-        // Sorting by HMW
-        if (xAxisSort === 'hmw') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].hmwSum;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].hmwSum;
-            return valueA - valueB;
-        }
-
-        // Sorting by ICES7
-        if (xAxisSort === 'ices7') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].ICES7;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].ICES7;
-            return valueA - valueB;
-        }
-
-        // Sorting by All PCBs
-        if (xAxisSort === 'allpcbs') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].All;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].All;
-            return valueA - valueB;
-        }
-
-        // Sorting by gravel
-        if (xAxisSort === 'gravel') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Gravel'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Gravel'];
-            return valueA - valueB;
-        }
-
-        // Sorting by silt
-        if (xAxisSort === 'silt') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Silt And Clay'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Silt And Clay'];
-            return valueA - valueB;
-        }
-
-        // Sorting by sand
-        if (xAxisSort === 'sand') {
-            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
-            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
-            const valueA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
-                          splitWeightsA['Very Coarse And Coarse Sand'];
-            const valueB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
-                          splitWeightsB['Very Coarse And Coarse Sand'];
-                          return valueA - valueB;
-                        }
-
-        // Sorting by sand
-        if (xAxisSort === 'slitsand') {
-            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
-            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
-            const valueA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
-                          splitWeightsA['Very Coarse And Coarse Sand'] + splitWeightsA['Silt And Clay'];
-            const valueB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
-                          splitWeightsB['Very Coarse And Coarse Sand'] + splitWeightsB['Silt And Clay'];
-            return valueA - valueB;
-        }
-
-        // Sorting by datelatitude
-        if (xAxisSort === 'datelatitude') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
-                const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by datelongitude
-        if (xAxisSort === 'datelongitude') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
-                const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-
-        // Sorting by datetototalarea
-        if (xAxisSort === 'datetotalarea') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
-                const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-
-        // Sorting by datelmw
-        if (xAxisSort === 'datelmw') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].lmwSum;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].lmwSum;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by datehmw
-        if (xAxisSort === 'datehmw') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].hmwSum;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].hmwSum;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by dateices7
-        if (xAxisSort === 'dateices7') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].ICES7;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].ICES7;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by dateallpcbs
-        if (xAxisSort === 'dateallpcbs') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].All;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].All;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Default case if no valid sort key is provided
-        // Usorted
+    if (!sortKey || sortKey === 'none' || sortKey === 'unsorted') {
         return 0;
-    });
-};
-*/
+    }
 
+    try {
+        switch (sortKey) {
+            // --- PRIMARY SORT KEYS (Strings) ---
+            case 'dateofsampling':
+                return selectedSampleInfo[datePart]['label'].toLowerCase();
+            case 'samplename':
+                return selectedSampleInfo[datePart].position[samplePart]['label'].toLowerCase();
+            case 'datesamplename':
+                return (selectedSampleInfo[datePart]['label'] + selectedSampleInfo[datePart].position[samplePart]['label']).toLowerCase();
+            
+            // --- SECONDARY SORT KEYS (Numbers) ---
+            case 'latitude':
+                value = selectedSampleInfo[datePart]?.position[samplePart]?.['Position latitude'];
+                return value ? parseFloat(value) : 0;
+            case 'longitude':
+                value = selectedSampleInfo[datePart]?.position[samplePart]?.['Position longitude'];
+                return value ? parseFloat(value) : 0;
+            case 'totalsolids':
+                value = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.['Total solids (% total sediment)'];
+                return value ? parseFloat(value) : 0;
+            case 'organicmatter':
+                value = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.['Organic matter (total organic carbon)'];
+                return value ? parseFloat(value) : 0;
+            case 'totalarea':
+                value = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.totalArea;
+                return value ? parseFloat(value) : 0;
+            case 'totalhydrocarbon':
+                value = selectedSampleMeasurements[datePart]?.['PAH data']?.totalHC[samplePart];
+                return value ? parseFloat(value) : 0;
+            case 'gorhamlmwsum':
+                value = selectedSampleMeasurements[datePart]?.['PAH data']?.gorhamTest[samplePart]?.lmwSum;
+                return value ? parseFloat(value) : 0;
+            case 'gorhamhmwsum':
+                value = selectedSampleMeasurements[datePart]?.['PAH data']?.gorhamTest[samplePart]?.hmwSum;
+                return value ? parseFloat(value) : 0;
+            case 'ices7pcbsum':
+                value = selectedSampleMeasurements[datePart]?.['PCB data']?.congenerTest[samplePart]?.ICES7;
+                return value ? parseFloat(value) : 0;
+            case 'allpcbssum':
+                value = selectedSampleMeasurements[datePart]?.['PCB data']?.congenerTest[samplePart]?.All;
+                return value ? parseFloat(value) : 0;
+            case 'gravel':
+                value = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.splitWeights['Gravel'];
+                return value ? parseFloat(value) : 0;
+            case 'silt':
+                value = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.splitWeights['Silt And Clay'];
+                return value ? parseFloat(value) : 0;
+            case 'sand':
+                const splitWeightsSand = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.splitWeights;
+                if (!splitWeightsSand) return 0;
+                return (parseFloat(splitWeightsSand['Fine And Very Fine Sand']) || 0) + (parseFloat(splitWeightsSand['Medium Sand']) || 0) + (parseFloat(splitWeightsSand['Very Coarse And Coarse Sand']) || 0);
+            case 'siltandsand':
+                const splitWeightsSiltSand = selectedSampleMeasurements[datePart]?.['Physical Data']?.samples[samplePart]?.splitWeights;
+                if (!splitWeightsSiltSand) return 0;
+                return (parseFloat(splitWeightsSiltSand['Fine And Very Fine Sand']) || 0) + (parseFloat(splitWeightsSiltSand['Medium Sand']) || 0) + (parseFloat(splitWeightsSiltSand['Very Coarse And Coarse Sand']) || 0) + (parseFloat(splitWeightsSiltSand['Silt And Clay']) || 0);
+            default:
+                return 0;
+        }
+    } catch (e) {
+        console.warn(`Could not retrieve sort value for key "${sortKey}" on sample "${fullSampleName}". Returning 0.`);
+        return 0;
+    }
+}
 
-// Extend the Array prototype to include a custom sortSamples method
+/**
+ * Extends the Array prototype to sort samples based on primary and secondary keys.
+ */
 Array.prototype.sortComplexSamples = function() {
-    // Use the built-in sort method on the array
+    // Read the current selections directly from the dropdowns
+    const primaryKey = document.getElementById('primary-sorting-select').value;
+    const secondaryKey = document.getElementById('secondary-sorting-select').value;
 
     return this.sort((a, b) => {
-//console.log(a,b);
-        const partsA = a.split(": ");
-        if (partsA.length >2) {
-            partsA[1] = partsA[1] + ': ' + partsA[2];
-        }
-        const partsB = b.split(": ");
-        if (partsB.length >2) {
-            partsB[1] = partsB[1] + ': ' + partsB[2];
-        }
-//        selectedSampleInfo[partsA[0]].position[partsA[1]]
-//console.log(partsA);
-//console.log(partsB);
+        // Get the values for the primary sort key
+        const primaryA = getSortValue(a, primaryKey);
+        const primaryB = getSortValue(b, primaryKey);
 
-        // Sorting by datesampled and label
-        if (xAxisSort === 'normal') {
-            const valueA = (selectedSampleInfo[partsA[0]]['label'] + selectedSampleInfo[partsA[0]].position[partsA[1]]['label']).toLowerCase();
-            const valueB = (selectedSampleInfo[partsB[0]]['label'] + selectedSampleInfo[partsB[0]].position[partsB[1]]['label']).toLowerCase();
-            return valueA.localeCompare(valueB);
-        }
-        // Sorting by latitude
-        if (xAxisSort === 'latitude') {
-            const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
-            const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
-            return valueA - valueB;
-        }
-        
-        // Sorting by longitude
-        if (xAxisSort === 'longitude') {
-            const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
-            const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
-            return valueA - valueB;
-        }
-        
-        // Sorting by totalSolids
-        if (xAxisSort === 'totalsolids') {
-//console.log(partsA,partsB);
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]]['Total solids (% total sediment)'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]]['Total solids (% total sediment)'];
-            return valueA - valueB;
+        let comparison = 0;
+        // Compare primary values
+        if (typeof primaryA === 'string') {
+            comparison = primaryA.localeCompare(primaryB);
+        } else {
+            comparison = primaryA - primaryB;
         }
 
-        // Sorting by organicmatter
-        if (xAxisSort === 'organicmatter') {
-//console.log(partsA,partsB);
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]]['Organic matter (total organic carbon)'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]]['Organic matter (total organic carbon)'];
-            return valueA - valueB;
-        }
+        // If primary values are the same, sort by the secondary key
+        if (comparison === 0 && secondaryKey && secondaryKey !== 'none') {
+            const secondaryA = getSortValue(a, secondaryKey);
+            const secondaryB = getSortValue(b, secondaryKey);
 
-        // Sorting by totalArea
-        if (xAxisSort === 'totalarea') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
-            return valueA - valueB;
-        }
-
-        // Sorting by totalHC
-        if (xAxisSort === 'totalhcsort') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].totalHC[partsA[1]];
-            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].totalHC[partsB[1]];
-            return valueA - valueB;
-        }
-
-        // Sorting by LMW
-        if (xAxisSort === 'lmw') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].lmwSum;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].lmwSum;
-            return valueA - valueB;
-        }
-
-        // Sorting by HMW
-        if (xAxisSort === 'hmw') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].hmwSum;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].hmwSum;
-            return valueA - valueB;
-        }
-
-        // Sorting by ICES7
-        if (xAxisSort === 'ices7') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].ICES7;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].ICES7;
-            return valueA - valueB;
-        }
-
-        // Sorting by All PCBs
-        if (xAxisSort === 'allpcbs') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].All;
-            const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].All;
-            return valueA - valueB;
-        }
-
-        // Sorting by gravel
-        if (xAxisSort === 'gravel') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Gravel'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Gravel'];
-            return valueA - valueB;
-        }
-
-        // Sorting by silt
-        if (xAxisSort === 'silt') {
-            const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights['Silt And Clay'];
-            const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights['Silt And Clay'];
-            return valueA - valueB;
-        }
-
-        // Sorting by sand
-        if (xAxisSort === 'sand') {
-            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
-            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
-            const valueA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
-                          splitWeightsA['Very Coarse And Coarse Sand'];
-            const valueB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
-                          splitWeightsB['Very Coarse And Coarse Sand'];
-                          return valueA - valueB;
-                        }
-
-        // Sorting by sand
-        if (xAxisSort === 'slitsand') {
-            const splitWeightsA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].splitWeights;
-            const splitWeightsB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].splitWeights;
-            const valueA = splitWeightsA['Fine And Very Fine Sand'] + splitWeightsA['Medium Sand'] + 
-                          splitWeightsA['Very Coarse And Coarse Sand'] + splitWeightsA['Silt And Clay'];
-            const valueB = splitWeightsB['Fine And Very Fine Sand'] + splitWeightsB['Medium Sand'] + 
-                          splitWeightsB['Very Coarse And Coarse Sand'] + splitWeightsB['Silt And Clay'];
-            return valueA - valueB;
-        }
-
-        // Sorting by datelatitude
-        if (xAxisSort === 'datelatitude') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position latitude'];
-                const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position latitude'];
-                return valueA - valueB;
+            if (typeof secondaryA === 'string') {
+                comparison = secondaryA.localeCompare(secondaryB);
             } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
+                comparison = secondaryA - secondaryB;
             }
         }
         
-        // Sorting by datelongitude
-        if (xAxisSort === 'datelongitude') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleInfo[partsA[0]].position[partsA[1]]['Position longitude'];
-                const valueB = selectedSampleInfo[partsB[0]].position[partsB[1]]['Position longitude'];
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-
-        // Sorting by datetototalarea
-        if (xAxisSort === 'datetotalarea') {
-//console.log('datetotalarea');
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['Physical Data'].samples[partsA[1]].totalArea;
-                const valueB = selectedSampleMeasurements[partsB[0]]['Physical Data'].samples[partsB[1]].totalArea;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-
-        // Sorting by datelmw
-        if (xAxisSort === 'datelmw') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].lmwSum;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].lmwSum;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by datehmw
-        if (xAxisSort === 'datehmw') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PAH data'].gorhamTest[partsA[1]].hmwSum;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PAH data'].gorhamTest[partsB[1]].hmwSum;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by dateices7
-        if (xAxisSort === 'dateices7') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].ICES7;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].ICES7;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Sorting by dateallpcbs
-        if (xAxisSort === 'dateallpcbs') {
-            if (partsA[0] === partsB[0]) {
-                const valueA = selectedSampleMeasurements[partsA[0]]['PCB data'].congenerTest[partsA[1]].All;
-                const valueB = selectedSampleMeasurements[partsB[0]]['PCB data'].congenerTest[partsB[1]].All;
-                return valueA - valueB;
-            } else {
-                if (partsA[0] > partsB[0]) {
-                    return 1
-                } else {
-                    return -1
-                }
-            }
-        }
-        
-        // Default case if no valid sort key is provided
-        // Usorted
-        return 0;
+        return comparison;
     });
 };
 
 
+/**
+ * Populates the primary and secondary sorting dropdowns from the new option arrays.
+ */
+function populateSortDropdowns() {
+    const primarySelect = document.getElementById('primary-sorting-select');
+    const secondarySelect = document.getElementById('secondary-sorting-select');
+
+    primarySelect.innerHTML = '';
+    secondarySelect.innerHTML = '';
+
+    // Populate Primary Dropdown
+    primarySortingOptions.forEach(optionText => {
+        const option = document.createElement('option');
+        option.value = optionText.toLowerCase().replace(/[\s&]+/g, '');
+        option.textContent = optionText;
+        primarySelect.appendChild(option);
+    });
+
+    // Populate Secondary Dropdown
+    const noneOption = document.createElement('option');
+    noneOption.value = 'none';
+    noneOption.textContent = 'None';
+    secondarySelect.appendChild(noneOption);
+
+    secondarySortingOptions.forEach(optionText => {
+        const option = document.createElement('option');
+        option.value = optionText.toLowerCase().replace(/\s+/g, '');
+        option.textContent = optionText;
+        secondarySelect.appendChild(option);
+    });
+}
 
 // Define ranges for different materials for standard MMO template
 let ranges = {

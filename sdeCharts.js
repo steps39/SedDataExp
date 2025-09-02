@@ -1,33 +1,95 @@
+/**
+ * Enables or disables sorting options based on available data.
+ */
+function updateSortingOptionsState() {
+    const primarySelect = document.getElementById('primary-sorting-select');
+    const secondarySelect = document.getElementById('secondary-sorting-select');
+
+    // First, enable all options by default
+    for (const option of primarySelect.options) {
+        option.disabled = false;
+    }
+    for (const option of secondarySelect.options) {
+        option.disabled = false;
+    }
+
+    // Now, disable options based on missing data
+    for (const sortValue in sortOptionDependencies) {
+        const requiredSheet = sortOptionDependencies[sortValue];
+
+        // Check if the required sheet data is NOT complete/available
+        if (!completeSheet[requiredSheet]) {
+            // Find and disable the option in both dropdowns
+            const primaryOption = primarySelect.querySelector(`option[value="${sortValue}"]`);
+            if (primaryOption) {
+                primaryOption.disabled = true;
+            }
+            
+            const secondaryOption = secondarySelect.querySelector(`option[value="${sortValue}"]`);
+            if (secondaryOption) {
+                secondaryOption.disabled = true;
+            }
+        }
+    }
+}
+
 function updateOptions() {
     //Recheck available samples to make sure all the correct options are available
-/*    for (group in sortButtonGroups) {
+/* for (group in sortButtonGroups) {
         disableRadioButtons(sortButtonGroups[group], false);
     }
     dataSheetNames.forEach(sheetName => {
         disableRadioButtons(sortButtonGroups[sheetName], false);
         completeSheet[sheetName] = true;
     })*/
-    dataSheetNames.forEach(sheetName => {
+/*    dataSheetNames.forEach(sheetName => {
         disableRadioButtons(sortButtonGroups[sheetName], false);
         completeSheet[sheetName] = true;
-        for(dateSampled in selectedSampleMeasurements) {
+        for(const dateSampled in selectedSampleMeasurements) {
             if (!selectedSampleMeasurements[dateSampled][sheetName]){
                 disableRadioButtons(sortButtonGroups[sheetName], true);
                 completeSheet[sheetName] = false;
                 break;
             }
         }
-    })
-    for (i = 0; i < dataSheetNames.length; i++) {
-        sheetName = dataSheetNames[i];
+    })*/
+       // This part checks which data sheets are complete
+    dataSheetNames.forEach(sheetName => {
+        completeSheet[sheetName] = true;
+        for(const dateSampled in selectedSampleMeasurements) {
+            if (!selectedSampleMeasurements[dateSampled][sheetName]){
+                completeSheet[sheetName] = false;
+                break;
+            }
+        }
+    });
+
+    // --- ADD THIS CALL ---
+    // After determining which sheets are complete, update the dropdowns
+    updateSortingOptionsState();
+    const primarySort = document.getElementById('primary-sorting-select').value;
+    const secondarySort = document.getElementById('secondary-sorting-select').value;
+
+    // Combine the values. You will need to update your sorting logic
+    // to handle this new combined format (e.g., "latitude-longitude").
+    if (secondarySort !== 'none') {
+        xAxisSort = `${primarySort}-${secondarySort}`;
+    } else {
+        xAxisSort = primarySort;
+    }
+
+console.log('xAxisSort', xAxisSort);
+
+    for (let i = 0; i < dataSheetNames.length; i++) {
+        const sheetName = dataSheetNames[i];
         sheetsToDisplay[dataSheetNames[i]] = document.getElementById(dataSheetNamesCheckboxes[i]).checked ? true : false; // Check the checkbox state
     }
-    for (i = 0; i < subChartNames.length; i++) {
-        subName = subChartNames[i];
+    for (let i = 0; i < subChartNames.length; i++) {
+        const subName = subChartNames[i];
         subsToDisplay[subName] = document.getElementById(subName).checked ? true : false; // Check the checkbox state
     }
-//    xAxisSort = document.querySelector('input[name="sorting"]:checked').value; //radio buttons
-    xAxisSort = document.getElementById('sorting-select').value; //dropdown
+//  xAxisSort = document.querySelector('input[name="sorting"]:checked').value; //radio buttons
+//    xAxisSort = document.getElementById('sorting-select').value; //dropdown
     lookSetting = document.querySelector('input[name="look"]:checked').value;
     resuspensionSize = parseFloat(document.getElementById('resuspensionsize').value);
     if (isNaN(resuspensionSize)) {
@@ -58,7 +120,7 @@ function updateChart(){
     blankSheets = {};
     setBlanksForCharting();
 //console.log(sheetsToDisplay);
-    for (sheetName in sheetsToDisplay) {
+    for (const sheetName in sheetsToDisplay) {
 console.log(sheetName, sheetsToDisplay[sheetName], chemicalTypeHasData(sheetName));
         if (sheetsToDisplay[sheetName] && chemicalTypeHasData(sheetName)) {
             lastInstanceNo = displayCharts(sheetName, lastInstanceNo);
@@ -78,17 +140,17 @@ console.log('about to display sample map');
 }
 
 function displayPsdSplits(sortedSamples, sums, sheetName, instanceNo, unitTitle, subTitle) {
-//    console.log(sums);
+//  console.log(sums);
     createCanvas(instanceNo);
 //Bodge lost data for unitTitle
     if (unitTitle === undefined || unitTitle === null) {
-        unitTitle = 'Particle size distribution (% at 0.5 phi intervals)'; //bodge 
+        unitTitle = 'Particle size distribution (% at 0.5 phi intervals)'; //bodge	
     }
     const convas = document.getElementById("chart" + instanceNo);
     convas.style.display = "block";
     instanceType[instanceNo] = 'PSD splits by ' + subTitle;
     instanceSheet[instanceNo] = sheetName;
-//    const allSamples = Object.keys(sums);
+//  const allSamples = Object.keys(sums);
     const allSamples = sortedSamples; // Use the sorted samples from the retData
     const allParticles = Object.keys(sums[allSamples[0]]); // Assuming all samples have the particles
     const datasets = allParticles.map((particle, index) => {
@@ -190,11 +252,10 @@ function createResetChart(instanceNo) {
     });
     container.appendChild(button);
 }
-    
+        
         
 function displayCharts(sheetName, instanceNo) {
     // If this is the first chart of a new plot, clear the container.
-    // This prevents old tabs from remaining when replotting.
     if (instanceNo === 0) {
         document.getElementById('chartContainer').innerHTML = '';
     }
@@ -301,16 +362,16 @@ function displayCharts(sheetName, instanceNo) {
                 concentrateFactor = retData['concentrateFactor'];
             }
             if (subsToDisplay['relationareadensity']) {
-                for (chemical in selectedMeas) {
+                for (const chemical in selectedMeas) {
                     selectedMeasArea[chemical] = {};
-                    for (sample in selectedMeas[chemical]) {
+                    for (const sample in selectedMeas[chemical]) {
                         let parts = sample.split(": ");
                         if (parts.length>2) {
                             parts[1] = parts[1] + ': ' + parts[2];
                         }
                         if (selectedSampleMeasurements?.[parts[0]]?.['Physical Data']?.samples[parts[1]]?.totalArea !== undefined) {
                             if (selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea > 0) {
-                                totalArea = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea;
+                                const totalArea = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]].totalArea;
                                 selectedMeasArea[chemical][sample] = selectedMeas[chemical][sample] / totalArea;
                             }
                         }
@@ -324,8 +385,8 @@ function displayCharts(sheetName, instanceNo) {
             if (sheetName === 'BDE data') {
                 let organicCPresent = true;
                 let selectedMeasOrganicC = selectedMeas;
-                for (chemical in selectedMeasOrganicC) {
-                    for (sample in selectedMeasOrganicC[chemical]) {
+                for (const chemical in selectedMeasOrganicC) {
+                    for (const sample in selectedMeasOrganicC[chemical]) {
                         let parts = sample.split(": ");
                         if (parts.length > 2) {
                             parts[1] = parts[1] + ': ' + parts[2];
@@ -400,13 +461,20 @@ function displayCharts(sheetName, instanceNo) {
             }
         }
         largeInstanceNo = -1;
+console.log('instanceNo before LL', instanceNo);
         if (subsToDisplay['positionplace']) {
-            retData = dataForScatterCharting(sheetName);
-            unitTitle = retData['unitTitle'];
+/*            retData = dataForScatterCharting(sheetName);
             scatterData = retData['scatterData'];
             chemicalData = retData['chemicalData'];
             const allChemicals = Object.keys(chemicalData);
             instanceNo += 1;
+
+            // This is the single, correct declaration of currentChartContainer
+            const currentChartContainer = document.getElementById('chartContainer');
+            const combinedCanvas = document.createElement('canvas');
+            combinedCanvas.id = 'chart' + instanceNo;
+            currentChartContainer.appendChild(combinedCanvas);
+
             displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
             largeInstanceNo = instanceNo;
 
@@ -424,7 +492,7 @@ function displayCharts(sheetName, instanceNo) {
                 cell.appendChild(canvas);
             }
 
-            const currentChartContainer = document.getElementById('chartContainer');
+            // The second declaration was here and has been removed.
             if (largeInstanceNo > 1) {
                 const divContainer = document.createElement('div');
                 divContainer.id = 'chartButtons';
@@ -432,20 +500,99 @@ function displayCharts(sheetName, instanceNo) {
             }
             currentChartContainer.appendChild(scatterTable);
             instanceNo = startInstanceNo;
-            i = 0;
+            
             for (const c in chemicalData) {
                 instanceNo += 1;
-                sampleNames = Object.keys(chemicalData[c]);
+                const sampleNames = Object.keys(chemicalData[c]);
                 displayScatterChartLL(scatterData, chemicalData[c], sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
-                i += 1;
-            }
+            }*/
+           retData = dataForScatterCharting(sheetName);
+scatterData = retData['scatterData'];
+chemicalData = retData['chemicalData'];
+const allChemicals = Object.keys(chemicalData);
+instanceNo += 1;
+
+const currentChartContainer = document.getElementById('chartContainer');
+const combinedCanvas = document.createElement('canvas');
+combinedCanvas.id = 'chart' + instanceNo;
+currentChartContainer.appendChild(combinedCanvas);
+
+displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
+largeInstanceNo = instanceNo;
+
+// --- Refactored Section ---
+
+// 1. Create a div to serve as the flex container instead of a table.
+const scatterFlexContainer = document.createElement('div');
+
+// 2. Apply CSS styles to make it a flex container.
+//    - 'display: flex' enables flex layout.
+//    - 'flex-wrap: wrap' allows items to wrap onto the next line.
+//    - 'justify-content: center' centers the charts within the container.
+//    - 'gap: 1rem' adds consistent spacing between the charts.
+scatterFlexContainer.style.display = 'flex';
+scatterFlexContainer.style.flexWrap = 'wrap';
+scatterFlexContainer.style.justifyContent = 'center';
+scatterFlexContainer.style.gap = '1rem';
+scatterFlexContainer.style.padding = '1rem 0';
+
+
+const noCharts = allChemicals.length;
+const startInstanceNo = instanceNo;
+
+// 3. Loop through and create a canvas for each chemical.
+//    The logic for creating rows (if i % 4 === 0) is no longer needed.
+for (let i = 0; i < noCharts; i++) {
+    instanceNo += 1;
+    
+    // Create a wrapper for each chart to manage its flex properties.
+    const chartWrapper = document.createElement('div');
+    
+    // 4. Set flex properties for the wrapper.
+    //    - 'flex: 0 0 calc(25% - 1rem)' sets flex-grow and flex-shrink to 0, fixing the size.
+    //    - 'minWidth' ensures the charts don't become too small on smaller screens.
+    chartWrapper.style.flex = '0 0 calc(25% - 1rem)';
+    chartWrapper.style.minWidth = '250px';
+    chartWrapper.style.boxSizing = 'border-box';
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'chart' + instanceNo;
+    
+    // Append the canvas to its wrapper, and the wrapper to the flex container.
+    chartWrapper.appendChild(canvas);
+    scatterFlexContainer.appendChild(chartWrapper);
+}
+
+// --- Existing Code ---
+
+if (largeInstanceNo > 1) {
+    const divContainer = document.createElement('div');
+    divContainer.id = 'chartButtons';
+    currentChartContainer.appendChild(divContainer);
+}
+
+// 5. Append the new flex container to the main chart container.
+currentChartContainer.appendChild(scatterFlexContainer);
+instanceNo = startInstanceNo;
+
+for (const c in chemicalData) {
+    instanceNo += 1;
+    const sampleNames = Object.keys(chemicalData[c]);
+    displayScatterChartLL(scatterData, chemicalData[c], sheetName, instanceNo, c, 'Longitude', 'Latitude', largeInstanceNo);
+}
+
         }
 
-        instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'relationareadensity', 'Total Area', 'Concentration', 'chartContainer', instanceNo);
-        instanceNo = displayScatterCharts(sheetName, { key: 'totalHC', sheetKey: 'PAH data' }, 'relationhc', 'Total Hydrocarbon', 'Concentration', 'chartContainer', instanceNo);
-        instanceNo = displayScatterCharts(sheetName, { key: 'totalSolids', sheetKey: 'Physical Data' }, 'relationtotalsolids', 'Total Solids %', 'Concentration', 'chartContainer', instanceNo);
-        instanceNo = displayScatterCharts(sheetName, { key: 'organicCarbon', sheetKey: 'Physical Data' }, 'relationorganiccarbon', 'Organic Carbon %', 'Concentration', 'chartContainer', instanceNo);
-
+//        instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'latitudelongitude', 'Latitude', 'Longitude', targetContainer, instanceNo);
+console.log('instanceNo after scatter', instanceNo);
+        instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'relationareadensity', 'Total Area', 'Concentration', targetContainer, instanceNo);
+console.log('instanceNo after totalArea', instanceNo);
+        instanceNo = displayScatterCharts(sheetName, { key: 'totalHC', sheetKey: 'PAH data' }, 'relationhc', 'Total Hydrocarbon', 'Concentration', targetContainer, instanceNo);
+console.log('instanceNo after totalHC', instanceNo);        
+        instanceNo = displayScatterCharts(sheetName, { key: 'totalSolids', sheetKey: 'Physical Data' }, 'relationtotalsolids', 'Total Solids %', 'Concentration', targetContainer, instanceNo);
+console.log('instanceNo after totalSolids', instanceNo);        
+        instanceNo = displayScatterCharts(sheetName, { key: 'organicCarbon', sheetKey: 'Physical Data' }, 'relationorganiccarbon', 'Organic Carbon %', 'Concentration', targetContainer, instanceNo);
+console.log('instanceNo after organicCarbon', instanceNo);
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
             const properties = Object.keys(chemInfo[chemicalNames[0]]);
@@ -549,53 +696,55 @@ function removeScatterTables() {
     }
 }
 
-function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLabel, containerId, instanceNo) {
-//console.log('Sheet Name ',sheetName, 'chartType ', chartType, 'subsKey', subsKey, 'xAxisLael', xAxisLabel, 'yAxisLabel', yAxisLabel, 'containerId', containerId, 'instanceNo', instanceNo);
+function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLabel, containerElement, instanceNo) {
     if (subsToDisplay[subsKey] && completeSheet[chartType.sheetKey]) {
-        // Fetch chart data
         const retData = dataForTotalScatterCharting(sheetName, chartType.key);
         const { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors } = retData;
-//console.log('dataForTotalScatterCharting scatterData, chemicalData ',scatterData, chemicalData);
+        
         if (unitTitle === 'No data') {
-            return instanceNo
+            return instanceNo;
         }
+        
         const allChemicals = Object.keys(chemicalData);
-
         instanceNo += 1;
+        
+        const combinedCanvas = document.createElement('canvas');
+        combinedCanvas.id = 'chart' + instanceNo;
+        containerElement.appendChild(combinedCanvas);
         displayCombinedScatterChart(scatterData, sheetName, instanceNo, 'fred');
-        largeInstanceNo = instanceNo;
 
-        // Create a table element
-        const scatterTable = document.createElement('table');
-        const noCharts = allChemicals.length;
+        let largeInstanceNo = instanceNo;
+        const scatterContainer = document.createElement('div');
+        scatterContainer.className = 'scatter-flex-container';
         const startInstanceNo = instanceNo;
 
-        for (let i = 0; i < noCharts; i++) {
+        for (let i = 0; i < allChemicals.length; i++) {
             instanceNo += 1;
-            if (i % 4 === 0) scatterTable.insertRow();
-            const cell = scatterTable.rows[scatterTable.rows.length - 1].insertCell();
+            // Create a wrapper for each chart
+            const chartWrapper = document.createElement('div');
+            chartWrapper.className = 'scatter-chart-wrapper';
+            
             const canvas = document.createElement('canvas');
             canvas.id = `chart${instanceNo}`;
-            cell.appendChild(canvas);
+            
+            chartWrapper.appendChild(canvas);
+            scatterContainer.appendChild(chartWrapper);
         }
 
-        // Append table and buttons to the container
-        const chartContainer = document.getElementById(containerId);
+        const chartContainer = containerElement; 
         if (largeInstanceNo > 1) {
             const divContainer = document.createElement('div');
             divContainer.id = 'chartButtons';
             chartContainer.appendChild(divContainer);
         }
-        chartContainer.appendChild(scatterTable);
+        chartContainer.appendChild(scatterContainer); // Add the new flex container
 
         instanceNo = startInstanceNo;
         for (const c in chemicalData) {
             let sampleNames = Object.keys(fitConcentration[c]);
-//console.log('sampleNames', sampleNames);
-//console.log(sheetName, c);
             const data = fitConcentration ? 
                 concentrationFitter(fitConcentration[c], fitPredictors[c], 'Chart Analysis') : 
-                { beta: 0, R_squared: 0 }; // Default values for charts without fitting
+                { beta: 0, R_squared: 0 };
 
             instanceNo += 1;
             displayScatterChart(
@@ -611,7 +760,7 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
             );
         }
     }
-    return instanceNo
+    return instanceNo;
 }
 
 function setBlanksForCharting() {
@@ -630,47 +779,47 @@ function setBlanksForCharting() {
 }
 
 function heatmapColor(value, alpha = 1) {
-  // Clamp value to [0, 1]
-  value = Math.max(0, Math.min(1, value));
+ // Clamp value to [0, 1]
+ value = Math.max(0, Math.min(1, value));
 
-  let r = 0, g = 0, b = 0;
+ let r = 0, g = 0, b = 0;
 
-  if (value <= 0.25) {
+ if (value <= 0.25) {
     // Blue to Cyan
     let t = value / 0.25;
     r = 0;
     g = Math.round(255 * t);
     b = 255;
-  } else if (value <= 0.5) {
+ } else if (value <= 0.5) {
     // Cyan to Green
     let t = (value - 0.25) / 0.25;
     r = 0;
     g = 255;
     b = Math.round(255 * (1 - t));
-  } else if (value <= 0.75) {
+ } else if (value <= 0.75) {
     // Green to Yellow
     let t = (value - 0.5) / 0.25;
     r = Math.round(255 * t);
     g = 255;
     b = 0;
-  } else {
+ } else {
     // Yellow to Red
     let t = (value - 0.75) / 0.25;
     r = 255;
     g = Math.round(255 * (1 - t));
     b = 0;
-  }
+ }
 
-  return `rgb(${r}, ${g}, ${b}, ${alpha})`;
+ return `rgb(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function heatColor(value, alpha = 1) {
-  // Clamp value to [0, 1]
-  value = Math.max(0, Math.min(1, value));
+ // Clamp value to [0, 1]
+ value = Math.max(0, Math.min(1, value));
 
-  let r, g, b;
+ let r, g, b;
 
-  if (value < 0.5) {
+ if (value < 0.5) {
     // Green to Orange
     // Green: (0, 255, 0)
     // Orange: (255, 165, 0)
@@ -678,7 +827,7 @@ function heatColor(value, alpha = 1) {
     r = Math.round(255 * t);
     g = Math.round(255 - (90 * t)); // from 255 to 165
     b = 0;
-  } else {
+ } else {
     // Orange to Red
     // Orange: (255, 165, 0)
     // Red: (255, 0, 0)
@@ -686,9 +835,9 @@ function heatColor(value, alpha = 1) {
     r = 255;
     g = Math.round(165 * (1 - t));
     b = 0;
-  }
+ }
 
-  return `rgb(${r}, ${g}, ${b}, ${alpha})`;
+ return `rgb(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // Function to interpolate between two colors based on the value
@@ -738,8 +887,12 @@ function displayCombinedScatterChart(meas, sheetName, instanceNo, unitTitle) {
     legends[instanceNo] = true;
     ylinlog[instanceNo] = false;
     stacked[instanceNo] = false;
-    createCanvas(instanceNo);
+//    createCanvas(instanceNo);  //Already done in displayCharts
     const convas = document.getElementById("chart" + instanceNo);
+    if (!convas) {
+        console.error(`Canvas with ID "chart${instanceNo}" not found for displayCombinedScatterChart.`);
+        return;
+    }
     convas.style.display = "block";
     instanceType[instanceNo] = 'combinedscatter';
     instanceSheet[instanceNo] = sheetName;
@@ -773,7 +926,7 @@ function displayCombinedScatterChart(meas, sheetName, instanceNo, unitTitle) {
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
     createExportButton(chartInstance[instanceNo], instanceNo);
-//    console.log(ddatasets);
+//  console.log(ddatasets);
 }
 
 function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo) {
@@ -790,32 +943,39 @@ function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, 
     const color2 = '#ff0000'; // End of gradient (green)
       allSamples = Object.keys(oneChemical);
       allConcs = Object.values(oneChemical);
-//console.log(allConcs);
+console.log(allConcs);
       minConc = Math.min(...allConcs);
       maxConc = Math.max(...allConcs);
 //console.log(minConc,maxConc);
 //console.log(oneChemical);
+console.log('llscatterData', scatterData);
 //      oneChemical = (oneChemical - minConc) / (maxConc - minConc);
-      scaledChemical = {};
+      scaledChemical = [];
+      let i = 0;
       for (s in oneChemical) {
-        scaledChemical[s] = (oneChemical[s] - minConc) / (maxConc - minConc);
-//console.log(oneChemical[s]);
+        scaledChemical[i] = (oneChemical[s] - minConc) / (maxConc - minConc);
+        i += 1;
       }
-//console.log(oneChemical);
+console.log('oneChemical',oneChemical);
+console.log('scaledChemical',scaledChemical);
+    const colorScale = chroma.scale(['green', 'yellow', 'red']).domain([minConc, maxConc]);
+    const pointBackgroundColors = allConcs.map(value => colorScale(value).hex());
+
+
     // Chart configuration
     const chartConfig = {
         type: 'scatter',
         data: {
                   datasets: [{
                     data: scatterData,
-                    backgroundColor:
-                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
-                    borderColor:
-                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
-                       pointStyle: 'cross',
-                       pointRadius: function(context) {
-                        return convas.width / 70
-                       }
+                    backgroundColor: pointBackgroundColors,
+//                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+                    borderColor: pointBackgroundColors,
+//                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+                        pointStyle: 'cross',
+                        pointRadius: function(context) {
+                         return convas.width / 70
+                        }
                     }]
         },
         options: {
@@ -833,7 +993,7 @@ function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, 
                         display: true,
                         text: 'Min: ' + minConc + ' Max: ' + maxConc
                         },
-                          legend: {
+                        legend: {
                     display: false, 
                     position: 'bottom', 
                     labels: {
@@ -844,10 +1004,47 @@ function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, 
                         }
                     }
                 },
-                    // Add a custom plugin for interactivity
-                    selectSample: {
-                        highlightedSample: null,
+
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            // Show the set name (dataset label) as the tooltip title
+                            if (tooltipItems.length > 0) {
+//                              return tooltipItems[0].dataset.label;
+                                return tooltipItems[0].dataset.label;
+                            }
+                            return '';
+                        },
+                        label: function(context) {
+                            const dataPoint = context.raw; // This contains {x, y, label: fullSampleName}
+                            let pointLabel = dataPoint.label || ''; // Full sample name
+                            if (pointLabel) {
+                                pointLabel = pointLabel.split(':').pop().trim(); // Show only part after colon
+                                pointLabel += ': ';
+                            }
+//console.log(dataPoint);
+                            // Add the x and y values to the label
+                            pointLabel += `(X: ${parseFloat(dataPoint.x).toFixed(2)}, Y: ${parseFloat(dataPoint.y).toFixed(2)})`;
+                            return pointLabel;
+                        }
                     },
+//                },
+
+                // Add a custom plugin for interactivity
+                selectSample: {
+                    highlightedSample: null,
+                },
+            },
+
+
+
+
+
+
+                        // Add a custom plugin for interactivity
+                        selectSample: {
+                            highlightedSample: null,
+                        },
                 },
                 scales: {
                     x: {
@@ -866,15 +1063,15 @@ function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, 
                     },
         }
     };
-//console.log(chartConfig);
+console.log(chartConfig);
     const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
     if (chartInstance[instanceNo]) {
         chartInstance[instanceNo].destroy();
     }
     chartInstance[instanceNo] = new Chart(ctx, chartConfig);
-//    createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
+//  createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
 //console.log(largeInstanceNo,oneChemical);
-/*    if (largeInstanceNo > 1) {
+/* if (largeInstanceNo > 1) {
         createToggleFocusChart(convas, chartInstance[instanceNo], instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
     }*/
     document.getElementById('chart' + instanceNo).addEventListener('click', () => displayScatterChartLL(scatterData, oneChemical, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1));
@@ -910,52 +1107,68 @@ function displayScatterChart(scatterData, oneChemical, sampleNames, sheetName, i
     instanceSheet[instanceNo] = sheetName;
     const color1 = '#00ff00'; // Start of gradient (red)
     const color2 = '#ff0000'; // End of gradient (green)
-      allSamples = Object.keys(oneChemical);
-      allConcs = Object.values(oneChemical);
+//    allSamples = Object.keys(oneChemical);
+//    allConcs = Object.values(oneChemical);
 //console.log(allSamples, allConcs);
 //console.log(allConcs);
-      minConc = Math.min(...allConcs);
-      maxConc = Math.max(...allConcs);
-//console.log(minConc,maxConc);
-//console.log(oneChemical);
-//      oneChemical = (oneChemical - minConc) / (maxConc - minConc);
-      scaledChemical = {};
-      for (s in oneChemical) {
-        scaledChemical[s] = (oneChemical[s] - minConc) / (maxConc - minConc);
-//console.log(oneChemical[s]);
-      }
-//console.log(oneChemical);
     // Chart configuration
 
-//        data: {
-//            datasets: finalChartDatasets
-//        },
-//console.log('scatterData', scatterData);
+//      data: {
+//          datasets: finalChartDatasets
+//      },
+console.log('scatterData', scatterData);
 scatterData[0].backgroundColor ='rgba(63, 50, 50, 0.72)'; // Set background color to transparent
 scatterData[0].backgroundColor.pointStyle = 'cross';
 //console.log('scatterData', scatterData);
+    let k = -1;
+    let sD = [];
+    let oC = [];
+    for (let i=0; i<scatterData.length; i++) {
+        for (let j=0; j<scatterData[i].data.length; j++) {
+            k += 1;
+            sD[k] = scatterData[i].data[j];
+            oC[k] = sD[k].y;
+        }
+    }
+    minConc = Math.min(...oC);
+    maxConc = Math.max(...oC);
+//console.log(minConc,maxConc);
+//console.log(oneChemical);
+    scaledChemical = [];
+    for (let i=0; i<oC.length; i++) {
+        scaledChemical[i] = (oC[i] - minConc) / (maxConc - minConc);
+//console.log(oneChemical[s]);
+    }
+    const colorScale = chroma.scale(['green', 'yellow', 'red']).domain([minConc, maxConc]);
+    const pointBackgroundColors = oC.map(value => colorScale(value).hex());
+//console.log('scaledChemical', scaledChemical);
+//console.log('sD',sD);
     const chartConfig = {
         type: 'scatter',
         data: {
-//                  datasets: Object.values(scatterData)/*[{
+//              datasets: Object.values(scatterData)/*[{
                   datasets: [{
-                    data: scatterData[0].data,
-                    label: 'fred',
-//                    backgroundColor:
-//                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
-//                       allSamples.map(sample => heatmapColor(scaledChemical[sample])),
-                    borderColor:
-                       allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
-//                       allSamples.map(sample => heatmapColor(scaledChemical[sample])),
-                       pointRadius: function(context) {
-                        return convas.width / 70
-                       },
-                       pointStyle: 'rect',
+                    data: sD,
+//                    data: scatterData[0].data,
+//                    label: 'fred',
+                    backgroundColor: pointBackgroundColors,
+//                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+//                        allSamples.map(sample => f(scaledChemical[sample])),
+//                        allSamples.map(sample => heatmapColor(scaledChemical[sample])),
+                    borderColor: pointBackgroundColors,
+//                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
+//                        allSamples.map(sample => f(scaledChemical[sample])),
+//                        allSamples.map(sample => heatmapColor(scaledChemical[sample])),
+                        pointRadius: function(context) {
+                         return convas.width / 70
+                        },
+                        pointStyle: 'rect',
                     }]
         },
         options: {
             plugins: {
                 repsonsive: true,
+                maintainAspectRatio: false,
                 colors: {
                     enabled: true,
                     forceOverride: false
@@ -989,7 +1202,7 @@ scatterData[0].backgroundColor.pointStyle = 'cross';
                         title: function(tooltipItems) {
                             // Show the set name (dataset label) as the tooltip title
                             if (tooltipItems.length > 0) {
-//                                return tooltipItems[0].dataset.label;
+//                              return tooltipItems[0].dataset.label;
                                 return tooltipItems[0].dataset.label;
                             }
                             return '';
@@ -1039,9 +1252,9 @@ scatterData[0].backgroundColor.pointStyle = 'cross';
     chartInstance[instanceNo] = new Chart(ctx, chartConfig);
 //console.log(chartConfig);
 
-//    createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
+//  createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
 //console.log(largeInstanceNo,oneChemical);
-/*    if (largeInstanceNo > 1) {
+/* if (largeInstanceNo > 1) {
         createToggleFocusChart(convas, chartInstance[instanceNo], instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
     }*/
     document.getElementById('chart' + instanceNo).addEventListener('click', () => displayScatterChart(scatterData, oneChemical, sampleNames, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1));
@@ -1067,7 +1280,7 @@ function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle
 //console.log(sizes, meas, sheetName, instanceNo, unitTitle, subTitle);
 //Bodge lost data for unitTitle
     if (unitTitle === undefined || unitTitle === null) {
-        unitTitle = 'Particle size distribution (% at 0.5 phi intervals)'; //bodge 
+        unitTitle = 'Particle size distribution (% at 0.5 phi intervals)'; //bodge	
     }
     legends[instanceNo] = false;
     ylinlog[instanceNo] = false;
@@ -1244,8 +1457,8 @@ function displaySampleChart(meas, sheetName, instanceNo, unitTitle) {
                 data: data,
                 borderWidth: 1,
                 yAxisID: 'y',
-//                backgroundColor: getRandomColor(),
-//                backgroundColor: pattern.draw('square',getRandomColor()),
+//              backgroundColor: getRandomColor(),
+//              backgroundColor: pattern.draw('square',getRandomColor()),
             };
         } else {
             return {
@@ -1357,8 +1570,8 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
 
     // Get the current sorting value.
     // This assumes xAxisSort is a global or accessible variable.
-//    const xAxisSort = document.getElementById('sorting-select').value;
-//    const selectedSortText = sortSelect.options[sortSelect.selectedIndex].text;
+//  const xAxisSort = document.getElementById('sorting-select').value;
+//  const selectedSortText = sortSelect.options[sortSelect.selectedIndex].text;
 
     stanGraph = {
         type: 'bar',
@@ -1386,7 +1599,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                         size: 12,
                         style: 'italic'
                     },
-/*                    padding: {
+/* padding: {
                         top: 10
                     }*/
                 },
@@ -1506,7 +1719,7 @@ function displayAnyChart(meas, all, datasets, instanceNo, title, yTitle, showLeg
                         console.log("Sample:", sample);
                         // Corrected call with only two arguments
                         createHighlights(meas, hoveredSample);
-//250808                        createHighlights(meas, dateSampled, all[i], null);
+//250808                      createHighlights(meas, dateSampled, all[i], null);
                     } else {
                         console.log("String format doesn't match the expected pattern.");
                     };
@@ -1550,8 +1763,10 @@ function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs
 //console.log("datasets ",datasets);
     names4Chemicals = allChemicals;
     if (sheetName === 'PCB data') {
+console.log('PCB data allChemicals',allChemicals);
         names4Chemicals = [];
         allChemicals.forEach(chemical => {names4Chemicals.push(ddLookup.reverseChemical[chemical])});
+console.log('PCB data names4Chemicals',names4Chemicals);
     }
     displayAnyChart(meas, names4Chemicals,datasets,instanceNo,sheetName,unitTitle,false);
     chartInstance[instanceNo].options.plugins.annotation.annotations = {};
@@ -1590,10 +1805,10 @@ if (dsiplayALs) {
             alMax = maxConc;
         }
         alX = allChemicals.length * 0.03;
-        chartLabel(instanceNo,alX,0.8*alMax,actionLevelColors[0],'Action Level 1                  ');
+        chartLabel(instanceNo,alX,0.8*alMax,actionLevelColors[0],'Action Level 1                        ');
         chartLine(instanceNo,'Legend - Action Level 1',alX*1.4,alX*2.5,0.8*alMax,0.8*alMax,actionLevelColors[0],actionLevelDashes[0]);
         if (al2) {
-            chartLabel(instanceNo,alX,0.9*alMax,actionLevelColors[1],'Action Level 2                  ');
+            chartLabel(instanceNo,alX,0.9*alMax,actionLevelColors[1],'Action Level 2                        ');
             chartLine(instanceNo,'Legend - Action Level 2',alX*1.4,alX*2.5,0.9*alMax,0.9*alMax,actionLevelColors[1],actionLevelDashes[1]);
 //console.log(sheetName,'here');
         }
@@ -1727,9 +1942,9 @@ function displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, in
     
     
     //samples.forEach(sample => console.log(sample));
-//    const lmwSumData = samples.map(sample => sums[sample].lmwSum);
+//  const lmwSumData = samples.map(sample => sums[sample].lmwSum);
     //console.log(lmwSumData);
-//    const hmwSumData = samples.map(sample => sums[sample].hmwSum);
+//  const hmwSumData = samples.map(sample => sums[sample].hmwSum);
     //console.log(hmwSumData);
     const samples = Object.keys(cumWeights);
     datasets = [
@@ -1763,8 +1978,8 @@ function displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, in
     console.log(datasets);
 
     displayAnySampleChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm and Concentration factor', 'Fraction', true);
-//    displayAnyChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm', unitTitle, true);
-//    displayAnyChart(sums, samples,datasets,instanceNo,sheetName + ': Total hydrocarbon & Total PAH',unitTitle,true);
+//  displayAnyChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm', unitTitle, true);
+//  displayAnyChart(sums, samples,datasets,instanceNo,sheetName + ': Total hydrocarbon & Total PAH',unitTitle,true);
     // Update the chart
     chartInstance[instanceNo].options.plugins.legend.display = true;
     legends[instanceNo] = true;
@@ -1788,7 +2003,7 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
         ERM: 9600
     };
 
-//    const samples = Object.keys(cumWeights);
+//  const samples = Object.keys(cumWeights);
     const samples = Object.keys(sums);
 //console.log(samples);
 //console.log(sums);
@@ -1832,13 +2047,13 @@ function displayGorhamTest(sums, sheetName, instanceNo, unitTitle) {
             gorMax = sums[sample].hmwSum;
         }
     }
-    chartLabel(instanceNo,gorX,0.75*gorMax,'rgba(0, 0, 255, 0.5)','LMW ERL                            ');
+    chartLabel(instanceNo,gorX,0.75*gorMax,'rgba(0, 0, 255, 0.5)','LMW ERL                               ');
     chartLine(instanceNo,'Legend - LMW.ERL',gorX*1.2,gorX*2.2,0.75*gorMax,0.75*gorMax,'rgba(0, 0, 255, 0.5)',actionLevelDashes[0]);
-    chartLabel(instanceNo,gorX,0.8*gorMax,'rgba(0, 0, 255, 0.5)','LMW ERM                           ');
+    chartLabel(instanceNo,gorX,0.8*gorMax,'rgba(0, 0, 255, 0.5)','LMW ERM                               ');
     chartLine(instanceNo,'Legend - LMW.ERM',gorX*1.2,gorX*2.2,0.8*gorMax,0.8*gorMax,'rgba(0, 0, 255, 0.5)',actionLevelDashes[1]);
-    chartLabel(instanceNo,gorX,0.9*gorMax,'rgba(255, 0, 0, 0.5)','HMW ERL                            ');
+    chartLabel(instanceNo,gorX,0.9*gorMax,'rgba(255, 0, 0, 0.5)','HMW ERL                               ');
     chartLine(instanceNo,'Legend - HMW.ERL',gorX*1.2,gorX*2.2,0.9*gorMax,0.9*gorMax,'rgba(255, 0, 0, 0.5)',actionLevelDashes[0]);
-    chartLabel(instanceNo,gorX,0.95*gorMax,'rgba(255, 0, 0, 0.5)','HMW ERM                           ');
+    chartLabel(instanceNo,gorX,0.95*gorMax,'rgba(255, 0, 0, 0.5)','HMW ERM                               ');
     chartLine(instanceNo,'Legend - HMW.ERM',gorX*1.2,gorX*2.2,0.95*gorMax,0.95*gorMax,'rgba(255, 0, 0, 0.5)',actionLevelDashes[1]);
   // Update the chart
   chartInstance[instanceNo].options.plugins.legend.display = true;
@@ -1980,11 +2195,11 @@ function displayCongener(sums, sheetName, instanceNo, unitTitle) {
             gorMax = sums[sample].All;
         }
     }
-    chartLabel(instanceNo,gorX,0.75*gorMax,'rgba(0, 0, 255, 0.5)','ICES7 Action Level 1                            ');
+    chartLabel(instanceNo,gorX,0.75*gorMax,'rgba(0, 0, 255, 0.5)','ICES7 Action Level 1                               ');
     chartLine(instanceNo,'Legend - ICES7 AL1',gorX*1.2,gorX*2.2,0.75*gorMax,0.75*gorMax,'rgba(0, 0, 255, 0.5)',actionLevelDashes[0]);
-    chartLabel(instanceNo,gorX,0.9*gorMax,'rgba(255, 0, 0, 0.5)','All Action Level 1                            ');
+    chartLabel(instanceNo,gorX,0.9*gorMax,'rgba(255, 0, 0, 0.5)','All Action Level 1                               ');
     chartLine(instanceNo,'Legend - All AL1',gorX*1.2,gorX*2.2,0.9*gorMax,0.9*gorMax,'rgba(255, 0, 0, 0.5)',actionLevelDashes[0]);
-    chartLabel(instanceNo,gorX,0.95*gorMax,'rgba(255, 0, 0, 0.5)','All Action Level 2                           ');
+    chartLabel(instanceNo,gorX,0.95*gorMax,'rgba(255, 0, 0, 0.5)','All Action Level 2                               ');
     chartLine(instanceNo,'Legend - All AL2',gorX*1.2,gorX*2.2,0.95*gorMax,0.95*gorMax,'rgba(255, 0, 0, 0.5)',actionLevelDashes[1]);
   // Update the chart
   chartInstance[instanceNo].update();
@@ -2054,7 +2269,7 @@ function displayTotalHC(sums, sheetName, instanceNo, unitTitle) {
         },
     ];
     displayAnySampleChart(sums, samples, datasets, instanceNo, sheetName + ': Total hydrocarbon & Total PAH', unitTitle, true);
-//    y1Title = 'Total PAH';
+//  y1Title = 'Total PAH';
     chartInstance[instanceNo].options.plugins.legend.display = true;
     legends[instanceNo] = true;
     // Update the chart
@@ -2119,21 +2334,21 @@ console.log('createHighlights',hoveredSample,dateSampled);
     noSamples = 0;
     samples = [];
     const datesSampled = Object.keys(selectedSampleInfo);
-//srg250308    datesSampled.sort();
+//srg250308   datesSampled.sort();
     datesSampled.forEach(dateSampled => {
         const ok = Object.keys(selectedSampleInfo[dateSampled].position);
         noSamples += ok.length;
         const allSamples = Object.keys(selectedSampleInfo[dateSampled].position);
-//srg250308        allSamples.sort();
+//srg250308       allSamples.sort();
         allSamples.forEach(sample => {
             samples.push(dateSampled + ': ' + sample);
         });
         //			}
     });
-    //This needs the new sorting logic  *************************************************************************
-//    if (!(xAxisSort === 'normal')) {
+    //This needs the new sorting logic *************************************************************************
+//  if (!(xAxisSort === 'normal')) {
         samples.sortComplexSamples();
-//    }
+//  }
 //console.log(samples, hoveredSample);
     if (!dateSampled) {
         clickedSamples = findSamplesInSameLocation(hoveredSample);
@@ -2149,7 +2364,7 @@ console.log('createHighlights',hoveredSample,dateSampled);
     let clickedIndexes = [];
 //console.log('samples', samples);
 //console.log('clickedSamples', clickedSamples);
-    //    console.log('meas[allChemicals[0]]', Object.keys(meas[allChemicals[0]]));
+    //  console.log('meas[allChemicals[0]]', Object.keys(meas[allChemicals[0]]));
     clickedSamples.forEach(clickedSample => {
         index = -1;
         samples.forEach(sample => {
@@ -2657,7 +2872,7 @@ try {
     for (let i = 0; i < dataMatrix.length; i++) {
         const sample = dataMatrix[i];
         if (sample.length !== numFeatures) { // Should have been caught by dataMatrix validation earlier
-            console.error(`Sample <span class="math-inline">\{i\} length \(</span>{sample.length}) does not match feature count (${numFeatures}). Skipping.`);
+            console.error(`Sample ${i} length (${sample.length}) does not match feature count (${numFeatures}). Skipping.`);
             projectedData.push([NaN, NaN]); // Or handle error more strictly
             continue;
         }
@@ -2699,13 +2914,13 @@ console.log("Projected data:", projectedData);
         label: sampleLabels[index] // sample identifier
     }));
 
-/*    // Destroy existing chart instance if it exists on the canvas
+/* // Destroy existing chart instance if it exists on the canvas
     const existingChart = Chart.getChart(canvas); // Use the canvas object directly
     if (existingChart) {
         existingChart.destroy();
     }
 */
-/*        const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
+/* const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
  
     new Chart(convas, {
         type: 'scatter',
@@ -2721,7 +2936,7 @@ console.log("Projected data:", projectedData);
         },
         options: {
             responsive: true,
-//            maintainAspectRatio: false, // Good for fitting in dynamic containers
+//          maintainAspectRatio: false, // Good for fitting in dynamic containers
             scales: {
                 x: {
                     title: {
@@ -2973,7 +3188,7 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
 
     // --- 5. Prepare Data for Chart.js with Color Coding by Set ---
     const setColors = {}; 
-//    const onePattern = pattern.draw('square', 'rgba(255, 99, 132, 0.7)');
+//  const onePattern = pattern.draw('square', 'rgba(255, 99, 132, 0.7)');
     const colorPalette = [
         'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(75, 192, 192, 0.7)',
         'rgba(255, 206, 86, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
@@ -2995,13 +3210,13 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
         }
         const pointColor = setColors[setName];
         // Create a slightly more opaque version for the border
-//        const borderColor = pointColor.replace(/rgba\((\d+,\s*\d+,\s*\d+),\s*[\d\.]+\)/, `rgba($1, 1)`);
+//      const borderColor = pointColor.replace(/rgba\((\d+,\s*\d+,\s*\d+),\s*[\d\.]+\)/, `rgba($1, 1)`);
           const borderColor = pointColor;
 //console.log(`Point color for set "${setName}":`, pointColor, "Border color:", borderColor);
 
         if (!datasetsBySet[setName]) {
             datasetsBySet[setName] = {
-//                label: setName, // This will be shown in the legend
+//              label: setName, // This will be shown in the legend
                 label: selectedSampleInfo[setName].label, // This will be shown in the legend
                 data: [],
                 backgroundColor: pointColor,
@@ -3064,7 +3279,7 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
                         title: function(tooltipItems) {
                             // Show the set name (dataset label) as the tooltip title
                             if (tooltipItems.length > 0) {
-//                                return tooltipItems[0].dataset.label;
+//                              return tooltipItems[0].dataset.label;
                                 return tooltipItems[0].dataset.label;
                             }
                             return '';

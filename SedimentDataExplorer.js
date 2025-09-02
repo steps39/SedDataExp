@@ -114,8 +114,39 @@
         subName = subChartNames[i];
         subsToDisplay[subName] = false;
     }
-    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'totalsolids', 'organicmatter', 'silt', 'siltsand', 'sand', 'gravel',
-        'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
+    const sortingOptions = [
+        'Unsorted', 'Date of Sampling', 'Latitude', 'Longitude', 'Total Area', 
+        'Total Solids', 'Organic Matter', 'Silt', 'Silt and Sand', 'Sand', 'Gravel',
+        'Total Hydrocarbon', 'Gorham LMW Sum', 'Gorham HMW Sum', 'ICES7 PCB Sum'
+    ];
+
+    const primarySortingOptions = ['None', 'Date of Sampling', 'Sample Name', 'Date & Sample Name'];
+    const secondarySortingOptions = [
+        'Latitude', 'Longitude', 'Total Area', 'Total Solids', 'Organic Matter', 
+        'Silt', 'Silt and Sand', 'Sand', 'Gravel', 'Total Hydrocarbon', 
+        'Gorham LMW Sum', 'Gorham HMW Sum', 'ICES7 PCB Sum', 'All PCBs Sum'
+    ];
+
+
+    const sortOptionDependencies = {
+        'totalsolids': 'Physical Data',
+        'organicmatter': 'Physical Data',
+        'silt': 'Physical Data',
+        'siltsand': 'Physical Data',
+        'sand': 'Physical Data',
+        'gravel': 'Physical Data',
+        'totalhydrocarbon': 'PAH data',
+        'gorhamlmwsum': 'PAH data',
+        'gorhamhmwsum': 'PAH data',
+        'ices7pcbsum': 'PCB data',
+        'allpcbssum': 'PCB data'
+        // Add any other dependencies here.
+        // Options like 'Latitude', 'Longitude', etc., don't need to be listed
+        // as they are always available.
+    };
+
+//    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'totalsolids', 'organicmatter', 'silt', 'siltsand', 'sand', 'gravel',
+//        'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
     lookOptions = ['colour', 'blackandwhite'];
     sortButtonGroups['area'] = [...sortingOptions.filter(option => option.includes('area')), ...subChartNames.filter(option => option.includes('area'))];
     sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7'))];/*,
@@ -126,6 +157,7 @@
     sortButtonGroups['Physical Data'] = [...sortingOptions.filter(option => option.includes('silt') || option.includes('sand') || option.includes('area') || option.includes('gravel')),
                 ...subChartNames.filter(option => option.includes('area') || option.includes('solid') || option.includes('organic'))];
 //                ...relationNames.filter(option => option.includes('area') || option.includes('solid'))];
+populateSortDropdowns();
     for (group in sortButtonGroups) {
 //console.log(group);
         disableRadioButtons(sortButtonGroups[group], false);
@@ -679,8 +711,8 @@ console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
             cleanSample = sample.replace(/\s+/g, '').toLowerCase();
             namedLocations[cleanSample] = {};
             namedLocations[cleanSample].label = sample;
-            namedLocations[cleanSample].latitude = df[r][1];
-            namedLocations[cleanSample].longitude = df[r][2];
+            namedLocations[cleanSample].latitude = parseFlost(df[r][1]);
+            namedLocations[cleanSample].longitude = parseFlost(df[r][2]);
 //console.log(sample,namedLocations[sample]);
         }
 //console.log('End of processExcelLocations');
