@@ -1555,7 +1555,7 @@ function displayAnySampleChart(meas, all, datasets, instanceNo, title, yTitle, s
         if (parts.length>2) {
             parts[1] = parts[1] + ': ' + parts[2];
         }
-//console.log(parts[0],parts[1]);
+console.log(parts[0],parts[1]);
         readableLabels[i] = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
     }
 //console.log(readableLabels,datasets);

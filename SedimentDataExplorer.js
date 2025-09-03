@@ -122,7 +122,8 @@
 
     const primarySortingOptions = ['None', 'Date of Sampling', 'Sample Name', 'Date & Sample Name'];
     const secondarySortingOptions = [
-        'Latitude', 'Longitude', 'Total Area', 'Total Solids', 'Organic Matter', 
+        'Latitude', 'Longitude', 'Min Depth', 'Max Depth', 'Mean Depth',
+        'Total Area', 'Total Solids', 'Organic Matter', 
         'Silt', 'Silt and Sand', 'Sand', 'Gravel', 'Total Hydrocarbon', 
         'Gorham LMW Sum', 'Gorham HMW Sum', 'ICES7 PCB Sum', 'All PCBs Sum'
     ];

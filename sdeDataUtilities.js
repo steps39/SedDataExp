@@ -53,6 +53,16 @@ function getSortValue(fullSampleName, sortKey) {
                 return (selectedSampleInfo[datePart]['label'] + selectedSampleInfo[datePart].position[samplePart]['label']).toLowerCase();
             
             // --- SECONDARY SORT KEYS (Numbers) ---
+            case 'mindepth':
+                value = selectedSampleInfo[datePart]?.position[samplePart]?.['Sampling depth (m)'].minDepth;
+                return value ? parseFloat(value) : 0;
+            case 'maxdepth':
+                value = selectedSampleInfo[datePart]?.position[samplePart]?.['Sampling depth (m)'].maxDepth;
+                return value ? parseFloat(value) : 0;
+            case 'meandepth':
+                value = (selectedSampleInfo[datePart]?.position[samplePart]?.['Sampling depth (m)'].maxDepth
+                    +selectedSampleInfo[datePart]?.position[samplePart]?.['Sampling depth (m)'].minDepth)/2;
+                return value ? parseFloat(value) : 0;
             case 'latitude':
                 value = selectedSampleInfo[datePart]?.position[samplePart]?.['Position latitude'];
                 return value ? parseFloat(value) : 0;
