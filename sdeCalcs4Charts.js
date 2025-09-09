@@ -521,7 +521,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
     //    if (chartType === "totalHC") {
     //        return { unitTitle, scatterData, chemicalData };
     //    } else {
-console.log('scatterData', scatterData);
+//console.log('scatterData', scatterData);
     return { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors };
     //    }
 }

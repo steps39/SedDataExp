@@ -78,7 +78,7 @@ function updateOptions() {
         xAxisSort = primarySort;
     }
 
-console.log('xAxisSort', xAxisSort);
+//console.log('xAxisSort', xAxisSort);
 
     for (let i = 0; i < dataSheetNames.length; i++) {
         const sheetName = dataSheetNames[i];
@@ -121,7 +121,7 @@ function updateChart(){
     setBlanksForCharting();
 //console.log(sheetsToDisplay);
     for (const sheetName in sheetsToDisplay) {
-console.log(sheetName, sheetsToDisplay[sheetName], chemicalTypeHasData(sheetName));
+//console.log(sheetName, sheetsToDisplay[sheetName], chemicalTypeHasData(sheetName));
         if (sheetsToDisplay[sheetName] && chemicalTypeHasData(sheetName)) {
             lastInstanceNo = displayCharts(sheetName, lastInstanceNo);
         }
@@ -461,7 +461,7 @@ function displayCharts(sheetName, instanceNo) {
             }
         }
         largeInstanceNo = -1;
-console.log('instanceNo before LL', instanceNo);
+//console.log('instanceNo before LL', instanceNo);
         if (subsToDisplay['positionplace']) {
 /*            retData = dataForScatterCharting(sheetName);
             scatterData = retData['scatterData'];
@@ -584,15 +584,15 @@ for (const c in chemicalData) {
         }
 
 //        instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'latitudelongitude', 'Latitude', 'Longitude', targetContainer, instanceNo);
-console.log('instanceNo after scatter', instanceNo);
+//console.log('instanceNo after scatter', instanceNo);
         instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'relationareadensity', 'Total Area', 'Concentration', targetContainer, instanceNo);
-console.log('instanceNo after totalArea', instanceNo);
+//console.log('instanceNo after totalArea', instanceNo);
         instanceNo = displayScatterCharts(sheetName, { key: 'totalHC', sheetKey: 'PAH data' }, 'relationhc', 'Total Hydrocarbon', 'Concentration', targetContainer, instanceNo);
-console.log('instanceNo after totalHC', instanceNo);        
+//console.log('instanceNo after totalHC', instanceNo);        
         instanceNo = displayScatterCharts(sheetName, { key: 'totalSolids', sheetKey: 'Physical Data' }, 'relationtotalsolids', 'Total Solids %', 'Concentration', targetContainer, instanceNo);
-console.log('instanceNo after totalSolids', instanceNo);        
+//console.log('instanceNo after totalSolids', instanceNo);        
         instanceNo = displayScatterCharts(sheetName, { key: 'organicCarbon', sheetKey: 'Physical Data' }, 'relationorganiccarbon', 'Organic Carbon %', 'Concentration', targetContainer, instanceNo);
-console.log('instanceNo after organicCarbon', instanceNo);
+//console.log('instanceNo after organicCarbon', instanceNo);
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
             const properties = Object.keys(chemInfo[chemicalNames[0]]);
@@ -943,12 +943,12 @@ function displayScatterChartLL(scatterData, oneChemical, sheetName, instanceNo, 
     const color2 = '#ff0000'; // End of gradient (green)
       allSamples = Object.keys(oneChemical);
       allConcs = Object.values(oneChemical);
-console.log(allConcs);
+//console.log(allConcs);
       minConc = Math.min(...allConcs);
       maxConc = Math.max(...allConcs);
 //console.log(minConc,maxConc);
 //console.log(oneChemical);
-console.log('llscatterData', scatterData);
+//console.log('llscatterData', scatterData);
 //      oneChemical = (oneChemical - minConc) / (maxConc - minConc);
       scaledChemical = [];
       let i = 0;
@@ -956,9 +956,11 @@ console.log('llscatterData', scatterData);
         scaledChemical[i] = (oneChemical[s] - minConc) / (maxConc - minConc);
         i += 1;
       }
-console.log('oneChemical',oneChemical);
-console.log('scaledChemical',scaledChemical);
-    const colorScale = chroma.scale(['green', 'yellow', 'red']).domain([minConc, maxConc]);
+//console.log('oneChemical',oneChemical);
+//console.log('scaledChemical',scaledChemical);
+    colorScale = chroma.scale(['#007bff', '#ffc107', '#dc3545']).domain([minConc, maxConc]);
+    colorSacle = colorScale.mode('lrgb');
+//    const colorScale = chroma.scale(['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet']).domain([minConc, maxConc]);
     const pointBackgroundColors = allConcs.map(value => colorScale(value).hex());
 
 
@@ -972,7 +974,8 @@ console.log('scaledChemical',scaledChemical);
 //                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
                     borderColor: pointBackgroundColors,
 //                        allSamples.map(sample => colorGradient(scaledChemical[sample], color1, color2)),
-                        pointStyle: 'cross',
+//                        pointStyle: 'cross',
+                        pointStyle: 'rect',
                         pointRadius: function(context) {
                          return convas.width / 70
                         }
@@ -1035,35 +1038,29 @@ console.log('scaledChemical',scaledChemical);
                     highlightedSample: null,
                 },
             },
-
-
-
-
-
-
-                        // Add a custom plugin for interactivity
-                        selectSample: {
-                            highlightedSample: null,
-                        },
-                },
-                scales: {
-                    x: {
-                        position: 'bottom',
-                        title: {
-                            display: true,
-                            text: xAxisTitle
-                            }
+                    // Add a custom plugin for interactivity
+                    selectSample: {
+                        highlightedSample: null,
                     },
-                    y: {
-                        title: {
-                            display: true,
-                            text: yAxisTitle
-                            }
+            },
+            scales: {
+                x: {
+                    position: 'bottom',
+                    title: {
+                        display: true,
+                        text: xAxisTitle
                         }
-                    },
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: yAxisTitle
+                        }
+                    }
+                },
         }
     };
-console.log(chartConfig);
+//console.log(chartConfig);
     const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
     if (chartInstance[instanceNo]) {
         chartInstance[instanceNo].destroy();
@@ -1116,7 +1113,7 @@ function displayScatterChart(scatterData, oneChemical, sampleNames, sheetName, i
 //      data: {
 //          datasets: finalChartDatasets
 //      },
-console.log('scatterData', scatterData);
+//console.log('scatterData', scatterData);
 scatterData[0].backgroundColor ='rgba(63, 50, 50, 0.72)'; // Set background color to transparent
 scatterData[0].backgroundColor.pointStyle = 'cross';
 //console.log('scatterData', scatterData);
@@ -1512,7 +1509,7 @@ function createRadarPlot(meas, sheetName) {
             data[sample] = allChemicals.map(chemical => meas[chemical][sample]); // Using the first concentration value for simplicity
         });
         
-    console.log("datasets ",datasets);
+//console.log("datasets ",datasets);
     
     const chartsForMapContainer = document.getElementById('chartsForMapContainer');
     for (sample in data) {
@@ -1555,7 +1552,7 @@ function displayAnySampleChart(meas, all, datasets, instanceNo, title, yTitle, s
         if (parts.length>2) {
             parts[1] = parts[1] + ': ' + parts[2];
         }
-console.log(parts[0],parts[1]);
+//console.log(parts[0],parts[1]);
         readableLabels[i] = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
     }
 //console.log(readableLabels,datasets);
@@ -1763,10 +1760,10 @@ function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs
 //console.log("datasets ",datasets);
     names4Chemicals = allChemicals;
     if (sheetName === 'PCB data') {
-console.log('PCB data allChemicals',allChemicals);
+//console.log('PCB data allChemicals',allChemicals);
         names4Chemicals = [];
         allChemicals.forEach(chemical => {names4Chemicals.push(ddLookup.reverseChemical[chemical])});
-console.log('PCB data names4Chemicals',names4Chemicals);
+//console.log('PCB data names4Chemicals',names4Chemicals);
     }
     displayAnyChart(meas, names4Chemicals,datasets,instanceNo,sheetName,unitTitle,false);
     chartInstance[instanceNo].options.plugins.annotation.annotations = {};
@@ -3129,7 +3126,7 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
             }
         }
     }
-    console.log('DataMatrix after scaling (first sample):', dataMatrix.length > 0 ? JSON.stringify(dataMatrix[0]) : 'empty');
+//console.log('DataMatrix after scaling (first sample):', dataMatrix.length > 0 ? JSON.stringify(dataMatrix[0]) : 'empty');
 
     let vectors;
     let projectedData;
@@ -3240,7 +3237,7 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
     });
 //console.log("Datasets by set prepared for chart:", datasetsBySet);
     const finalChartDatasets = Object.values(datasetsBySet);
-    console.log("Final datasets for chart:", finalChartDatasets);
+//console.log("Final datasets for chart:", finalChartDatasets);
 
     // Destroy existing chart instance if it exists on the canvas
     // This is important if the function can be called multiple times for the same canvas

@@ -724,3 +724,110 @@ function disableRadioButtons(radioButtonsToChange, state) {
         }
     });
 }
+
+function parseCoordinate(input) {
+    if (input == undefined || input == null) {
+        return null;
+    }
+    const digitalFormatRegex = /^[-+]?\d+(\.\d+)?$/;
+    if (digitalFormatRegex.test(input)) {
+        return parseFloat(input);
+    }
+    const dmsRegex = /^(\d+)\s+(\d+)\s+([\d.]+)\s*([NSEW])$/i;
+    const dmsMatch = input.match(dmsRegex);
+    if (dmsMatch) {
+        const degrees = parseFloat(dmsMatch[1]);
+        const minutes = parseFloat(dmsMatch[2]);
+        const seconds = parseFloat(dmsMatch[3]);
+        const direction = dmsMatch[4].toUpperCase();
+        let result = degrees + minutes / 60 + seconds / 3600;
+        if (direction === 'S' || direction === 'W') {
+            result = -result;
+        }
+        return result;
+    }
+    const dmRegex = /^(\d+)[\s\:]+([\d.]+)\s*([NSEW])$/i;
+    const dmMatch = input.match(dmRegex);
+    if (dmMatch) {
+        const degrees = parseFloat(dmMatch[1]);
+        const minutes = parseFloat(dmMatch[2]);
+        const direction = dmMatch[3].toUpperCase();
+        let result = degrees + minutes / 60;
+        if (direction === 'S' || direction === 'W') {
+            result = -result;
+        }
+        return result;
+    }
+    return null;
+}
+
+function parseCoordinates(latitude, longitude) {
+//console.log(latitude,longitude);
+// Detect Easting/Northing in "E181866.536,N32697.506" format
+//    const enRegex = /^E\s*([0-9.]+)\s*,?\s*N\s*([0-9.]+)$/i;
+    const enMatchLat = typeof latitude === "string" ? latitude.match(/^N\s*([0-9.]+)/i) : null;
+    const enMatchLon = typeof longitude === "string" ? longitude.match(/^E\s*([0-9.]+)/i) : null;
+
+    if (enMatchLat && enMatchLon) {
+        const easting = parseFloat(longitude.replace(/^[Ee]/, '').replace(',', ''));
+        const northing = parseFloat(latitude.replace(/^[Nn]/, '').replace(',', ''));
+
+        // Define EPSG:27700 if not already defined
+        if (!proj4.defs["EPSG:27700"]) {
+            proj4.defs("EPSG:27700",
+                "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 " +
+                "+x_0=400000 +y_0=-100000 +ellps=airy " +
+                "+towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 " +
+                "+units=m +no_defs"
+            );
+        }
+
+        const [lon, lat] = proj4("EPSG:27700", "EPSG:4326", [easting, northing]);
+        return { latitude: lat, longitude: lon };
+    }
+
+
+    if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
+        const en = os.Transform.fromGridRef(latitude);
+        if (en.ea === undefined || en.ea === null) {
+            console.log('Looks like this is an invalid grid reference ', latitude);
+            return null;
+        }
+        const latlong = os.Transform.toLatLng(en);
+        if (latlong === undefined || latlong == null) {
+            return null;
+        }
+        return { latitude: latlong.lat, longitude: latlong.lng };
+    }
+    if ((latitude == undefined || latitude == null) && (longitude == undefined || longitude == null)) {
+        return null;
+    }
+//console.log(latitude,longitude);
+    if (latitude > 360) {
+        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
+        const point = proj4("EPSG:27700", "EPSG:4326", [parseFloat(latitude), parseFloat(longitude)]);
+        return { latitude: point[1], longitude: point[0] };
+    }
+    const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
+    const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
+    if (digitalDegreesMatch) {
+        const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
+        const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
+        return { latitude: latValue, longitude: lonValue };
+    }
+    const digitalMinutesRegex = /^(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*$/i;
+    const digitalMinutesMatch = `${latitude} ${longitude}`.match(digitalMinutesRegex);
+    if (digitalMinutesMatch) {
+        const latValue = (parseInt(digitalMinutesMatch[1]) + parseFloat(digitalMinutesMatch[2])/60) * (digitalMinutesMatch[3].toUpperCase() === 'S' ? -1 : 1);
+        const lonValue = (parseInt(digitalMinutesMatch[4]) + parseFloat(digitalMinutesMatch[5])/60) * (digitalMinutesMatch[6].toUpperCase() === 'W' ? -1 : 1);
+        return { latitude: latValue, longitude: lonValue };
+    }
+    if (latitude > 360) {
+        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
+        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
+        return { latitude: point[1], longitude: point[0] };
+    } else {
+        return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
+    }
+    return null;
+}

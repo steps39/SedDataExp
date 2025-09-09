@@ -476,7 +476,7 @@ function postLoadSnapShot() {
 
     function importChemInfo() {
         urls = {};
-console.log('importChemInfo');
+//console.log('importChemInfo');
         if (firstTime) {
             firstTime = false;
             files = {};
@@ -559,8 +559,6 @@ console.log('importChemInfo');
         }
 //console.log('End of processChemInfo');
     }
-
-
 
     function importLocations() {
         urls = {};
@@ -757,9 +755,6 @@ function toggleSidebar() {
     toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
 }
 
-
-
-
 function importData() {
     var urls = {};
     if (firstTime) {
@@ -802,9 +797,9 @@ function importData() {
 //            const everything = document.getElementById('controls-sidebar');
 //            everything.style.display = 'inline';
         }
-console.log(suppliedParams);
+//console.log(suppliedParams);
         const durlParam = suppliedParams.get('durl');
-console.log(durlParam);
+//console.log(durlParam);
         if (durlParam) {
 /*            var urlInputDD = document.getElementById('urlInputDD');
             urlInputDD.value = durlParam;
@@ -1028,7 +1023,7 @@ function processExcelData(data, url, fileNumber) {
                         measurementUnit = df[r][c + 3];
                     }
                     //}
-console.log('unit ',measurementUnit);
+//console.log('unit ',measurementUnit);
                     if (!(sheetName === 'Physical Data')) {
                         if (!(sheetName === 'PCB data')) {
                             startRow = r + 2;
@@ -1137,8 +1132,8 @@ fred = df;
                         if ('total' in meas) {
 
                         allSamples = Object.keys(meas.total);
-console.log('allSamples ',allSamples,sheetName,dateSampled);
-console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
+//console.log('allSamples ',allSamples,sheetName,dateSampled);
+//console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
 //fred = sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]];
 //                        if (!sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)']) {
 //                        if (sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)'] === undefined) {
@@ -1150,7 +1145,7 @@ row = startRow - 2;
 console.log('col ',col,' row ',row, df[row][col]);
 if(!(df[row][col] === undefined)) {
                             if (df[row][col].includes('Total Solids (%)')) {
-console.log('Total Solids found column found');
+//console.log('Total Solids found column found');
 let ts = {};
 let missingTotalSolids = true;
                                         for (let row = startRow; row < df.length; row++) {
@@ -1483,9 +1478,9 @@ let missingTotalSolids = true;
 //                });
         sheetName = 'Application info';
         sheetData = workbook.Sheets[sheetName];
-console.log('fileNumber',fileNumber);
+//console.log('fileNumber',fileNumber);
         dateSampled = extractApplicationDataFromSheet(sheetName, sheetData, url, fileNumber);
-console.log('dateSampled',dateSampled);
+//console.log('dateSampled',dateSampled);
 
         sheetName = 'Physical Data';
         sheetData = workbook.Sheets[sheetName];
@@ -1930,3 +1925,24 @@ function toggleFileDisplay() {
         fileDisplayDiv.style.display = 'block';
     }
 }
+
+    function toggleMapPosition() {
+        const fixMapCheckbox = document.getElementById('fixMap');
+        const outputArea = document.querySelector('.output-area');
+        const mapContainer = document.getElementById('everything-maps');
+        const chartsAndTablesContainer = document.getElementById('charts-and-tables-container');
+
+        if (fixMapCheckbox.checked) {
+            outputArea.style.overflowY = 'auto';
+            mapContainer.classList.add('fixed-map-container');
+            if (chartsAndTablesContainer) {
+                chartsAndTablesContainer.classList.add('scrollable-charts-container');
+            }
+        } else {
+            outputArea.style.overflowY = 'hidden';
+            mapContainer.classList.remove('fixed-map-container');
+            if (chartsAndTablesContainer) {
+                chartsAndTablesContainer.classList.remove('scrollable-charts-container');
+            }
+        }
+    }
