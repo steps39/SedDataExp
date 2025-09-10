@@ -386,53 +386,6 @@ console.log("Processing contaminant marker data for", chemicalName, "sample", fu
                 }//);
             });
 
-
-/*    // Build contaminant markers, while filling stats
-    contaminantStats = computeContaminationStats(selectedSampleMeasurements, selectedSampleInfo);
-    Object.keys(selectedSampleMeasurements).forEach(datasetName => {
-        const dataset = selectedSampleMeasurements[datasetName];
-        Object.keys(dataset).forEach(sheetName => {
-            if (sheetName === "Physical Data") return; // exclude
-            const sheet = dataset[sheetName];
-            if (!sheet?.chemicals) return;
-            Object.keys(sheet.chemicals).forEach(chemicalName => {
-                const chemical = sheet.chemicals[chemicalName];
-                if (!contaminantLayerItems[chemicalName]) contaminantLayerItems[chemicalName] = [];
-                const unit = chemical.unit ?? (contaminantStats[chemicalName]?.unit ?? "");
-                Object.keys(chemical.samples || {}).forEach(sampleName => {
-                    const value = chemical.samples[sampleName];
-                    if (value == null || isNaN(value)) return;
-                    // Position
-                    const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
-                    if (!sampleInfo) return;
-                    const lat = parseFloat(sampleInfo["Position latitude"]);
-                    const lon = parseFloat(sampleInfo["Position longitude"]);
-                    if (isNaN(lat) || isNaN(lon)) return;
-                    // Depth for radius (per contaminant)
-                    let depth = null;
-                    const dObj = sampleInfo['Sampling depth (m)'];
-                    if (dObj && dObj.maxDepth != null && !isNaN(dObj.maxDepth)) depth = dObj.maxDepth;
-                    // Tooltip with unit + optional depth line
-                    const unitSuffix = unit ? ` ${unit}` : "";
-                    const tooltipHtml = `${sampleName}<br>${chemicalName}: ${value}${unitSuffix}${(depth != null && !isNaN(depth)) ? `<br>Depth: ${depth} m` : ""}`;
-                    // Create marker with placeholders; styling applied when layer added
-                    const m = L.circleMarker([lat, lon], {
-                        radius: 6,
-                        fillColor: "#999",
-                        color: "#000",
-                        weight: 1,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                    }).bindTooltip(tooltipHtml);
-                    // Store attributes for styling later
-                    m.options._chemValue = value;
-                    m.options._chemUnit = unit || "";
-                    m.options._depth = depth;
-                    contaminantLayerItems[chemicalName].push(m);
-                });
-            });
-        });
-    });*/
 console.log(contaminantLayerItems);
     // Build LayerGroups for contaminants
     Object.keys(contaminantLayerItems).forEach(chem => {
@@ -445,6 +398,25 @@ console.log(contaminantLayerItems);
 
 // 1. Fix the opacity issue in createContaminantHeatmaps
 function createContaminantHeatmaps() {
+        var cfg = {
+          // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+          "radius": 2,
+          "maxOpacity": .8,
+          // scales the radius based on map zoom
+          "scaleRadius": true,
+          // if set to false the heatmap uses the global maximum for colorization
+          // if activated: uses the data maximum within the current map boundaries
+          //   (there will always be a red spot with useLocalExtremas true)
+          "useLocalExtrema": true,
+          // which field name in your data represents the latitude - default "lat"
+          latField: 'lat',
+          // which field name in your data represents the longitude - default "lng"
+          lngField: 'lng',
+          // which field name in your data represents the data value - default "value"
+          valueField: 'value'
+        };
+
+
     Object.keys(contaminantLayerItems).forEach(chemicalName => {
         const items = contaminantLayerItems[chemicalName];
         if (!items || items.length === 0) return;
@@ -466,7 +438,7 @@ function createContaminantHeatmaps() {
         });
         
         // Create heatmap layer using overlapping circles
-        const heatmapLayer = L.layerGroup();
+//        const heatmapLayer = L.layerGroup();
         
         heatmapData.forEach(point => {
             if (isNaN(point.lat) || isNaN(point.lng)) return;
@@ -478,9 +450,11 @@ function createContaminantHeatmaps() {
                 let baseRadius;
                 if (point.depth != null && !isNaN(point.depth)) {
                     const depthRadius = getLogDepthRadius3Levels(point.depth, stats.depthMin, stats.depthMax);
-                    baseRadius = 20 + (depthRadius - 6) * 5;
+//                    baseRadius = 40 + (depthRadius - 6) * 5;
+                    baseRadius = 100 + (depthRadius - 6) * 5;
                 } else {
-                    baseRadius = 50;
+//                    baseRadius = 20;
+                    baseRadius = 100;
                 }
                 
                 const layerScale = 0.3 + (i - 1) * 0.35;
@@ -501,209 +475,14 @@ function createContaminantHeatmaps() {
                 }).addTo(heatmapLayer);
             }
         });
+/*console.log("Creating heatmap for", chemicalName, "with", heatmapData.length, "points", heatmapData);
+console.log({max: stats.valueMax, data: heatmapData});
+        let heatmapLayer = new HeatmapOverlay(cfg);
+        heatmapLayer.setData({max: stats.valueMax, data: heatmapData});*/
         
         contaminantHeatmaps[chemicalName] = heatmapLayer;
     });
 }
-
-
-    /*function createContaminantHeatmaps() {
-    Object.keys(contaminantLayerItems).forEach(chemicalName => {
-        const items = contaminantLayerItems[chemicalName];
-        if (!items || items.length === 0) return;
-        
-        const stats = contaminantStats[chemicalName];
-        if (!stats) return;
-        
-        console.log(`Creating heatmap for ${chemicalName}`);
-        console.log(`Total markers for ${chemicalName}:`, items.length);
-        
-        // Create heatmap data and log what we're getting
-        const heatmapData = items.map(marker => {
-            const data = {
-                lat: marker.getLatLng().lat,
-                lng: marker.getLatLng().lng,
-                value: marker.options._chemValue,
-                depth: marker.options._depth
-            };
-            return data;
-        });
-        
-        // Log the data before sorting
-        console.log(`Heatmap data before sorting for ${chemicalName}:`, heatmapData);
-        console.log(`Data with null/undefined depth:`, heatmapData.filter(d => d.depth == null));
-        console.log(`Data with valid depth:`, heatmapData.filter(d => d.depth != null));
-        
-        // Sort by depth, but handle null/undefined values
-        const sortedData = heatmapData.sort((a, b) => {
-            // Handle null/undefined depths - put them at the end
-            if (a.depth == null && b.depth == null) return 0;
-            if (a.depth == null) return 1;  // a goes after b
-            if (b.depth == null) return -1; // b goes after a
-            return b.depth - a.depth; // Normal sort (deepest first)
-        });
-        
-        console.log(`Sorted heatmap data for ${chemicalName}:`, sortedData);
-        
-        // Create heatmap layer using overlapping circles
-        const heatmapLayer = L.layerGroup();
-        let circlesCreated = 0;
-        
-        sortedData.forEach((point, index) => {
-            console.log(`Processing point ${index} for ${chemicalName}:`, point);
-            
-            const normalizedLevel = Math.min((point.value - stats.valueMin) / (stats.valueMax - stats.valueMin || 1), 1);
-            console.log(`Normalized level for point ${index}:`, normalizedLevel);
-            
-            // Skip points with invalid coordinates
-            if (isNaN(point.lat) || isNaN(point.lng)) {
-                console.log(`Skipping point ${index} - invalid coordinates`);
-                return;
-            }
-            
-            // Create multiple overlapping circles for smooth heat effect
-            for (let i = 3; i >= 1; i--) {
-                // Start with a smaller base radius (in meters, not pixels)
-                let baseRadius;
-                if (point.depth != null && !isNaN(point.depth)) {
-                    // Use depth to scale radius, but keep it reasonable (10-50m range)
-                    const depthRadius = getLogDepthRadius3Levels(point.depth, stats.depthMin, stats.depthMax);
-                    baseRadius = 20 + (depthRadius - 6) * 5; // Scale 6-18 pixel range to 20-80m radius
-                } else {
-                    baseRadius = 50; // Default 50m radius for points without depth
-                }
-                
-                // Layer-specific scaling (outermost layer is largest)
-                const layerScale = 0.3 + (i - 1) * 0.35; // 0.3, 0.65, 1.0 for layers 1,2,3
-                
-                // Value-based scaling (higher values get larger circles)
-                const valueScale = 0.5 + normalizedLevel * 1.0; // 0.5 to 1.5 scale
-                
-                const radius = baseRadius * layerScale * valueScale;
-                
-                // Opacity decreases for outer layers and increases with value
-                const opacity = (0.15 / i) * (0.2 + normalizedLevel * 0.6);
-                
-                const color = getHeatmapColor(normalizedLevel);
-                
-                const circle = L.circle([point.lat, point.lng], {
-                    radius: radius,
-                    fillColor: color,
-                    color: 'transparent',
-                    fillOpacity: opacity,
-                    weight: 0
-                });
-                
-                circle.addTo(heatmapLayer);
-                circlesCreated++;
-                
-                if (index < 3) { // Log details for first few points
-                    console.log(`Circle ${i} for point ${index}: radius=${radius.toFixed(1)}m, opacity=${opacity.toFixed(3)}, color=${color}`);
-                }
-            }
-        });
-        
-        console.log(`Total circles created for ${chemicalName}: ${circlesCreated}`);
-        contaminantHeatmaps[chemicalName] = heatmapLayer;
-    });
-}*/
-
-/*    function createContaminantHeatmaps() {
-    Object.keys(contaminantLayerItems).forEach(chemicalName => {
-        const items = contaminantLayerItems[chemicalName];
-        if (!items || items.length === 0) return;
-        
-        const stats = contaminantStats[chemicalName];
-        if (!stats) return;
-        
-        // Create heatmap data sorted by value for proper layering
-        const heatmapData = items.map(marker => ({
-            lat: marker.getLatLng().lat,
-            lng: marker.getLatLng().lng,
-            value: marker.options._chemValue,
-            depth: marker.options._depth
-        })).sort((a, b) => b.depth - a.depth); // Sort by depth (deepest first)
-        
-        // Create heatmap layer using overlapping circles
-        const heatmapLayer = L.layerGroup();
-        
-        heatmapData.forEach(point => {
-            const normalizedLevel = Math.min((point.value - stats.valueMin) / (stats.valueMax - stats.valueMin || 1), 1);
-            
-            // Create multiple overlapping circles for smooth heat effect
-            // Use much smaller base radius and scaling
-            for (let i = 3; i >= 1; i--) {
-                // Start with a smaller base radius (in meters, not pixels)
-                let baseRadius;
-                if (point.depth) {
-                    // Use depth to scale radius, but keep it reasonable (10-50m range)
-                    const depthRadius = getLogDepthRadius3Levels(point.depth, stats.depthMin, stats.depthMax);
-                    baseRadius = 20 + (depthRadius - 6) * 5; // Scale 6-18 pixel range to 20-80m radius
-                } else {
-                    baseRadius = 50; // Default 50m radius
-                }
-                
-                // Layer-specific scaling (outermost layer is largest)
-                const layerScale = 0.3 + (i - 1) * 0.35; // 0.3, 0.65, 1.0 for layers 1,2,3
-                
-                // Value-based scaling (higher values get larger circles)
-                const valueScale = 0.5 + normalizedLevel * 1.0; // 0.5 to 1.5 scale
-                
-                const radius = baseRadius * layerScale * valueScale;
-                
-                // Opacity decreases for outer layers and increases with value
-                const opacity = (0.15 / i) * (0.2 + normalizedLevel * 0.6);
-                
-                const color = getHeatmapColor(normalizedLevel);
-                
-                L.circle([point.lat, point.lng], {
-                    radius: radius,
-                    fillColor: color,
-                    color: 'transparent',
-                    fillOpacity: opacity,
-                    weight: 0
-                }).addTo(heatmapLayer);
-            }
-        });
-        
-        contaminantHeatmaps[chemicalName] = heatmapLayer;
-    });
-}*/
-/*    function createContaminantHeatmaps() {
-        Object.keys(contaminantLayerItems).forEach(chemicalName => {
-            const items = contaminantLayerItems[chemicalName];
-            if (!items || items.length === 0) return;
-            const stats = contaminantStats[chemicalName];
-            if (!stats) return;
-            // Create heatmap data sorted by value for proper layering
-            const heatmapData = items.map(marker => ({
-                lat: marker.getLatLng().lat,
-                lng: marker.getLatLng().lng,
-                value: marker.options._chemValue,
-                depth: marker.options._depth
-            })).sort((a, b) => b.depth - a.depth); // Sort by depth (deepest first)
-            // Create heatmap layer using overlapping circles
-            const heatmapLayer = L.layerGroup();
-            heatmapData.forEach(point => {
-                const normalizedLevel = Math.min((point.value - stats.valueMin) / (stats.valueMax - stats.valueMin || 1), 1);
-                // Create multiple overlapping circles for smooth heat effect
-                for (let i = 3; i >= 1; i--) {
-                    const baseRadius = point.depth ? getLogDepthRadius3Levels(point.depth, stats.depthMin, stats.depthMax) * 1 : 20;
-                    const radius = baseRadius * i * (0.5 + normalizedLevel * 1.2);
-                    const opacity = (0.4 / i) * (0.3 + normalizedLevel * 0.7);
-                    const color = getHeatmapColor(normalizedLevel);
-                    L.circle([point.lat, point.lng], {
-                        radius: radius,
-                        fillColor: color,
-                        color: 'transparent',
-                        fillOpacity: opacity,
-                        weight: 0
-                    }).addTo(heatmapLayer);
-                }
-            });
-            contaminantHeatmaps[chemicalName] = heatmapLayer;
-        });
-    }*/
 
 console.log("Created heatmap layers:", contaminantHeatmaps);
     // Get color for heatmap based on normalized intensity (0-1)
@@ -801,38 +580,6 @@ function toggleVisualizationMode() {
     }
 }
 
-/*    // Toggle between point and heatmap visualization
-    function toggleVisualizationMode() {
-        if (!activeContaminant) return;
-        if (isHeatmapMode) {
-            // Switch to points
-            if (contaminantHeatmaps[activeContaminant] && map.hasLayer(contaminantHeatmaps[activeContaminant])) {
-                map.removeLayer(contaminantHeatmaps[activeContaminant]);
-            }
-            if (contaminantLayers[activeContaminant]) {
-                map.addLayer(contaminantLayers[activeContaminant]);
-                applyDynamicStyling(activeContaminant);
-            }
-            isHeatmapMode = false;
-            updateLegendForMode();
-        } else {
-            // Switch to heatmap
-console.log("Switching to heatmap for", contaminantLayers[activeContaminant] && map.hasLayer(contaminantLayers[activeContaminant]));
-            if (contaminantLayers[activeContaminant] && map.hasLayer(contaminantLayers[activeContaminant])) {
-                map.removeLayer(contaminantLayers[activeContaminant]);
-            }
-console.log("Active contaminant:", activeContaminant);
-console.log("Heatmap layer:", contaminantHeatmaps);
-console.log("Point layer:", contaminantLayers[activeContaminant]);
-console.log("Removing point layer, adding heatmap layer", contaminantHeatmaps[activeContaminant]);  
-            if (contaminantHeatmaps[activeContaminant]) {
-                map.addLayer(contaminantHeatmaps[activeContaminant]);
-            }
-            isHeatmapMode = true;
-            updateLegendForMode();
-        }
-    }*/
-
     // ---- Legend (bottom-right): gradient for value (min/max), and depth scale preview ----
     let legend = L.control({ position: "bottomright" });
     legend.onAdd = function () {
@@ -840,6 +587,7 @@ console.log("Removing point layer, adding heatmap layer", contaminantHeatmaps[ac
         this.update();
         return this._div;
     };
+
     function makeDepthLegend(min, max) {
         const mid = (min + max) / 2;
         const values = [min, mid, max];
@@ -851,6 +599,7 @@ fill="grey" fill-opacity="0.6" />
 </svg> ≈ ${isFinite(v) ? v.toFixed(2) : '—'} m
 `).join("<br>");
     }
+
     function updateLegendForMode() {
         if (!activeContaminant) {
             legend.update();
@@ -911,7 +660,8 @@ margin-bottom: 5px;
 <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
 </div>
 `;
-        const depthLegend = !isHeatmapMode ? `
+console.log(stats.depthMin, stats.depthMax);
+        const depthLegend = (!isHeatmapMode & !(stats.depthMin === stats.depthMax)) ? `
 <br>
 <div><strong>Sample depth → radius</strong><br>
 ${makeDepthLegend(stats.depthMin, stats.depthMax)}</div>
@@ -938,24 +688,12 @@ ${depthLegend}
         });
         datasetLayers[dateSampled] = L.layerGroup(markerLayers[dateSampled]).addTo(map);
     });
-/*    // Replace old layerControl with both dataset + contaminant overlays
+    // Replace the layer control creation with this debug version:
     let overlayLayers = {
         ...shapeOverlay,
         ...datasetLayers,
         ...contaminantLayers
     };
-    let layerControl = L.control.layers(mapLayers, overlayLayers).addTo(map);*/
-
-    // Add this debugging code right before creating the layer control:
-
-//console.log("Available contaminant layers:", Object.keys(contaminantLayers));
-
-// Replace the layer control creation with this debug version:
-let overlayLayers = {
-    ...shapeOverlay,
-    ...datasetLayers,
-    ...contaminantLayers
-};
 
 //console.log("Final overlay layers:", overlayLayers);
 
@@ -1117,24 +855,31 @@ function createScrollableContaminantControl() {
                     
                     // Show selected contaminant layer
                     activeContaminant = selectedContaminant;
-                    isHeatmapMode = false;
-                    
-                    if (contaminantLayers[selectedContaminant]) {
-                        map.addLayer(contaminantLayers[selectedContaminant]);
-                        applyDynamicStyling(selectedContaminant);
-                        legend.update({ chemicalName: selectedContaminant });
+//                    isHeatmapMode = false;
+                    if (isHeatmapMode) {
+                        if (contaminantHeatmaps[activeContaminant]) {
+                            map.addLayer(contaminantHeatmaps[activeContaminant]);
+                            applyDynamicStyling(selectedContaminant);
+                            legend.update({ chemicalName: selectedContaminant });
+                        }
+                    } else {
+                        if (contaminantLayers[selectedContaminant]) {
+                            map.addLayer(contaminantLayers[selectedContaminant]);
+                            applyDynamicStyling(selectedContaminant);
+                            legend.update({ chemicalName: selectedContaminant });
+                        }
                     }
                 }
             }
-        });
-        
+        }); // <-- This closes the 'change' event handler
+
         // Prevent map interactions when using the control
         L.DomEvent.disableClickPropagation(div);
         L.DomEvent.disableScrollPropagation(div);
-        
+
         return div;
     };
-    
+
     return contaminantControl;
 }
 
@@ -1232,7 +977,8 @@ map.on("overlayadd", function (e) {
         });
         
         // Start in point mode for newly activated contaminant
-        isHeatmapMode = false;
+        // Stay in current mode instead
+//        isHeatmapMode = false;
         applyDynamicStyling(layerNameFromObject);
         legend.update({ chemicalName: layerNameFromObject });
     }
@@ -1259,186 +1005,12 @@ map.on("overlayremove", function (e) {
         });
         
         activeContaminant = null;
-        isHeatmapMode = false;
+//        isHeatmapMode = false;
         legend.update();
     }
 });
-
-
-/*map.on("overlayadd", function (e) {
-    console.log("Layer added event:", e);
-    console.log("Layer name from event:", e.name);
-    console.log("Layer object from event:", e.layer);
-    console.log("Available contaminant layer names:", Object.keys(contaminantLayers));
-    
-    // Method 1: Direct name lookup
-    if (contaminantLayers[e.name]) {
-        console.log("Method 1 worked - direct name match");
-        activeContaminant = e.name;
-    }
-    
-    // Method 2: Layer object comparison
-    const layerNameFromObject = Object.keys(contaminantLayers).find(
-        chem => contaminantLayers[chem] === e.layer
-    );
-    
-    if (layerNameFromObject) {
-        console.log("Method 2 worked - layer object match:", layerNameFromObject);
-        activeContaminant = layerNameFromObject;
-        
-        // Remove any other active contaminant layers and their heatmaps
-        Object.keys(contaminantLayers).forEach(chem => {
-            if (chem !== layerNameFromObject) {
-                if (map.hasLayer(contaminantLayers[chem])) {
-                    map.removeLayer(contaminantLayers[chem]);
-                }
-                if (contaminantHeatmaps[chem] && map.hasLayer(contaminantHeatmaps[chem])) {
-                    map.removeLayer(contaminantHeatmaps[chem]);
-                }
-            }
-        });
-        
-        // Start in point mode for newly activated contaminant
-        isHeatmapMode = false;
-        applyDynamicStyling(layerNameFromObject);
-        legend.update({ chemicalName: layerNameFromObject });
-    }
-    
-    console.log("Active contaminant after processing:", activeContaminant);
-});
-
-map.on("overlayremove", function (e) {
-    console.log("Layer removed event:", e);
-    
-    const layerNameFromObject = Object.keys(contaminantLayers).find(
-        chem => contaminantLayers[chem] === e.layer
-    );
-    
-    if (layerNameFromObject && activeContaminant === layerNameFromObject) {
-        console.log("Removing active contaminant:", layerNameFromObject);
-        if (contaminantHeatmaps[layerNameFromObject] && map.hasLayer(contaminantHeatmaps[layerNameFromObject])) {
-            map.removeLayer(contaminantHeatmaps[layerNameFromObject]);
-        }
-//        activeContaminant = null;
-        isHeatmapMode = false;
-        legend.update();
-    }
-});*/
-
-
-/*// Style + legend sync on layer toggle
-map.on("overlayadd", function (e) {
-    // Find which contaminant layer this corresponds to
-    const layerName = Object.keys(contaminantLayers).find(
-        chem => contaminantLayers[chem] === e.layer
-    );
-    
-    if (layerName) {
-        // This is a contaminant layer being added
-        activeContaminant = layerName;
-        console.log("Setting active contaminant to:", layerName);
-        
-        // Remove any other active contaminant layers and their heatmaps
-        Object.keys(contaminantLayers).forEach(chem => {
-            if (chem !== layerName) {
-                if (map.hasLayer(contaminantLayers[chem])) {
-                    map.removeLayer(contaminantLayers[chem]);
-                }
-                if (contaminantHeatmaps[chem] && map.hasLayer(contaminantHeatmaps[chem])) {
-                    map.removeLayer(contaminantHeatmaps[chem]);
-                }
-            }
-        });
-        
-        // Start in point mode for newly activated contaminant
-        isHeatmapMode = false;
-        applyDynamicStyling(layerName);
-        legend.update({ chemicalName: layerName });
-    }
-});
-
-map.on("overlayremove", function (e) {
-    // Find which contaminant layer this corresponds to
-    const layerName = Object.keys(contaminantLayers).find(
-        chem => contaminantLayers[chem] === e.layer
-    );
-    
-    if (layerName && activeContaminant === layerName) {
-        console.log("Removing active contaminant:", layerName);
-        // If removing the active contaminant, also remove its heatmap if visible
-        if (contaminantHeatmaps[layerName] && map.hasLayer(contaminantHeatmaps[layerName])) {
-            map.removeLayer(contaminantHeatmaps[layerName]);
-        }
-        activeContaminant = null;
-        isHeatmapMode = false;
-        legend.update(); // clear legend when contaminant hidden
-    }
-});*/
-
- /*   // Style + legend sync on layer toggle
-    map.on("overlayadd", function (e) {
-        if (contaminantLayers[e.name]) {
-            // Check if this is a contaminant layer being added
-            activeContaminant = e.name;
-            // Remove any other active contaminant layers and their heatmaps
-            Object.keys(contaminantLayers).forEach(chem => {
-                if (chem !== e.name) {
-                    if (map.hasLayer(contaminantLayers[chem])) {
-                        map.removeLayer(contaminantLayers[chem]);
-                    }
-                    if (contaminantHeatmaps[chem] && map.hasLayer(contaminantHeatmaps[chem])) {
-                        map.removeLayer(contaminantHeatmaps[chem]);
-                    }
-                }
-            });
-            // Start in point mode for newly activated contaminant
-            isHeatmapMode = false;
-            applyDynamicStyling(e.name);
-            legend.update({ chemicalName: e.name });
-        }
-    });
-    map.on("overlayremove", function (e) {
-        if (contaminantLayers[e.name]) {
-            // If removing the active contaminant, also remove its heatmap if visible
-            if (activeContaminant === e.name) {
-                if (contaminantHeatmaps[e.name] && map.hasLayer(contaminantHeatmaps[e.name])) {
-                    map.removeLayer(contaminantHeatmaps[e.name]);
-                }
-                activeContaminant = null;
-                isHeatmapMode = false;
-                legend.update(); // clear legend when contaminant hidden
-            }
-        }
-    });*/
-/*    // Handle when a contaminant overlay is turned on
-map.on("overlayadd", function (e) {
-    // Find which chemical name this layer corresponds to
-    const layerName = Object.keys(contaminantLayers).find(
-        chem => contaminantLayers[chem] === e.layer
-    );
-    if (layerName) {
-        activeContaminant = layerName;
-        applyDynamicStyling(layerName);
-        legend.update({ chemicalName: layerName });
-    }
-});
-
-// Handle when a contaminant overlay is turned off
-map.on("overlayremove", function (e) {
-    const layerName = Object.keys(contaminantLayers).find(
-        chem => contaminantLayers[chem] === e.layer
-    );
-    if (layerName && activeContaminant === layerName) {
-        activeContaminant = null;
-        legend.update(null); // clear legend
-    }
-});*/
 
 }
-
-
-
-
 
 // Utilities kept from your original
 function randomColor() {
