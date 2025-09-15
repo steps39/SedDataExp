@@ -313,7 +313,7 @@ function dataForScatterCharting(sheetName) {
 //                scatterData[ds + ' : ' + s] = ({
                     x: sampleInfo[ds].position[s]['Position longitude'],
                     y: sampleInfo[ds].position[s]['Position latitude'],
-                    label: selectedSampleInfo[ds].label + ' ' + selectedSampleInfo[ds].position[s].label,
+                    label: selectedSampleInfo[ds].label + ': ' + selectedSampleInfo[ds].position[s].label,
                 });
                 i += 1;
                 //console.log(sampleInfo[ds].position[s]['Position latitude']);
@@ -326,7 +326,7 @@ function dataForScatterCharting(sheetName) {
                 currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
                 //console.log(currentChemical);
                 for (const s in currentChemical.samples) {
-                    chemicalData[c][ds + ' : ' + s] = currentChemical.samples[s];
+                    chemicalData[c][ds + ': ' + s] = currentChemical.samples[s];
                     //console.log(currentChemical.samples[s])
                 }
             }
@@ -475,7 +475,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                     scatterData[c][j].data[ii] = {
                         x: Number(xValue),
                         y: currentChemical.samples[s],
-                        label: selectedSampleInfo[ds].label + ' ' + selectedSampleInfo[ds].position[s].label,
+                        label: selectedSampleInfo[ds].label + ': ' + selectedSampleInfo[ds].position[s].label,
                     };
                     ii += 1;
                     if (!xValue) {
@@ -487,8 +487,8 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                         return { unitTitle };
                     }
                     chemicalData[c][i] = currentChemical.samples[s];
-                    fitConcentration[c][ds + ' : ' + s] = currentChemical.samples[s];
-                    fitPredictors[c][ds + ' : ' + s] = [xValue];
+                    fitConcentration[c][ds + ': ' + s] = currentChemical.samples[s];
+                    fitPredictors[c][ds + ': ' + s] = [xValue];
                     i += 1;
                 }
             }

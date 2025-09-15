@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="chart-plugin-select-sample.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.4/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -74,12 +75,42 @@
             position: relative;
         }
 
+/*        
         .output-area {
             flex-grow: 1;
             padding: 1.5rem;
             overflow-y: auto;
             position: relative;
         }
+*/
+/* Update the .output-area to be a flex container that is fixed in height */
+.output-area {
+    flex-grow: 1;
+    padding: 1.5rem;
+    position: relative;
+    display: flex; /* Make it a flex container */
+    flex-direction: column; /* Stack children vertically */
+    overflow: hidden; /* Prevent the main output area from scrolling */
+}
+
+/* NEW: Add a fixed container for the map and tabs */
+.fixed-header-container {
+    position: sticky; /* This is the key */
+    top: 0; /* Stick it to the top */
+    z-index: 10; /* Ensure it's above the charts */
+    background-color: var(--background-color);
+    padding-bottom: 1.5rem;
+    padding-top: 1.5rem;
+    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.1); /* Optional: Adds a subtle shadow on scroll */
+}
+
+/* NEW: Add a scrollable container for the charts */
+.scrollable-content {
+    flex-grow: 1; /* This makes the container fill the remaining space */
+    overflow-y: auto; /* This adds the vertical scrollbar */
+    /* Add padding to account for the space taken by the fixed header, preventing overlap */
+    padding-top: 1rem; 
+}
 
         /* Collapsible Sidebar Styles */
         .controls-sidebar.collapsed {
@@ -395,7 +426,7 @@
 .output-area.fixed-map {
     display: flex;
     flex-direction: column;
-    height: 100%; /* Important: Ensure the container has a defined height */
+    height: 40%; /* Important: Ensure the container has a defined height */
     overflow-y: hidden; /* Prevent the main area from scrolling */
 }
 
@@ -413,7 +444,65 @@
     padding-top: 1.5rem;
 }        
         
+/* Ensure map containers render properly 
+div[id$="-contaminant-map"], div[id^="smallmap-"] {
+    position: relative !important;
+    display: block !important;
+    overflow: hidden !important;
+}*/
 
+/* Force Leaflet containers to take full space */
+.leaflet-container {
+    width: 100% !important;
+    min-height: 90% !important;
+}
+
+/* Force Leaflet normal map containers to take half height */
+.map-container-original {
+    width: 100% !important;
+    min-height: 50% !important;
+}
+
+/* Ensure tiles render in correct position */
+.leaflet-map-pane {
+    left: 0 !important;
+    top: 0 !important;
+}
+
+/*div[id$="contaminant-map"], div[id^="smallmap-"] {
+    position: relative;
+}*/
+
+/*
+.leaflet-container {
+    position: relative;
+    outline: 0;
+}*/
+
+.small-map-wrapper {
+    min-height: 280px !important;
+    min-width: 250px !important;
+    display: block !important;
+}
+
+div[id^="smallmap-"] {
+    display: block !important;
+    width: 100% !important;
+    height: calc(100% - 50px) !important;
+    min-height: 200px !important;
+}
+
+div[id^="largemap-"] {
+    display: block !important;
+    width: 100% !important;
+    height: calc(100% - 50px) !important;
+    min-height: 700px !important;
+}
+
+#largeContaminantMapId {
+    height: 500px; /* Or whatever height you need */
+    width: 100%;
+}
 
     </style>
 </head>
@@ -523,32 +612,35 @@
 
         </aside>
 
-        <main class="output-area">
-            <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
-            <div id="sedDredgeData" style="display: none;"></div>
-            <div id="fileDisplay"></div>
-            <div id="sample-info-table-container"></div>
-            <div id="everything-maps" style="display: none; margin-top: 1rem;">
-                <div id="map"></div>
-                <!-- NEW: Map Legend Container -->
-                <div id="map-legend" class="map-legend-container" style="display: none;">
-                    <h4>Legend</h4>
-                    <!-- Legend items will be populated here by Javascript -->
+<main class="output-area">
+    <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
+
+    <div class="fixed-header-container">
+        <div id="sedDredgeData" style="display: none;"></div>
+        <div id="fileDisplay"></div>
+        <div id="sample-info-table-container"></div>
+        <div id="everything-maps" style="display: none; margin-top: 1rem;">
+            <div id="map" class="map-container-original"></div>
+            <div id="map-legend" class="map-legend-container" style="display: none;">
+                <h4>Legend</h4>
                 </div>
-                <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
-                    <button onclick="toggleFileDisplay()">Toggle File Display</button>
-                    <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
-                    <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
-                    <!-- NEW: Toggle Legend Button -->
-                    <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
-                </div>
+            <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
+                <button onclick="toggleFileDisplay()">Toggle File Display</button>
+                <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
+                <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
+                <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
             </div>
-            <div id="charts-and-tables-container">
-                <div id="chartContainer"></div>
-                <div id="chartsForMapContainer"></div>
-            </div>
-        </main>
+        </div>
+        
+        <div id="chart-tab-buttons" class="tab-buttons"></div>
     </div>
+    <div class="scrollable-content">
+        <div id="charts-and-tables-container">
+            <div id="chartContainer"></div>
+            <div id="chartsForMapContainer"></div>
+        </div>
+    </div>
+    </main>
 
     <!-- Modals -->
     <div id="sedDataModal" class="modal">
