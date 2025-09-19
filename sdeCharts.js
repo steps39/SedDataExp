@@ -1,6 +1,11 @@
 /**
  * Enables or disables sorting options based on available data.
  */
+
+chartNameSep = '   '// Three spaces to separate dataset name from sample name for point labels
+
+// Mapping of sorting options to required data sheets
+
 function updateSortingOptionsState() {
     const primarySelect = document.getElementById('primary-sorting-select');
     const secondarySelect = document.getElementById('secondary-sorting-select');
@@ -1037,10 +1042,10 @@ scatterData[0].backgroundColor.pointStyle = 'cross';
                         label: function(context) {
                             const dataPoint = context.raw; // This contains {x, y, label: fullSampleName}
                             let pointLabel = dataPoint.label || ''; // Full sample name
-                            if (pointLabel) {
+/*                            if (pointLabel) {
                                 pointLabel = pointLabel.split(':').pop().trim(); // Show only part after colon
                                 pointLabel += ': ';
-                            }
+                            }*/
 //console.log(dataPoint);
                             // Add the x and y values to the label
                             pointLabel += `(X: ${dataPoint.x.toFixed(2)}, Y: ${dataPoint.y.toFixed(2)})`;
@@ -2263,7 +2268,7 @@ console.log('Resetting to original style for sample:', sampleId);
         for (let i = 1; i < lastInstanceNo + 1; i++) {
 console.log('Checking chart instance', i, instanceType[i]);
 //            if (['gorham', 'chemical', 'congener', 'totalHC', 'pahratios', 'ringfractions', 'eparatios', 'simpleratios', 'scatter'].includes(instanceType[i])) {
-            const validTypes = ['gorham', 'chemical', 'congener', 'totalHC', 'pahratios', 'ringfractions', 'eparatios', 'simpleratios', 'scatter'];
+            const validTypes = ['gorham', 'chemical', 'congener', 'totalHC', 'pahratios', 'ringfractions', 'eparatios', 'simpleratios', 'scatter', 'PCA'];
             const chartType = instanceType[i];
             if (validTypes.some(type => chartType.includes(type))) {
                 if (isHighlighted) {
@@ -2288,7 +2293,7 @@ function displayChartHighlight(instanceNo, fullSampleIdentifier) {
     
     let chartLabel = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
     
-    if (instanceType[instanceNo].includes('scatter')) {
+    if (instanceType[instanceNo].includes('scatter') || instanceType[instanceNo].includes('PCA')) {
         // For scatter plots, we need to find the data point by matching the label
         const datasets = chartInstance[instanceNo].data.datasets;
 console.log('chartInstance[instanceNo].data', chartInstance[instanceNo].data, 'datasets', datasets, 'chartLabel', chartLabel);          
@@ -2296,10 +2301,11 @@ console.log('chartInstance[instanceNo].data', chartInstance[instanceNo].data, 'd
         let datasetIndex = -1;
         let pointIndex = -1;
         
+console.log('Searching for data point matching label:', datasets.length, 'datasets');
         // Search through all datasets and their data points
         for (let i = 0; i < datasets.length; i++) {
             const dataset = datasets[i];
-console.log('Checking dataset', i, dataset);
+console.log('Checking dataset', i, dataset, dataset.data.length);
             for (let j = 0; j < dataset.data.length; j++) {
                 const dataPoint = dataset.data[j];
                 // Check if this data point matches our sample
@@ -2329,17 +2335,18 @@ console.log('Checking data point', j, dataPoint.label);
                 radius: 12, // Make it larger than the original point
                 id: annotationId,
             };
-            console.log(`Added scatter highlight for ${fullSampleIdentifier} at (${foundDataPoint.x}, ${foundDataPoint.y})`);
+            console.log(`Added ${instanceType[instanceNo]} highlight for ${fullSampleIdentifier} at (${foundDataPoint.x}, ${foundDataPoint.y})`);
         } else {
-            console.warn(`Could not find scatter data point for sample: ${fullSampleIdentifier}`);
+            console.warn(`Could not find ${instanceType[instanceNo]} data point for sample: ${fullSampleIdentifier}`);
         }
     } else {
         // Original logic for bar charts
         const allChartSamples = chartInstance[instanceNo].data.labels;
         const itemIndex = allChartSamples.indexOf(chartLabel);
-        
         if (itemIndex > -1) {
-            chartInstance[instanceNo].options.plugins.annotation.annotations[(`tempBox-${instanceNo}-${itemIndex}`)] = {
+            const annotationId = `tempBox-${fullSampleIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`;
+//            chartInstance[instanceNo].options.plugins.annotation.annotations[(`tempBox-${instanceNo}-${itemIndex}`)] = {
+            chartInstance[instanceNo].options.plugins.annotation.annotations[annotationId] = {
                 type: 'box',
                 xScaleID: 'x',
                 yScaleID: 'y',
@@ -2348,27 +2355,34 @@ console.log('Checking data point', j, dataPoint.label);
                 borderWidth: 2,
                 borderColor: 'red',
                 backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                id: `tempBox-${instanceNo}-${itemIndex}`,
+                id: annotationId,
+//                id: `tempBox-${instanceNo}-${itemIndex}`,
             };
         }
     }
-    
     // Update the chart to show the new highlight
     chartInstance[instanceNo].update();
 }
 
 function removeChartHighlight(instanceNo, fullSampleIdentifier) {
     console.log('removeChartHighlight', instanceNo, fullSampleIdentifier);
-    
-    if (instanceType[instanceNo].includes('scatter')) {
+    const annotationId = `tempBox-${fullSampleIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    delete chartInstance[instanceNo].options.plugins.annotation.annotations[annotationId];
+    chartInstance[instanceNo].update();
+    console.log(`Removed ${instanceType[instanceNo]} scatter highlight annotations for ${fullSampleIdentifier}`);
+
+/*    
+//    if (instanceType[instanceNo].includes('scatter') || instanceType[instanceNo].includes('PCA')) {
         // For scatter plots, we need to find and remove all annotations that match this sample
-        const annotations = chartInstance[instanceNo].options.plugins.annotation.annotations;
-        const annotationsToRemove = [];
+//        const annotations = chartInstance[instanceNo].options.plugins.annotation.annotations;
+        const annotationId = `tempBox-${fullSampleIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        delete chartInstance[instanceNo].options.plugins.annotation.annotations[annotationId];
+//        const annotationsToRemove = [];
         
         // Find all annotations that belong to this sample
-        for (const annotationId in annotations) {
+//        for (const annotationId in annotations) {
 //            if (annotationId.startsWith(`tempBox-${instanceNo}-`)) {
-            if (annotationId.startsWith(`tempBox-${fullSampleIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`)) {
+/*            if (annotationId.startsWith(`tempBox-${fullSampleIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`)) {
                 // We need to check if this annotation corresponds to our sample
                 // Since we don't store the sample ID in the annotation, we'll remove all temp annotations
                 // and let the highlighting system re-add the ones that should still be there
@@ -2381,7 +2395,8 @@ function removeChartHighlight(instanceNo, fullSampleIdentifier) {
             delete annotations[id];
         });
         
-        console.log(`Removed ${annotationsToRemove.length} scatter highlight annotations for ${fullSampleIdentifier}`);
+//        console.log(`Removed ${annotationsToRemove.length} scatter highlight annotations for ${fullSampleIdentifier}`);
+        console.log(`Removed ${instanceType[instanceNo]} scatter highlight annotations for ${fullSampleIdentifier}`);
     } else {
         // Original logic for bar charts
         let parts = fullSampleIdentifier.split(": ");
@@ -2392,124 +2407,16 @@ function removeChartHighlight(instanceNo, fullSampleIdentifier) {
         
         const allChartSamples = chartInstance[instanceNo].data.labels;
         const itemIndex = allChartSamples.indexOf(chartLabel);
-
+        const annotationId = `tempBox-${fullSampleIdentifier.replace(/[^a-zA-Z0-9]/g, '_')}`;
         if (itemIndex > -1) {
-            delete chartInstance[instanceNo].options.plugins.annotation.annotations[`tempBox-${instanceNo}-${itemIndex}`];
+//            delete chartInstance[instanceNo].options.plugins.annotation.annotations[`tempBox-${instanceNo}-${itemIndex}`];
+            delete chartInstance[instanceNo].options.plugins.annotation.annotations[annotationId];
         }
     }
     
     // Update the chart to remove the highlight
-    chartInstance[instanceNo].update();
+    chartInstance[instanceNo].update();*/
 }
-
-/*function displayChartHighlight(instanceNo, fullSampleIdentifier) {
-console.log('displayChartHighlight', instanceNo, fullSampleIdentifier);
-    // Turn the fullSampleIdentifier into the correct label for this chart instance
-    let parts = fullSampleIdentifier.split(": ");
-    if (parts.length>2) {
-        parts[1] = parts[1] + ': ' + parts[2];
-    }
-console.log(parts[0],parts[1]);
-    let chartLabel = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
-console.log('chartInstance[instanceNo].data', chartInstance[instanceNo].data);
-    // 2. Find the index of the fullSampleIdentifier in this list.
-//    const itemIndex = allChartSamples.indexOf(chartLabel);
-console.log('chartLabel', chartLabel);
-//    if (itemIndex > -1) {
-        if (instanceType[instanceNo].includes('scatter')) {
-            // For scatter plots, the x-axis might not be a simple index.
-            // You may need to map the itemIndex to the actual x-value used in the scatter data.
-            const scatterData = chartInstance[instanceNo].data.datasets[0].data;
-console.log('chartInstance[instanceNo].data', chartInstance[instanceNo].data, 'scatterData', scatterData, 'chartLabel', chartLabel);
-            let itemIndex = -1;
-            for (let i = 0; i < scatterData.length; i++) {
-console.log('scatterData[i].label', scatterData[i].label);                
-                if (scatterData[i].label === chartLabel) {
-                    itemIndex = i;
-                    break;
-                }
-            }
-            if (itemIndex > -1) {
-console.log('about to highlight scatter', instanceNo, instanceType[instanceNo], itemIndex);
-                const clickedDataPoint = scatterData[itemIndex];
-    console.log('chartLabel', chartLabel, 'clickedDataPoint', clickedDataPoint);
-                if (clickedDataPoint) {
-                    // Use the x-value of the clicked data point for highlighting
-                    const xValue = clickedDataPoint.x;
-                    // Use the x-value of the clicked data point for highlighting
-                    const yValue = clickedDataPoint.y;
-                    // Draw a box around the clicked data point using its x-value
-                    chartInstance[instanceNo].options.plugins.annotation.annotations[('tempBox-' + instanceNo + '-' + itemIndex)] = {
-                        type: 'box',
-                        xScaleID: 'x',
-                        yScaleID: 'y',
-                        xMin: xValue - 0.5, // Adjust based on your data and preferences
-                        xMax: xValue + 0.5,
-                        borderWidth: 2,
-                        borderColor: 'red',
-                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                        id: `tempBox-${instanceNo}-${xValue}`,
-                    };
-                }
-            }
-        } else {
-            // 1. Get the list of samples from the chart instance data.
-            const allChartSamples = chartInstance[instanceNo].data.labels;
-console.log('allChartSamples', allChartSamples, chartLabel);
-            // 2. Find the index of the fullSampleIdentifier in this list.
-            const itemIndex = allChartSamples.indexOf(chartLabel);
-            if (itemIndex > -1) {
-console.log('about to highlight bar', instanceNo, instanceType[instanceNo], itemIndex);
-                // Now you have the correct numerical index for this chart's data.
-                // Draw a box around the clicked data point.
-                chartInstance[instanceNo].options.plugins.annotation.annotations[('tempBox-' + instanceNo + '-' + itemIndex)] = {
-                    type: 'box',
-                    xScaleID: 'x',
-                    yScaleID: 'y',
-                    xMin: itemIndex - 0.5,
-                    xMax: itemIndex + 0.5,
-                    borderWidth: 2,
-                    borderColor: 'red',
-                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                    id: `tempBox-${instanceNo}-${itemIndex}`,
-                };
-            }
-        }
-        // Update the chart to show the new highlight.
-        chartInstance[instanceNo].update();
-  //  }
-} 
-
-function removeChartHighlight(instanceNo, fullSampleIdentifier) {
-console.log('removeChartHighlight', instanceNo, fullSampleIdentifier);
-    // Turn the fullSampleIdentifier into the correct label for this chart instance
-    let parts = fullSampleIdentifier.split(": ");
-    if (parts.length>2) {
-        parts[1] = parts[1] + ': ' + parts[2];
-    }
-    let chartLabel = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
-    // 1. Get the list of samples from the chart instance data.
-    const allChartSamples = chartInstance[instanceNo].data.labels;
-    // 2. Find the index of the fullSampleIdentifier in this list.
-    const itemIndex = allChartSamples.indexOf(chartLabel);
-
-    if (itemIndex > -1) {
-        // Remove the box using the correct index.
-        delete chartInstance[instanceNo].options.plugins.annotation.annotations['tempBox-' + instanceNo + '-' + itemIndex];
-        // Update the chart to remove the highlight.
-        chartInstance[instanceNo].update();
-    }
-}*/
-
-/**
- * Performs PCA on selected measurements for a given chemical group (sheetName)
- * and plots the first two principal components using Chart.js.
- *
- * @param {object} selectMeas Data structure: selectMeas[chemicalName][sampleName] = concentration.
- * @param {string} sheetName Type of chemical data (e.g., 'PAH data').
- * @param {array} chemicalNames An array of chemical names.
- * @param {string|number} instanceNo A unique identifier for this chart instance.
- */
 
 /**
  * Performs PCA on selected measurements for a given chemical group (sheetName)
@@ -2728,8 +2635,17 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
 
     projectedData.forEach((point, index) => {
         const fullSampleName = sampleLabels[index];
-        const parts = fullSampleName.split(':');
+        let parts = fullSampleName.split(": ");
+        if (parts.length>2) {
+            parts[1] = parts[1] + ': ' + parts[2];
+        }
         const setName = parts.length > 1 ? parts[0].trim() : "Unknown Set";
+        const sampleName = parts[1];
+        console.log(`Sample "${fullSampleName}" parsed as set "${setName}", sample "${sampleName}".`);
+        console.log('selectedSampleInfo', selectedSampleInfo[setName].label);
+        console.log('selectedSampleInfo position', selectedSampleInfo[setName].position[sampleName].label);
+        const labelSampleName = selectedSampleInfo[setName].label + ': ' + selectedSampleInfo[setName].position[sampleName].label;
+//        const sampleName = parts.length > 2 ? parts.slice(1).join(':').trim() : fullSampleName.trim();
 
         if (!setColors[setName]) {
             setColors[setName] = colorPalette[nextColorIndex % colorPalette.length];
@@ -2759,7 +2675,8 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
             datasetsBySet[setName].data.push({
                 x: point[0],
                 y: point[1],
-                label: fullSampleName // Store full name for tooltip
+//                label: fullSampleName // Store full name for tooltip
+                label: labelSampleName // Store label sample name for tooltip
             });
         } else {
             console.warn(`Skipping invalid data point for ${fullSampleName}: PC1=${point[0]}, PC2=${point[1]}`);
@@ -2771,12 +2688,12 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
 
     // Destroy existing chart instance if it exists on the canvas
     // This is important if the function can be called multiple times for the same canvas
-    const existingChart = Chart.getChart(convas);
+/*    const existingChart = Chart.getChart(convas);
     if (existingChart) {
         existingChart.destroy();
-    }
+    }*/
  
-    new Chart(convas, {
+    let chartConfig = {
         type: 'scatter',
         data: {
             datasets: finalChartDatasets
@@ -2801,6 +2718,9 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
                 }
             },
             plugins: {
+                annotation: {
+                    annotations: {}
+                },                
                 tooltip: {
                     callbacks: {
                         title: function(tooltipItems) {
@@ -2814,10 +2734,10 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
                         label: function(context) {
                             const dataPoint = context.raw; // This contains {x, y, label: fullSampleName}
                             let pointLabel = dataPoint.label || ''; // Full sample name
-                            if (pointLabel) {
+/*                            if (pointLabel) {
                                 pointLabel = pointLabel.split(':').pop().trim(); // Show only part after colon
                                 pointLabel += ': ';
-                            }
+                            }*/
                             pointLabel += `(PC1: ${dataPoint.x.toFixed(2)}, PC2: ${dataPoint.y.toFixed(2)})`;
                             return pointLabel;
                         }
@@ -2833,9 +2753,67 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
                     labels: {
                         usePointStyle: true, // Makes legend markers match point style
                     }
+                },
+                selectSample: {
+                    highlightedSample: null
                 }
             }
         }
-    });
+    };
+/*
+        convas.addEventListener('click', (e) => {
+        const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+        if (points.length > 0) {
+            const firstPoint = points[0];
+            const dataPoint = chart.data.datasets[firstPoint.datasetIndex].data[firstPoint.index];
+            const clickedSampleIdentifier = dataPoint.label;
+
+            createHighlights(clickedSampleIdentifier);
+        }
+    });*/
+
+    const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
+    if (chartInstance[instanceNo]) {
+        chartInstance[instanceNo].destroy();
+    }
+    const chart = new Chart(ctx, chartConfig);
+    chartInstance[instanceNo] = chart;
+//console.log(chartConfig);
+
+//  createToggleCanvasSize(convas, chartInstance[instanceNo], instanceNo, unitTitle);
+//console.log(largeInstanceNo,oneChemical);
+/* if (largeInstanceNo > 1) {
+        createToggleFocusChart(convas, chartInstance[instanceNo], instanceNo, oneChemical, scatterData, sheetName, unitTitle, xAxisTitle, yAxisTitle, largeInstanceNo);
+    }*/
+
+    const canvas = document.getElementById('chart' + instanceNo)
+        // Add a click listener to the canvas element
+        canvas.addEventListener('click', (e) => {
+            const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+console.log(points);            
+            if (points.length > 0) {
+                const firstPoint = points[0];
+                const pointLabel = chart.data.datasets[firstPoint.datasetIndex].data[firstPoint.index].label;
+console.log('firstPoint', firstPoint, pointLabel);
+                let parts = pointLabel.split(": ");
+                if (parts.length>2) parts[1] = parts[1] + ': ' + parts[2];
+                const pointDateSampled = parts[0].trim();
+                const pointSampleID = parts[1].trim();
+console.log('pointDateSampled', pointDateSampled, 'pointSampleID', pointSampleID);
+                const dateSampled = getKeyFromLabel(selectedSampleInfo, pointDateSampled);
+                const sampleID = getKeyFromLabel(selectedSampleInfo[dateSampled].position, pointSampleID);
+                const clickedSampleIdentifier = dateSampled + ': ' + sampleID;
+console.log('clickedSampleIdentifier', clickedSampleIdentifier);
+                // Get the sample identifier from the clicked point
+//                const dataPoint = chart.data.datasets[firstPoint.datasetIndex].data[firstPoint.index];
+//                const clickedSampleIdentifier = dataPoint.label;
+                
+                // Call the central highlighting function
+                createHighlights(clickedSampleIdentifier);
+//                createHighlights(sampleNames[firstPoint.index]);
+            }
+        });
+
+
     console.log(`PCA chart for ${sheetName} (Instance ${instanceNo}) rendered successfully with color coding.`);
 }

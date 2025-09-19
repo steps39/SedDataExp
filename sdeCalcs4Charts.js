@@ -452,7 +452,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                     //let xValue;
                     switch (chartType) {
                         case "totalArea":
-                            //console.log(ds,s);
+                            console.log(ds,s);
                             xValue = sampleMeasurements[ds]['Physical Data'].samples[s].totalArea;
                             break;
 

@@ -1419,7 +1419,7 @@ function NEXTNEXTTRYcreateStaticContaminantMap(containerId, contaminantName, vis
 
 function sampleMap(meas) {
     if (map) map.remove();
-    allMapMarkers = [];
+//    allMapMarkers = [];
     isHeatmapMode = false;
     activeContaminant = null;
 
@@ -1770,3 +1770,50 @@ ${depthLegend}
         return minRadius + t * (maxRadius - minRadius);
     }
 
+let tooltipsAreVisible = false;
+
+function isOverlapping(el1, el2) {
+    if (!el1 || !el2) return false;
+    const rect1 = el1.getBoundingClientRect();
+    const rect2 = el2.getBoundingClientRect();
+    return !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+    );
+}
+
+function toggleAllTooltips() {
+    if (!allMapMarkers || allMapMarkers.length === 0) {
+        return;
+    }
+
+    tooltipsAreVisible = !tooltipsAreVisible;
+    const button = document.getElementById('toggleTooltipsBtn');
+
+    if (tooltipsAreVisible) {
+        if (button) button.textContent = 'Hide All Sample Names';
+        allMapMarkers.forEach(marker => marker.openTooltip());
+        const visibleTooltips = [];
+        allMapMarkers.forEach(marker => {
+            const currentTooltip = marker.getTooltip();
+            if (!currentTooltip) return;
+            let hasOverlap = false;
+            for (const visibleTooltip of visibleTooltips) {
+                if (isOverlapping(currentTooltip._container, visibleTooltip._container)) {
+                    hasOverlap = true;
+                    break;
+                }
+            }
+            if (hasOverlap) {
+                marker.closeTooltip();
+            } else {
+                visibleTooltips.push(currentTooltip);
+            }
+        });
+    } else {
+        if (button) button.textContent = 'Show All Sample Names';
+        allMapMarkers.forEach(marker => marker.closeTooltip());
+    }
+}

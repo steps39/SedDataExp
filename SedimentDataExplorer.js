@@ -120,7 +120,9 @@
         'Total Hydrocarbon', 'Gorham LMW Sum', 'Gorham HMW Sum', 'ICES7 PCB Sum'
     ];
 
-    const primarySortingOptions = ['None', 'Date of Sampling', 'Sample Name', 'Date & Sample Name'];
+    const primarySortingOptions = [
+        'None', 'Date of Sampling', 'Sample Name', 'Date & Sample Name', 'Sample Name & Date',
+        'Dataset Name', 'Dataset Name & Sample Name ', 'Sample Name & Dataset Name'];
     const secondarySortingOptions = [
         'Latitude', 'Longitude', 'Min Depth', 'Max Depth', 'Mean Depth',
         'Total Area', 'Total Solids', 'Organic Matter', 
@@ -1137,7 +1139,7 @@ fred = df;
 //fred = sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]];
 //                        if (!sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)']) {
 //                        if (sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)'] === undefined) {
-console.log('New test: No total solids');
+console.log('New test: No total solids',dateSampled, sheetName);
 // Code that reads Total Solids column into physical data
                         if (!('Total solids (% total sediment)' in sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]])) {
 col = startCol + 3;
@@ -1198,14 +1200,16 @@ let missingTotalSolids = true;
                         if (df[startRow - 3][startCol + 4].includes('Exempt')) {
                             deltaExempt = 1;
                         }
+                        let blankLine = 0;
                         for (let col = startCol + 6 + deltaExempt; col < df[startRow - 1].length; col++) {
                             meas.sizes.push(parseFloat(df[startRow - 2][col]) || 0);
-                            for (let row = startRow; row < 38; row++) {
+                            for (let row = startRow; row < df.length; row++) {
                                 sample = df[row][startCol + 2]; //bodge to pick up sample id
                                 // If sample id not present then use Laboratory sample number instead
                                 if (sample == undefined || sample == null) {
                                     sample = df[row][startCol];
                                 }
+                                //Stop if no sample id - end of data - may break if blank rows in data
                                 if (!(sample == undefined || sample == null)) {
                                     //console.log(sheetName, col, row, sample);
                                     if (!meas.samples) {
@@ -1237,6 +1241,11 @@ let missingTotalSolids = true;
                                     //console.log(sample);
                                     meas.samples[sample].psd.push(parseFloat(df[row][col]) || 0);
                                     //console.log('meas.psd ',df[row][col]);
+                                } else {
+                                    blankLine += 1;
+                                    if (blankLine > 5) { // Allow for up to 5 blank lines in PSD data
+                                        break;
+                                    }
                                 }
                             }
                         }

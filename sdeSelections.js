@@ -612,6 +612,26 @@ console.log('sheetName',sheetName,dataSheetNamesCheckboxes[i]);
             }
         }
     }
+    // going to find sample with specific measurements
+    for (const dateSelected in selectedSampleMeasurements) {
+        for (const sheetName in selectedSampleMeasurements[dateSelected]) {
+            const mustChemicalType = document.getElementById((sheetName + 'sample').replace(/\s/g, '').toLowerCase()).checked;
+            if (mustChemicalType) {
+                for (const chemical in selectedSampleMeasurements[dateSelected][sheetName].chemicals) {
+                    for (const sample in selectedSampleInfo[dateSelected].position) {
+                        const conc = selectedSampleMeasurements[dateSelected][sheetName].chemicals[chemical].samples[sample];
+console.log(dateSelected,sheetName,chemical,sample,conc);
+                        if (conc === null || conc == undefined) {
+                            const checkName = `sample_${dateSelected + ': ' + sample}`;
+                            const checkbox = document.getElementById(checkName);
+                            checkbox.checked = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 function haversineDistance(lat1, lon1, lat2, lon2) {

@@ -46,11 +46,20 @@ function getSortValue(fullSampleName, sortKey) {
         switch (sortKey) {
             // --- PRIMARY SORT KEYS (Strings) ---
             case 'dateofsampling':
-                return selectedSampleInfo[datePart]['label'].toLowerCase();
+                return selectedSampleInfo[datePart]['Date Sampled'].toLowerCase();
             case 'samplename':
                 return selectedSampleInfo[datePart].position[samplePart]['label'].toLowerCase();
             case 'datesamplename':
+                return (selectedSampleInfo[datePart]['Date Sampled'] + selectedSampleInfo[datePart].position[samplePart]['label']).toLowerCase();
+            case 'samplenamedate':
+                return (selectedSampleInfo[datePart].position[samplePart]['label'] + selectedSampleInfo[datePart]['Date Sampled']).toLowerCase();
+            case 'datasetname':
+                return selectedSampleInfo[datePart]['label'].toLowerCase();
+            case 'datasetnamesamplename':
                 return (selectedSampleInfo[datePart]['label'] + selectedSampleInfo[datePart].position[samplePart]['label']).toLowerCase();
+            case 'samplenamedatasetname':
+                return (selectedSampleInfo[datePart].position[samplePart]['label'] + selectedSampleInfo[datePart]['label']).toLowerCase();
+
             
             // --- SECONDARY SORT KEYS (Numbers) ---
             case 'mindepth':
