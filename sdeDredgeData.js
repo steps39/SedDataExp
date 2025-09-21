@@ -47,7 +47,8 @@ ddLookup.sheet = {'pcb101' : "PCB data" , 'pcb105' : "PCB data" , 'pcb110' : "PC
         'pcb66' : "PCB data" , 'acenapth' : "PAH data" , 'acenapthylene' : "PAH data" , 'anthracn' : "PAH data" , 'baa' : "PAH data" , 'bap' : "PAH data" ,
         'bbf' : "PAH data" , 'benzghip' : "PAH data" , 'bep' : "PAH data" , 'bkf' : "PAH data" , 'c1n' : "PAH data" , 'c1phen' : "PAH data" , 'c2n' : "PAH data" ,
         'c3n' : "PAH data" , 'chrysene' : "PAH data" , 'dibenzah' : "PAH data" , 'flurant' : "PAH data" , 'fluorene' : "PAH data" , 'indypr' : "PAH data" ,
-        'napth' : "PAH data" , 'perylene' : "PAH data" , 'phenant' : "PAH data" , 'pyrene' : "PAH data" , 'thc' : "PAH data" , 'ahch' : "Organochlorine data" ,
+        'napth' : "PAH data" , 'perylene' : "PAH data" , 'phenant' : "PAH data" , 'pyrene' : "PAH data" , //'thc' : "PAH data" ,
+         'ahch' : "Organochlorine data" ,
         'bhch' : "Organochlorine data" , 'ghch' : "Organochlorine data" , 'dieldrin' : "Organochlorine data" , 'hcb' : "Organochlorine data" ,
         'dde' : "Organochlorine data" , 'ddt' : "Organochlorine data" , 'tde' : "Organochlorine data" , 'bde100' : "BDE data" , 'bde138' : "BDE data" ,
         'bde153' : "BDE data" , 'bde154' : "BDE data" , 'bde17' : "BDE data" , 'bde183' : "BDE data" , 'bde28' : "BDE data" , 'bde47' : "BDE data" ,
@@ -234,6 +235,7 @@ function processDDExcelData(data, url, mlaInput) {
     //    dateAnalysed = extractDataFromSheet();
     selectedSampleInfo = sampleInfo;
     selectedSampleMeasurements = sampleMeasurements;
+    postLoadSnapShot();
     updateChart();
 }
     
@@ -274,10 +276,14 @@ function extractDataFromSheet(sheetData, mlApplication) {
         sampleInfo[dateSampled].position = {};
         sampleInfo[dateSampled].label = dateSampled;
         uniqueRows.forEach(row => {
+            let correctedDepth = parseFloat(row[CEFASdepth]);
+            if (correctedDepth < 0) {
+                correctedDepth = 0;
+            }
             sampleInfo[dateSampled].position[row[CEFASsamplename]] = {
-                'Position latitude': row[CEFASlatitude],
-                'Position longitude': row[CEFASlongitude],
-                'Sampling depth (m)': row[CEFASdepth],
+                'Position latitude': parseFloat(row[CEFASlatitude]),
+                'Position longitude': parseFloat(row[CEFASlongitude]),
+                'Sampling depth (m)': { minDepth:correctedDepth, maxDepth:correctedDepth},
                 'label': row[CEFASsamplename],
             };
         });
@@ -335,7 +341,7 @@ function extractDataFromSheet(sheetData, mlApplication) {
         });
         for (const sheetName in meas) {
             meas[sheetName]['Unit of measurement'] = CEFASMeasurementUnit[sheetName];
-            // Fill in 0 for missing positions
+/*SRG250920            // Fill in 0 for missing positions
 //            for (const chemical in determinands[sheetName]) {
             for (let i = 0; i < determinands[sheetName].length; i++) {
                 const chemical = determinands[sheetName][i];
@@ -346,8 +352,8 @@ function extractDataFromSheet(sheetData, mlApplication) {
 /*                    if(!(meas[sheetName].chemicals[chemical].samples[sample])) {
                         meas[sheetName].chemicals[chemical].samples[sample] = 0;
                     }*/
-                }
-            }
+//                }
+//            }
         }
         sampleMeasurements[dateSampled] = meas;
         for (const sheetName in meas) {
@@ -388,16 +394,16 @@ function closeCEFASSearch(centreLat,centreLon,radius,startDate,finishDate) {
     }
     mlas = [];
     uniqueRows = CEFASUniqueRows;
-//console.log(uniqueRows);
+console.log(uniqueRows);
     uniqueRows.forEach(row => {
         samplingDate = new Date(parseDates(row[CEFASsampledate])[0]);
         sampleLat = row[CEFASlatitude];
         sampleLon = row[CEFASlongitude];
         distance = 1000 * haversineDistance(sampleLat, sampleLon, centreLat, centreLon);
         if (distance <= radius) {
-//console.log(startDate);
+console.log(startDate);
             if(startDate.toString() === 'Invalid Date' || finishDate.toString() === 'Invalid Date'){
-//console.log('Pushing Invalid Date');
+console.log('Pushing Invalid Date');
                 mlas.push(row[CEFASmla]);
             } else {
                 if (isBetweenDates(startDate,finishDate,samplingDate)){
@@ -406,16 +412,24 @@ function closeCEFASSearch(centreLat,centreLon,radius,startDate,finishDate) {
             }
         }
     });
+//    let mlaReturn = document.getElementById('mlApplications');
+//    let mlaInput = mlaReturn.value;
+//console.log(mlaInput);
+//    if (!(mlaInput === undefined || mlaInput === null)) {
+//        let mlas = mlaInput.trim().split(',').map(mla => mla.trim()); // Split comma-separated URLs
 console.log(mlas);
-    if (mlas.length > 0) {
-        mlas.forEach(mlApplication => {
+        if (mlas.length > 0) {
+            mlas.forEach(mlApplication => {
 //console.log(mlApplication);
             extractDataFromSheet(CEFASdata, mlApplication);
         });
+    }
+//}
         selectedSampleInfo = sampleInfo;
         selectedSampleMeasurements = sampleMeasurements;
+        postLoadSnapShot();
         updateChart();
-    }
+    
 }
 
 function sedDredgeDataDisplay(noMLAs,noDatasets) {

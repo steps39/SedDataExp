@@ -477,6 +477,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                         y: currentChemical.samples[s],
                         label: selectedSampleInfo[ds].label + ': ' + selectedSampleInfo[ds].position[s].label,
                     };
+console.log(xValue);
                     ii += 1;
                     if (!xValue) {
 // reverted to 250502 version of test not sure why?                   if (!(typeof xValue === "number")) {

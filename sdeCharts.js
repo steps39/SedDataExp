@@ -2641,9 +2641,9 @@ function pcaChart(selectMeas, sheetName, chemicalNames, instanceNo) {
         }
         const setName = parts.length > 1 ? parts[0].trim() : "Unknown Set";
         const sampleName = parts[1];
-        console.log(`Sample "${fullSampleName}" parsed as set "${setName}", sample "${sampleName}".`);
-        console.log('selectedSampleInfo', selectedSampleInfo[setName].label);
-        console.log('selectedSampleInfo position', selectedSampleInfo[setName].position[sampleName].label);
+//        console.log(`Sample "${fullSampleName}" parsed as set "${setName}", sample "${sampleName}".`);
+//        console.log('selectedSampleInfo', selectedSampleInfo[setName].label);
+//        console.log('selectedSampleInfo position', selectedSampleInfo[setName].position[sampleName].label);
         const labelSampleName = selectedSampleInfo[setName].label + ': ' + selectedSampleInfo[setName].position[sampleName].label;
 //        const sampleName = parts.length > 2 ? parts.slice(1).join(':').trim() : fullSampleName.trim();
 

@@ -467,6 +467,13 @@ console.log('sheetName',sheetName,dataSheetNamesCheckboxes[i]);
     }
     const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
     const checkboxesIn = document.querySelectorAll('input[name="sample"]:checked');
+//console.log(checkboxes,checkboxesIn);
+//console.log(Object.keys(checkboxes));
+let checkboxesNames = [];
+for (let i = 0; i < checkboxes.length; i++) {
+    checkboxesNames[i] = checkboxes[i].value;
+}
+console.log(checkboxes.value);
     if (selectBySheet) {
         index = 0;
         samplesToKeep = {};
@@ -613,7 +620,7 @@ console.log('sheetName',sheetName,dataSheetNamesCheckboxes[i]);
         }
     }
     // going to find sample with specific measurements
-    for (const dateSelected in selectedSampleMeasurements) {
+/*    for (const dateSelected in selectedSampleMeasurements) {
         for (const sheetName in selectedSampleMeasurements[dateSelected]) {
             const mustChemicalType = document.getElementById((sheetName + 'sample').replace(/\s/g, '').toLowerCase()).checked;
             if (mustChemicalType) {
@@ -630,8 +637,41 @@ console.log(dateSelected,sheetName,chemical,sample,conc);
                 }
             }
         }
+    }*/
+    for (let i = 0; i < dataSheetNames.length; i++) {
+        sheetName = dataSheetNames[i];
+        const mustChemicalType = document.getElementById((sheetName + 'sample').replace(/\s/g, '').toLowerCase()).checked;
+        if(mustChemicalType) {
+            for (let j = 0; j < checkboxesNames.length; j++) {
+                let parts = checkboxesNames[j].split(": ");
+                if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
+                const dateSampled = parts[0];
+                const sample = parts[1];
+                const checkName = `sample_${dateSampled + ': ' + sample}`;
+                const checkbox = document.getElementById(checkName);
+                if (!(sheetName in selectedSampleMeasurements[dateSampled])) {
+                    checkbox.checked = false;
+                } else {
+                    // Assume no chemicals are present for this sample
+                    checkbox.checked = false;
+                    for (const chemical in selectedSampleMeasurements[dateSampled][sheetName].chemicals) {
+                        const conc = selectedSampleMeasurements[dateSampled][sheetName].chemicals[chemical].samples[sample];
+//        console.log(dateSampled,sheetName,chemical,sample,conc);
+  /*                          if (conc === null || conc == undefined) {
+                                const checkName = `sample_${dateSampled + ': ' + sample}`;
+                                const checkbox = document.getElementById(checkName);
+                                checkbox.checked = false;
+                            }*/
+                           // If any chemical has a concentration > 0 then keep the sample
+                        if (conc > 0) {
+                            checkbox.checked = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
-
 }
 
 function haversineDistance(lat1, lon1, lat2, lon2) {

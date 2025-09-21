@@ -54,11 +54,12 @@ const openSensorCommunityTiles = L.tileLayer('https://osmc3.maps.sensor.communit
 
 //function createGlobalLayers(selectedSampleMeasurements, selectedSampleInfo) {
 function createGlobalLayers() {
+console.log('Creating global layers...');
     if (allMapData.isReady) {
         console.log("Layers already generated. Skipping regeneration.");
         return;
     }
-
+console.log(selectedSampleMeasurements, selectedSampleInfo);
     let allSamples = [];
     let sampleNo = -1;
 
@@ -75,7 +76,7 @@ function createGlobalLayers() {
     let colorIndex = 0;
     let noSamples = 0;
     const datesSampled = Object.keys(selectedSampleInfo);
-
+console.log(datesSampled);
     datesSampled.forEach(dateSampled => {
         markers[dateSampled] = {};
         dateColors[dateSampled] = markerColors[colorIndex];
@@ -85,11 +86,15 @@ function createGlobalLayers() {
         dsSamples.forEach(sample => allSamples.push(`${dateSampled}: ${sample}`));
     });
 
+if(datesSampled.length > 1) {
     datesSampled.sort((a, b) => {
         const labelA = selectedSampleInfo[a].label || a;
         const labelB = selectedSampleInfo[b].label || b;
         return labelA.localeCompare(labelB);
     });
+}
+console.log(datesSampled);
+console.log(noSamples, allSamples);
 
     let sampleDepths = {};
     let depthStatsGlobal = { min: Infinity, max: -Infinity };
@@ -108,7 +113,7 @@ function createGlobalLayers() {
             }
         });
     });
-
+console.log(sampleDepths, depthStatsGlobal);
     function computeContaminationStats(measurements, sampleInfo) {
         const statsByChem = {};
         Object.keys(measurements).forEach(datasetName => {
@@ -1545,6 +1550,8 @@ function sampleMap(meas) {
         const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
         map.fitBounds(bounds);
     }
+
+console.log("Map created", noLocations, noSamples);
 
     //DUPLICATE from sampleMap
     function applyDynamicStyling(chemicalName) {

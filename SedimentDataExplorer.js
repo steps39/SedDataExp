@@ -1139,9 +1139,10 @@ fred = df;
 //fred = sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]];
 //                        if (!sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)']) {
 //                        if (sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)'] === undefined) {
-console.log('New test: No total solids',dateSampled, sheetName);
+console.log('New test: No total solids',dateSampled, sheetName, allSamples[0]);
+//console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
 // Code that reads Total Solids column into physical data
-                        if (!('Total solids (% total sediment)' in sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]])) {
+                        if (!(sampleMeasurements[dateSampled]?.['Physical Data']?.samples?.[allSamples[0]]?.['Total solids (% total sediment)'])) {
 col = startCol + 3;
 row = startRow - 2;
 console.log('col ',col,' row ',row, df[row][col]);
@@ -1173,7 +1174,12 @@ let missingTotalSolids = true;
                                         }
                                         if (!missingTotalSolids) {
                                         for (let sample in ts) {
-                                            if (!(sampleMeasurements[dateSampled]['Physical Data'].samples[sample] === undefined)) {
+//                                            if (!(sampleMeasurements[dateSampled]['Physical Data'].samples[sample] === undefined)) {
+                                            if (!sampleMeasurements[dateSampled]?.['Physical Data']) {
+                                                sampleMeasurements[dateSampled]['Physical Data'] = {};
+                                                sampleMeasurements[dateSampled]['Physical Data'].samples = {};
+                                            }
+                                            if (sampleMeasurements[dateSampled]?.['Physical Data']?.samples[sample]) {
                                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample]['Total solids (% total sediment)'] = ts[sample];
                                                 if (!(ts[sample] === undefined)) {
                                                     missingTotalSolids = false;
