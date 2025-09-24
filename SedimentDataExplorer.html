@@ -525,6 +525,39 @@ div[id^="largemap-"] {
     width: 100%;
 }
 
+.collapsible-legend {
+    cursor: pointer;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out; /* Adjust the duration as needed */
+}
+
+.collapsible-content.show-content {
+    max-height: 750px; /* Use a value larger than your content will ever be */
+}
+
+/* Make the app container take up the full viewport height */
+.app-container {
+    display: flex; /* Use flexbox to align children */
+    height: 100vh; /* Set height to 100% of the viewport height */
+}
+
+/* Make the main content area flexible */
+.output-area {
+    flex-grow: 1; /* This will make the main content area take up the remaining space */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure the sidebar scrolls if its content overflows */
+.controls-sidebar {
+    overflow-y: auto; /* Enable vertical scrolling */
+    /* Other sidebar styles (width, etc.) go here */
+}
+
     </style>
 </head>
 
@@ -540,10 +573,11 @@ div[id^="largemap-"] {
         </div>
     </header>
 
-    <div class="app-container">
-        <aside id="controls-sidebar" class="controls-sidebar collapsed">
-            <fieldset>
-                <legend>Data Sources</legend>
+<div class="app-container">
+    <aside id="controls-sidebar" class="controls-sidebar collapsed">
+        <fieldset>
+            <legend class="collapsible-legend">Data Sources</legend>
+            <div class="collapsible-content">
                 <div class="input-group">
                     <label for="fileInput">MMO Templates (Local Files)</label>
                     <input type="file" id="fileInput" multiple onchange="importData()">
@@ -556,10 +590,12 @@ div[id^="largemap-"] {
                 <hr>
                 <button onclick="openCEFASSelection()">Select CEFAS Data</button>
                 <button onclick="openAdditionalInfoModal()">Additional Information</button>
-            </fieldset>
+            </div>
+        </fieldset>
 
-            <fieldset>
-                <legend>Save / Load State</legend>
+        <fieldset>
+            <legend class="collapsible-legend">Save / Load State</legend>
+            <div class="collapsible-content">
                 <div class="input-group">
                     <label for="fileSave">Save Snapshot</label>
                     <input type="text" id="fileSave" placeholder="Enter file name to save" onchange="saveSnapShot()">
@@ -572,18 +608,65 @@ div[id^="largemap-"] {
                     <label for="urlLoad">Load Snapshot from URL</label>
                     <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
                 </div>
-            </fieldset>
+            </div>
+        </fieldset>
 
-            <fieldset>
-                <legend>Selection Tools</legend>
+        <fieldset>
+            <legend class="collapsible-legend">Selection Tools</legend>
+            <div class="collapsible-content">
                 <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
                 <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
                 <button onclick="openChemicalSelection()">Select Chemicals</button>
                 <button onclick="clearSelections()" class="secondary">Clear All Selections</button>
-            </fieldset>
+            </div>
+        </fieldset>
 
-            <fieldset>
-                <legend>Chart Customisation</legend>
+        <fieldset>
+            <legend class="collapsible-legend">Chart Configuration</legend>
+            <div class="collapsible-content">
+                <p><strong>Sheetnames to Include:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
+                    <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
+                    <label><input type="checkbox" id="pahdata" checked> PAH data</label>
+                    <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
+                    <label><input type="checkbox" id="bdedata" checked> BDE data</label>
+                    <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
+                    <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
+                </div>
+                <hr>
+                <p><strong>Physical Chart Types:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="splitbyweight" checked> Split by weight</label>
+                    <label><input type="checkbox" id="splitbyarea" checked> Split by area</label>
+                    <label><input type="checkbox" id="totalsolidsandtotalcarbon" checked> Total solids and total carbon</label>
+                    <label><input type="checkbox" id="cumulative" checked> Cumulative</label>
+                </div>
+                <button onclick="openParticleSizeModal()">Small particle details</button>
+                <p><strong>Chemical Chart Types:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
+                    <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
+                    <label><input type="checkbox" id="correlationplots"> Correlation plots</label>
+                    <label><input type="checkbox" id="pcaanalysis"> PCA analysis</label>
+                    <label><input type="checkbox" id="mapgrid"> Map grid</label>
+                <button onclick="openAdditionalChartsModal()">Additional Charts</button>
+                <button onclick="openPcaOptionsModal()">PCA Options</button>
+                <hr>
+                </div>
+                <p><strong>Relations:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="relationareadensity"> Area density</label>
+                    <label><input type="checkbox" id="relationhc"> Total hydrocarbons</label>
+                    <label><input type="checkbox" id="relationtotalsolids"> Total solids</label>
+                    <label><input type="checkbox" id="relationorganiccarbon"> Organic Carbon</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend class="collapsible-legend">Chart Customisation</legend>
+            <div class="collapsible-content">
                 <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
                 <button onclick="openSampleLabels()">Enter Sample Labels</button>
                 <button onclick="openChartModifiersModal()">Chart Modifiers</button>
@@ -596,72 +679,42 @@ div[id^="largemap-"] {
                     <label for="secondary-sorting-select">Secondary Sort:</label>
                     <select id="secondary-sorting-select"></select>
                 </div>
-            </fieldset>
+            </div>
+        </fieldset>
+                    <button id="toggleMapBtn" onclick="toggleMap()">Hide Map</button>
 
-            <fieldset>
-                <legend>Chart Configuration</legend>
-                <p><strong>Sheetnames to Include:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
-                    <label><input type="checkbox" id="pahdata" checked> PAH data</label>
-                    <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
-                    <label><input type="checkbox" id="bdedata" checked> BDE data</label>
-                    <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
-                    <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
-                    <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
+    </aside>
+
+    <main class="output-area">
+        <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
+
+        <div class="fixed-header-container">
+            <div id="sedDredgeData" style="display: none;"></div>
+            <div id="fileDisplay"></div>
+            <div id="sample-info-table-container"></div>
+            <div id="everything-maps" style="display: none; margin-top: 1rem;">
+                <div id="map" class="map-container-original"></div>
+                <div id="map-legend" class="map-legend-container" style="display: none;">
+                    <h4>Legend</h4>
+                    </div>
+                <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
+                    <button onclick="toggleFileDisplay()">Toggle File Display</button>
+                    <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
+                    <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
+                    <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
                 </div>
-                <hr>
-                <p><strong>Chart Types:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
-                    <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
-                    <label><input type="checkbox" id="positionplace" checked> Plot by position</label>
-                    <label><input type="checkbox" id="pcaanalysis" checked> PCA analysis</label>
-                </div>
-                <button onclick="openAdditionalChartsModal()">Additional Charts</button>
-                <button onclick="openPcaOptionsModal()">PCA Options</button>
-                 <hr>
-                 <p><strong>Relations:</strong></p>
-                 <div class="checkbox-group">
-                    <label><input type="checkbox" id="relationareadensity" checked> Area density</label>
-                    <label><input type="checkbox" id="relationhc" checked> Total hydrocarbons</label>
-                    <label><input type="checkbox" id="relationtotalsolids" checked> Total solids</label>
-                    <label><input type="checkbox" id="relationorganiccarbon" checked> Organic Carbon</label>
-                 </div>
-                 <button onclick="openParticleSizeModal()">Particle Size Details</button>
-            </fieldset>
-
-        </aside>
-
-<main class="output-area">
-    <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
-
-    <div class="fixed-header-container">
-        <div id="sedDredgeData" style="display: none;"></div>
-        <div id="fileDisplay"></div>
-        <div id="sample-info-table-container"></div>
-        <div id="everything-maps" style="display: none; margin-top: 1rem;">
-            <div id="map" class="map-container-original"></div>
-            <div id="map-legend" class="map-legend-container" style="display: none;">
-                <h4>Legend</h4>
-                </div>
-            <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
-                <button onclick="toggleFileDisplay()">Toggle File Display</button>
-                <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
-                <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
-                <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
+            </div>
+            
+            <div id="chart-tab-buttons" class="tab-buttons"></div>
+        </div>
+        <div class="scrollable-content">
+            <div id="charts-and-tables-container">
+                <div id="chartContainer"></div>
+                <div id="chartsForMapContainer"></div>
             </div>
         </div>
-        
-        <div id="chart-tab-buttons" class="tab-buttons"></div>
-    </div>
-    <div class="scrollable-content">
-        <div id="charts-and-tables-container">
-            <div id="chartContainer"></div>
-            <div id="chartsForMapContainer"></div>
-        </div>
-    </div>
     </main>
+</div>
 
     <!-- Modals -->
     <div id="sedDataModal" class="modal">
@@ -842,6 +895,19 @@ div[id^="largemap-"] {
     <script src="sdeTables.js"></script>
     
     <script>
+        function toggleMap() {
+            const mapContainer = document.getElementById('everything-maps');
+            const button = document.getElementById('toggleMapBtn');
+            
+            if (mapContainer.style.display === 'none') {
+                mapContainer.style.display = 'block';
+                button.textContent = 'Hide Map';
+            } else {
+                mapContainer.style.display = 'none';
+                button.textContent = 'Show Map';
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('controls-sidebar');
             const toggleBtn = document.getElementById('sidebar-toggle');
@@ -1089,6 +1155,22 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
                 }
             }
         });
+
+        document.addEventListener("DOMContentLoaded", function() {
+    const legends = document.querySelectorAll(".collapsible-legend");
+
+    legends.forEach(legend => {
+        legend.addEventListener("click", function() {
+            // Find the immediate sibling which is the div containing the content
+            const content = this.nextElementSibling;
+            
+            // Toggle the 'show-content' class on the content div
+            if (content) {
+                content.classList.toggle("show-content");
+            }
+        });
+    });
+});
     </script>
 </body>
 </html>

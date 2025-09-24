@@ -1,5 +1,4 @@
 let permanentTooltipLayer;
-let contaminantHeatmaps = {};
 let isHeatmapMode = false;
 let activeContaminant = null;
 let allMapMarkers = [];
@@ -10,6 +9,7 @@ let datasetLayers = {};
 let overlayLayers = {};
 let contaminantLayers = {};
 let contaminantStats = {};
+let contaminantHeatmaps = {};
 let dateColors = {};
 let markers = {};
 let minLat = null, maxLat = null, minLon = null, maxLon = null;
@@ -40,6 +40,18 @@ const highlightStyle = {
         return rLarge;
     }
 
+    function extractUnit(str) {
+        //const regex = /\(([^)]+)\)|(mg\/kg)/;
+        const regex = /\((µ?g\/kg)\s*dry weight\)|(mg\/kg)/;
+        const match = str.match(regex);
+        if (match) {
+            // The captured group will be in match[1] or match[2]
+            // We check which one is not undefined
+            return match[1] || match[2] || 'Unit not found';
+        }
+        return 'Unit not found';
+    }
+
 const openStreetMapTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
 const worldImageryTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.' });
 const currentTime = new Date();
@@ -55,13 +67,16 @@ const openSensorCommunityTiles = L.tileLayer('https://osmc3.maps.sensor.communit
 //function createGlobalLayers(selectedSampleMeasurements, selectedSampleInfo) {
 function createGlobalLayers() {
 console.log('Creating global layers...');
-    if (allMapData.isReady) {
+/*    if (allMapData.isReady) {
         console.log("Layers already generated. Skipping regeneration.");
         return;
-    }
+    }*/
 console.log(selectedSampleMeasurements, selectedSampleInfo);
+contaminantLayers = {};
+contaminantHeatmaps = {};
     let allSamples = [];
     let sampleNo = -1;
+//    let minLat = null, maxLat = null, minLon = null, maxLon = null;
 
     baseLayers = {
         "OpenStreetMap": openStreetMapTiles,
@@ -75,6 +90,9 @@ console.log(selectedSampleMeasurements, selectedSampleInfo);
 
     let colorIndex = 0;
     let noSamples = 0;
+    let sampleDepths = {};
+    let depthStatsGlobal = { min: Infinity, max: -Infinity };
+
     const datesSampled = Object.keys(selectedSampleInfo);
 console.log(datesSampled);
     datesSampled.forEach(dateSampled => {
@@ -96,15 +114,18 @@ if(datesSampled.length > 1) {
 console.log(datesSampled);
 console.log(noSamples, allSamples);
 
-    let sampleDepths = {};
-    let depthStatsGlobal = { min: Infinity, max: -Infinity };
     datesSampled.forEach(dateSampled => {
         const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
         dsSamples.forEach(sample => {
             const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
+console.log(dateSampled, sample, depthInfo);
             if (depthInfo) {
                 const maxDepth = depthInfo['maxDepth'];
                 if (!isNaN(maxDepth)) {
+                    if (depthStatsGlobal.max === null) {
+                        depthStatsGlobal.min = maxDepth;
+                        depthStatsGlobal.max = maxDepth;
+                    }
                     const key = `${dateSampled}: ${sample}`;
                     sampleDepths[key] = maxDepth;
                     if (maxDepth < depthStatsGlobal.min) depthStatsGlobal.min = maxDepth;
@@ -114,18 +135,75 @@ console.log(noSamples, allSamples);
         });
     });
 console.log(sampleDepths, depthStatsGlobal);
-    function computeContaminationStats(measurements, sampleInfo) {
+
+function computeIndividualStats(statsByChem, unit, values, datasetName, chemicalName, lookupName = chemicalName) {
+    if (!statsByChem[chemicalName]) {
+        statsByChem[chemicalName] = {
+            valueMin: Infinity, valueMax: -Infinity,
+            depthMin: Infinity, depthMax: -Infinity,
+            unit
+        };
+    } else if (unit && !statsByChem[chemicalName].unit) {
+        statsByChem[chemicalName].unit = unit;
+    }
+    Object.keys(values || {}).forEach(sampleName => {
+        const value = values[sampleName];
+        if (value != null && !isNaN(value)) {
+            if (value < statsByChem[chemicalName].valueMin) statsByChem[chemicalName].valueMin = value;
+            if (value > statsByChem[chemicalName].valueMax) statsByChem[chemicalName].valueMax = value;
+        }
+        const info = sampleInfo[datasetName]?.position?.[sampleName];
+        const dObj = info?.['Sampling depth (m)'];
+        const dMax = dObj?.maxDepth;
+        if (dMax != null && !isNaN(dMax)) {
+            if (dMax < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = dMax;
+            if (dMax > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = dMax;
+        }
+    });
+}
+
+
+    function computeContaminationStats() {
         const statsByChem = {};
-        Object.keys(measurements).forEach(datasetName => {
-            const dataset = measurements[datasetName];
+        Object.keys(selectedSampleMeasurements).forEach(datasetName => {
+            const dataset = selectedSampleMeasurements[datasetName];
             Object.keys(dataset).forEach(sheetName => {
-                if (sheetName === "Physical Data") return;
                 const sheet = dataset[sheetName];
                 if (!sheet?.chemicals) return;
+                const unit = extractUnit(sheet['Unit of measurement']);
+                if (sheet?.total) {
+                    const total = sheet.total;
+                    computeIndividualStats(statsByChem, unit, total, datasetName, 'Total ' + sheetName);
+                }
+                if (sheetName === 'PAH data'){
+                    let lmwSum = {};
+                    let hmwSum = {};
+                    const gorham = sheet.gorhamTest;
+                    for(const sample in gorham) {
+                        lmwSum[sample] = gorham[sample].lmwSum;
+                        hmwSum[sample] = gorham[sample].hmwSum;
+                    }
+                    computeIndividualStats(statsByChem, unit, lmwSum, datasetName, 'LMW PAH Sum');
+                    computeIndividualStats(statsByChem, unit, hmwSum, datasetName, 'HMW PAH Sum');
+                }
+                if (sheetName === 'PCB data'){
+                    let ices7 = {};
+                    let all = {};
+                    const pcbSums = sheet.congenerTest;
+                    for(const sample in pcbSums) {
+                        ices7[sample] = pcbSums[sample].ICES7;
+                        all[sample] = pcbSums[sample].All;
+                    }
+                    computeIndividualStats(statsByChem, unit, ices7, datasetName, 'ICES7 PCB Sum');
+                    computeIndividualStats(statsByChem, unit, all, datasetName, 'All PCB Sum');
+                }
+
+
                 Object.keys(sheet.chemicals).forEach(chemicalName => {
                     const chemical = sheet.chemicals[chemicalName];
-                    const unit = chemical.unit ?? null;
-                    if (!statsByChem[chemicalName]) {
+                    computeIndividualStats(statsByChem, unit, chemical.samples, datasetName, chemicalName);
+//                    const unit = chemical.unit ?? null;
+/*                    if (!statsByChem[chemicalName]) {
                         statsByChem[chemicalName] = {
                             valueMin: Infinity, valueMax: -Infinity,
                             depthMin: Infinity, depthMax: -Infinity,
@@ -147,7 +225,7 @@ console.log(sampleDepths, depthStatsGlobal);
                             if (dMax < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = dMax;
                             if (dMax > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = dMax;
                         }
-                    });
+                    });*/
                 });
             });
         });
@@ -164,6 +242,9 @@ console.log(sampleDepths, depthStatsGlobal);
     function applyDynamicStyling(chemicalName) {
         const stats = contaminantStats[chemicalName];
         if (!stats) return;
+if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+    console.log(chemicalName, stats);
+}
         const { valueMin, valueMax, depthMin, depthMax } = stats;
         const { breaks, colors } = getColorScale(valueMin, valueMax);
         contaminantLayers[chemicalName].eachLayer(marker => {
@@ -205,6 +286,9 @@ console.log(sampleDepths, depthStatsGlobal);
         return sampleDepths[b] - sampleDepths[a];
     });
 
+    // delete current max lat etc to account if samples have been added or deleted
+    minLat = null, maxLat = null, minLon = null, maxLon = null;
+console.log(depthSortedSampleIds);
     depthSortedSampleIds.forEach(fullSample => {
         let parts = fullSample.split(": ");
         if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
@@ -214,6 +298,7 @@ console.log(sampleDepths, depthStatsGlobal);
         if (selectedSampleInfo[dateSampled].position[sample]?.hasOwnProperty('Position latitude')) {
             const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
             const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
+console.log(dateSampled,sample,lat,lon);
             if (!isNaN(lat) && !isNaN(lon)) {
                 if (maxLat === null) { minLat = lat; maxLat = lat; minLon = lon; maxLon = lon; }
                 else {
@@ -311,25 +396,57 @@ console.log(sampleDepths, depthStatsGlobal);
         datasetLayers[dateSampled] = L.layerGroup(markerLayers[dateSampled]);
     });
 
-    contaminantStats = computeContaminationStats(selectedSampleMeasurements, selectedSampleInfo);
+//    contaminantStats = computeContaminationStats(selectedSampleMeasurements, selectedSampleInfo);
+    contaminantStats = computeContaminationStats();
     let contaminantMarkerData = {};
 
     Object.keys(selectedSampleMeasurements).forEach(datasetName => {
         const dataset = selectedSampleMeasurements[datasetName];
         Object.keys(dataset).forEach(sheetName => {
-            if (sheetName === "Physical Data") return;
             const sheet = dataset[sheetName];
             if (!sheet?.chemicals) return;
+            const unit = extractUnit(sheet['Unit of measurement']);
+            if (sheet?.total) {
+                const total = sheet.total;
+                makePointLayer(datasetName, total, 'Total ' + sheetName, unit);
+            }
+            if (sheetName === 'PAH data'){
+                let lmwSum = {};
+                let hmwSum = {};
+                const gorham = sheet.gorhamTest;
+console.log(sheet,sheet.gorhamTest, gorham);
+                for(const sample in gorham) {
+                    lmwSum[sample] = gorham[sample].lmwSum;
+                    hmwSum[sample] = gorham[sample].hmwSum;
+                }
+console.log(lmwSum,hmwSum);
+                makePointLayer(datasetName,lmwSum,'LMW PAH Sum',unit);
+                makePointLayer(datasetName,hmwSum,'HMW PAH Sum',unit);
+            }
+            if (sheetName === 'PCB data'){
+                let ices7 = {};
+                let all = {};
+                const pcbSums = sheet.congenerTest;
+console.log(sheet,sheet.congenerTest, pcbSums);
+                for(const sample in pcbSums) {
+                    ices7[sample] = pcbSums[sample].ICES7;
+                    all[sample] = pcbSums[sample].All;
+                }
+console.log(ices7,all);
+                makePointLayer(datasetName,ices7,'ICES7 PCB Sum',unit);
+                makePointLayer(datasetName,all,'All PCB Sum',unit);
+            }
             Object.keys(sheet.chemicals).forEach(chemicalName => {
                 const chemical = sheet.chemicals[chemicalName];
-                if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
+                makePointLayer(datasetName,chemical.samples,chemicalName,unit);
+/*                if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
                 if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
-                const unit = chemical.unit ?? (contaminantStats[chemicalName]?.unit ?? "");
+//                const unit = chemical.unit ?? (contaminantStats[chemicalName]?.unit ?? "");
 //                Object.keys(chemical.samples || {}).forEach(sampleName => {
-    depthSortedSampleIds.forEach(fullSampleName => {
-        let parts = fullSampleName.split(": ");
-        if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
-        sampleName = parts[1];
+                depthSortedSampleIds.forEach(fullSampleName => {
+                    let parts = fullSampleName.split(": ");
+                    if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
+                    sampleName = parts[1];
 
 //                    const fullSampleName = `${datasetName}: ${sampleName}`;
                     const value = chemical.samples[sampleName];
@@ -355,10 +472,46 @@ console.log(sampleDepths, depthStatsGlobal);
                     m.options._depth = sampleDepths[fullSampleName];
                     contaminantLayers[chemicalName].addLayer(m);
                     contaminantMarkerData[chemicalName].push(m);
-                });
+                });*/
             });
         });
     });
+
+    function makePointLayer(datasetName,valueSamples,chemicalName,unit) {
+        if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
+        if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
+        depthSortedSampleIds.forEach(fullSampleName => {
+            let parts = fullSampleName.split(": ");
+            if (parts[0] === datasetName) {
+                if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
+                sampleName = parts[1];
+    //            const value = chemical.samples[sampleName];
+                const value = valueSamples[sampleName];
+                if (value == null || isNaN(value)) return;
+                const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
+                if (!sampleInfo) return;
+                const lat = parseFloat(sampleInfo["Position latitude"]);
+                const lon = parseFloat(sampleInfo["Position longitude"]);
+                if (isNaN(lat) || isNaN(lon)) return;
+                const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
+                const unitSuffix = unit ? ` ${unit}` : "";
+                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${value}${unitSuffix}<br>Depth: ${sampleDepths[fullSampleName]} m`;
+                const m = L.circleMarker([lat, lon], {
+                    radius: 6,
+                    fillColor: "#999",
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).bindTooltip(tooltipHtml);
+                m.options._chemValue = value;
+                m.options._chemUnit = unit || "";
+                m.options._depth = sampleDepths[fullSampleName];
+                contaminantLayers[chemicalName].addLayer(m);
+                contaminantMarkerData[chemicalName].push(m);
+            }
+        });
+    }
 
     Object.keys(contaminantLayers).forEach(chem => applyDynamicStyling(chem));
 
@@ -1428,12 +1581,12 @@ function sampleMap(meas) {
     isHeatmapMode = false;
     activeContaminant = null;
 
-    if (!allMapData.isReady) {
+/*    if (!allMapData.isReady) {
         createGlobalLayers(meas, selectedSampleInfo);
-    }
+    }*/
     
 //    let latSum = 0, lonSum = 0, noLocations = 0;
-//    let minLat = null, maxLat = null, minLon = null, maxLon = null;
+//    minLat = null, maxLat = null, minLon = null, maxLon = null;
     const markerColors = ['#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF', '#FFC300', '#33FFA1', '#C70039', '#900C3F'];
     const datesSampled = Object.keys(selectedSampleInfo);
     let colorIndex = 0;
@@ -1557,6 +1710,9 @@ console.log("Map created", noLocations, noSamples);
     function applyDynamicStyling(chemicalName) {
         const stats = contaminantStats[chemicalName];
         if (!stats) return;
+if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+    console.log(chemicalName, stats);
+}
         const { valueMin, valueMax, depthMin, depthMax } = stats;
         const { breaks, colors } = getColorScale(valueMin, valueMax);
         contaminantLayers[chemicalName].eachLayer(marker => {

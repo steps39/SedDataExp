@@ -321,18 +321,26 @@ function displayCharts(sheetName, instanceNo) {
         displayPSDChart(sizes, selectedMeasRelativeArea, sheetName, instanceNo, unitTitle, 'Relative Area');
         instanceNo += 1;
         displayPSDChart(sizes, selectedMeasArea, sheetName, instanceNo, unitTitle, 'Absolute Area');
-        instanceNo += 1;
-        displayPSDChart(sizes, cumWeights, sheetName, instanceNo, unitTitle, 'Cumlative by Weight');
-        instanceNo += 1;
-        displayPSDChart(sizes, cumAreas, sheetName, instanceNo, unitTitle, 'Cumulative by Area');
-        instanceNo += 1;
-        displayPsdSplits(sortedSamples, splitWeights, sheetName, instanceNo, unitTitle, 'Weight');
-        instanceNo += 1;
-        displayPsdSplits(sortedSamples, splitRelativeAreas, sheetName, instanceNo, unitTitle, 'Relative Area');
-        instanceNo += 1;
-        displayPsdSplits(sortedSamples, splitAreas, sheetName, instanceNo, unitTitle, 'Absolute Area');
-        instanceNo += 1;
-        displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTitle, 'Total Solids % and Organic Carbon %');
+        if (subsToDisplay['cumulative']) {
+            instanceNo += 1;
+            displayPSDChart(sizes, cumWeights, sheetName, instanceNo, unitTitle, 'Cumlative by Weight');
+            instanceNo += 1;
+            displayPSDChart(sizes, cumAreas, sheetName, instanceNo, unitTitle, 'Cumulative by Area');
+        }
+        if (subsToDisplay['splitbyweight']) {
+            instanceNo += 1;
+            displayPsdSplits(sortedSamples, splitWeights, sheetName, instanceNo, unitTitle, 'Weight');
+        }
+        if (subsToDisplay['splitbyarea']) {
+            instanceNo += 1;
+            displayPsdSplits(sortedSamples, splitRelativeAreas, sheetName, instanceNo, unitTitle, 'Relative Area');
+            instanceNo += 1;
+            displayPsdSplits(sortedSamples, splitAreas, sheetName, instanceNo, unitTitle, 'Absolute Area');
+        }
+        if (subsToDisplay['totalsolidsandtotalcarbon']) {
+            instanceNo += 1;
+            displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTitle, 'Total Solids % and Organic Carbon %');
+        }
         if (resuspensionSize>0) {
             instanceNo += 1;
             displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, instanceNo, unitTitle, 'Fractions');
@@ -450,141 +458,150 @@ function displayCharts(sheetName, instanceNo) {
             }
         }
         largeInstanceNo = -1;
-if (subsToDisplay['mapsNow']) {
-    //{if (subsToDisplay['positionplace']) {
-    const allContaminants = Object.keys(selectedMeas);
-    if (allContaminants.length > 0) {
-        // 1. Create a large container for the main map
-        const largeMapContainer = document.createElement('div');
-//        const largeContaminantMapId = 'large-contaminant-map';
-        const largeContaminantMapId = `largemap-${sheetName.replace(/[^a-zA-Z0-9]/g, '')}`;
-        largeMapContainer.id = largeContaminantMapId;
-        largeMapContainer.style.width = '100%';
-        largeMapContainer.style.height = '600px';
-        largeMapContainer.style.border = '2px solid #ccc';
-        targetContainer.appendChild(largeMapContainer);
-        
-        // 2. Create the grid container for small maps
-        const gridContainer = document.createElement('div');
-        gridContainer.id = 'small-contaminant-map-grid';
-        gridContainer.style.display = 'grid';
-        gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
-        gridContainer.style.gap = '1rem';
-        gridContainer.style.marginTop = '2rem';
-        gridContainer.innerHTML = '<h3 style="grid-column: 1 / -1;">' + sheetName + '</h3>';
-        targetContainer.appendChild(gridContainer);
-        
-        const firstContaminant = allContaminants[0];
+    if (subsToDisplay['mapgrid']) {
+        //{if (subsToDisplay['positionplace']) {
+        const allContaminants = Object.keys(selectedMeas);
+        if (allContaminants.length > 0) {
+            // 1. Create a large container for the main map
+            const largeMapContainer = document.createElement('div');
+    //        const largeContaminantMapId = 'large-contaminant-map';
+            const largeContaminantMapId = `largemap-${sheetName.replace(/[^a-zA-Z0-9]/g, '')}`;
+            largeMapContainer.id = largeContaminantMapId;
+            largeMapContainer.style.width = '100%';
+            largeMapContainer.style.height = '600px';
+            largeMapContainer.style.border = '2px solid #ccc';
+            targetContainer.appendChild(largeMapContainer);
+            
+            // 2. Create the grid container for small maps
+            const gridContainer = document.createElement('div');
+            gridContainer.id = 'small-contaminant-map-grid';
+            gridContainer.style.display = 'grid';
+            gridContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
+            gridContainer.style.gap = '1rem';
+            gridContainer.style.marginTop = '2rem';
+            gridContainer.innerHTML = '<h3 style="grid-column: 1 / -1;">' + sheetName + '</h3>';
+            targetContainer.appendChild(gridContainer);
+            
+            const firstContaminant = allContaminants[0];
 
-        // Create the large map - try ResizeObserver first, then fallback
-        createStaticContaminantMap(largeContaminantMapId, firstContaminant, 'points', true);
-        
-        // Fallback: if large map doesn't appear after 2 seconds, force create it
-        setTimeout(() => {
-            const container = document.getElementById(largeContaminantMapId);
-            if (container && !container._leaflet_map) {
-                console.log('Large map not created by ResizeObserver, forcing creation...');
-                // Force create without size checking
-                const staticMap = L.map(largeContaminantMapId, {
-                    center: [54.596, -1.177],
-                    zoom: 13,
-                    zoomControl: false,
-                    attributionControl: false,
-                    scrollWheelZoom: false,
-                    doubleClickZoom: false,
-                    boxZoom: false,
-                    keyboard: false,
-                    dragging: false,
-                });
-                container._leaflet_map = staticMap;
-
-                const baseLayerInstance = baseLayers['OpenStreetMap'];
-                L.tileLayer(baseLayerInstance._url, baseLayerInstance.options).addTo(staticMap);
-
-                const layerToAdd = contaminantLayers[firstContaminant];
-                if (layerToAdd) {
-                    layerToAdd.addTo(staticMap);
-                    const bounds = new L.LatLngBounds([]);
-                    layerToAdd.eachLayer(layer => {
-                        if (layer.getLatLng) {
-                            bounds.extend(layer.getLatLng());
-                        }
+            // Create the large map - try ResizeObserver first, then fallback
+            createStaticContaminantMap(largeContaminantMapId, firstContaminant, 'points', true);
+            
+            // Fallback: if large map doesn't appear after 2 seconds, force create it
+            setTimeout(() => {
+                const container = document.getElementById(largeContaminantMapId);
+                if (container && !container._leaflet_map) {
+                    console.log('Large map not created by ResizeObserver, forcing creation...');
+                    // Force create without size checking
+                    const staticMap = L.map(largeContaminantMapId, {
+                        center: [54.596, -1.177],
+                        zoom: 13,
+                        zoomControl: false,
+                        attributionControl: false,
+                        scrollWheelZoom: false,
+                        doubleClickZoom: false,
+                        boxZoom: false,
+                        keyboard: false,
+                        dragging: false,
                     });
-                    if (bounds.isValid()) {
-                        setTimeout(() => {
-                            staticMap.invalidateSize();
-                            staticMap.fitBounds(bounds, { padding: [20, 20] });
-                        }, 100);
+                    container._leaflet_map = staticMap;
+
+                    const baseLayerInstance = baseLayers['OpenStreetMap'];
+                    L.tileLayer(baseLayerInstance._url, baseLayerInstance.options).addTo(staticMap);
+
+                    const layerToAdd = contaminantLayers[firstContaminant];
+                    if (layerToAdd) {
+                        layerToAdd.addTo(staticMap);
+                        const bounds = new L.LatLngBounds([]);
+                        layerToAdd.eachLayer(layer => {
+                            if (layer.getLatLng) {
+                                bounds.extend(layer.getLatLng());
+                            }
+                        });
+                        if (bounds.isValid()) {
+                            setTimeout(() => {
+                                staticMap.invalidateSize();
+                                staticMap.fitBounds(bounds, { padding: [20, 20] });
+                            }, 100);
+                        }
                     }
                 }
-            }
-        }, 2000);
+            }, 2000);
 
-        // Generate small maps for all contaminants
-        allContaminants.forEach((contaminantName, index) => {
-            const mapWrapper = document.createElement('div');
-            const mapId = `map-${contaminantName.replace(/[^a-zA-Z0-9]/g, '')}`;
-//            const mapId = `smallmap-${index}`;
-            mapWrapper.className = 'small-map-wrapper';
-            mapWrapper.style.border = '1px solid #ddd';
-            mapWrapper.style.padding = '5px';
-            mapWrapper.style.textAlign = 'center';
-            mapWrapper.style.height = '280px';
-            mapWrapper.style.minWidth = '250px';
+            // Generate small maps for all contaminants
+            allContaminants.forEach((contaminantName, index) => {
+                const mapWrapper = document.createElement('div');
+                const mapId = `map-${contaminantName.replace(/[^a-zA-Z0-9]/g, '')}`;
+    //            const mapId = `smallmap-${index}`;
+                mapWrapper.className = 'small-map-wrapper';
+                mapWrapper.style.border = '1px solid #ddd';
+                mapWrapper.style.padding = '5px';
+                mapWrapper.style.textAlign = 'center';
+                mapWrapper.style.height = '280px';
+                mapWrapper.style.minWidth = '250px';
 
-            // Add Flexbox properties to arrange children vertically
-            mapWrapper.style.display = 'flex';
-            mapWrapper.style.flexDirection = 'column';
-    
-            const stats = contaminantStats[contaminantName];
-            const min = stats ? stats.valueMin.toFixed(2) : 'N/A';
-            const max = stats ? stats.valueMax.toFixed(2) : 'N/A';
-            const unit = stats ? stats.unit : '';
-            
-            const titleElement = document.createElement('h4');
-            titleElement.style.margin = '0';
-            titleElement.style.padding = '5px';
-            titleElement.style.backgroundColor = '#f0f0f0';
-            titleElement.style.cursor = 'pointer';
-            titleElement.style.fontSize = '14px';
-            titleElement.innerHTML = `${contaminantName}<br>(${min} - ${max} ${unit})`;
-            mapWrapper.appendChild(titleElement);
-            
-            const mapElement = document.createElement('div');
-            mapElement.id = mapId;
-            mapElement.style.width = '100%';
-            mapElement.style.flexGrow = '1';
-//            mapElement.style.height = 'calc(100% - 50px)';
-            mapElement.style.minHeight = '200px';
-            mapWrapper.appendChild(mapElement);
-            gridContainer.appendChild(mapWrapper);
-            
-            // Create small maps with staggered delays
-            setTimeout(() => {
-                createStaticContaminantMap(mapId, contaminantName, 'heatmap');
-            }, 300 + (index * 50));
-
-            titleElement.addEventListener('click', () => {
-                // Should be removed inside createStaticContaminantMap
-//                const existingLargeMap = document.getElementById(largeContaminantMapId)._leaflet_map;
-//                if (existingLargeMap) existingLargeMap.remove();
-
-                setTimeout(() => {
-                    createStaticContaminantMap(largeContaminantMapId, contaminantName, 'heatmap', true);
-                }, 100);
+                // Add Flexbox properties to arrange children vertically
+                mapWrapper.style.display = 'flex';
+                mapWrapper.style.flexDirection = 'column';
+        
+                const stats = contaminantStats[contaminantName];
+                const min = stats ? stats.valueMin.toFixed(2) : 'N/A';
+                const max = stats ? stats.valueMax.toFixed(2) : 'N/A';
+                const unit = stats ? stats.unit : '';
                 
-                targetContainer.scrollTop = 0;
-            });
-        });
-    } else {
-        console.warn(sheetName, ': No contaminant layers available for mapping.');
-    }
-}
+                const titleElement = document.createElement('h4');
+                titleElement.style.margin = '0';
+                titleElement.style.padding = '5px';
+                titleElement.style.backgroundColor = '#f0f0f0';
+                titleElement.style.cursor = 'pointer';
+                titleElement.style.fontSize = '14px';
+                titleElement.innerHTML = `${contaminantName}<br>(${min} - ${max} ${unit})`;
+                mapWrapper.appendChild(titleElement);
+                
+                const mapElement = document.createElement('div');
+                mapElement.id = mapId;
+                mapElement.style.width = '100%';
+                mapElement.style.flexGrow = '1';
+    //            mapElement.style.height = 'calc(100% - 50px)';
+                mapElement.style.minHeight = '200px';
+                mapWrapper.appendChild(mapElement);
+                gridContainer.appendChild(mapWrapper);
+                
+                // Create small maps with staggered delays
+                setTimeout(() => {
+                    createStaticContaminantMap(mapId, contaminantName, 'points');
+                }, 300 + (index * 50));
 
-        instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'relationareadensity', 'Total Area', 'Concentration', targetContainer, instanceNo);
-        instanceNo = displayScatterCharts(sheetName, { key: 'totalHC', sheetKey: 'PAH data' }, 'relationhc', 'Total Hydrocarbon', 'Concentration', targetContainer, instanceNo);
-        instanceNo = displayScatterCharts(sheetName, { key: 'totalSolids', sheetKey: 'Physical Data' }, 'relationtotalsolids', 'Total Solids %', 'Concentration', targetContainer, instanceNo);
-        instanceNo = displayScatterCharts(sheetName, { key: 'organicCarbon', sheetKey: 'Physical Data' }, 'relationorganiccarbon', 'Organic Carbon %', 'Concentration', targetContainer, instanceNo);
+                titleElement.addEventListener('click', () => {
+                    // Should be removed inside createStaticContaminantMap
+    //                const existingLargeMap = document.getElementById(largeContaminantMapId)._leaflet_map;
+    //                if (existingLargeMap) existingLargeMap.remove();
+
+                    setTimeout(() => {
+                        createStaticContaminantMap(largeContaminantMapId, contaminantName, 'points', true);
+                    }, 100);
+                    
+                    targetContainer.scrollTop = 0;
+                });
+            });
+        } else {
+            console.warn(sheetName, ': No contaminant layers available for mapping.');
+        }
+    }
+    if (subsToDisplay['correlationplots']) {
+        if (subsToDisplay['relationareadensity']) {
+            instanceNo = displayScatterCharts(sheetName, { key: 'totalArea', sheetKey: 'Physical Data' }, 'relationareadensity', 'Total Area', 'Concentration', targetContainer, instanceNo);
+        }
+        if (subsToDisplay['relationhc']) {
+            instanceNo = displayScatterCharts(sheetName, { key: 'totalHC', sheetKey: 'PAH data' }, 'relationhc', 'Total Hydrocarbon', 'Concentration', targetContainer, instanceNo);
+        }
+        if (subsToDisplay['relationtotalsolids']) {
+            instanceNo = displayScatterCharts(sheetName, { key: 'totalSolids', sheetKey: 'Physical Data' }, 'relationtotalsolids', 'Total Solids %', 'Concentration', targetContainer, instanceNo);
+        }
+        if (subsToDisplay['relationorganiccarbon']) {
+            instanceNo = displayScatterCharts(sheetName, { key: 'organicCarbon', sheetKey: 'Physical Data' }, 'relationorganiccarbon', 'Organic Carbon %', 'Concentration', targetContainer, instanceNo);
+        }
+    }
         if (sheetName == 'PAH data' && Object.keys(chemInfo).length != 0) {
             const chemicalNames = Object.keys(chemInfo);
             const properties = Object.keys(chemInfo[chemicalNames[0]]);

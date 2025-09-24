@@ -1,3 +1,10 @@
+function isSingleValue(item) {
+  return (
+    item !== null && 
+    typeof item !== 'object' && 
+    !Array.isArray(item)
+  );
+}
 // Extend the Array prototype to include a custom sortSamples method
 Array.prototype.sortSamples = function(ds) {
     // Use the built-in sort method on the array

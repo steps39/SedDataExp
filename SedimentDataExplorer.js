@@ -105,9 +105,11 @@
         disableRadioButtons(sortButtonGroups[sheetName], false);
         completeSheet[sheetName] = true;
     })*/
-    subChartNames = ['samplegroup','chemicalgroup','positionplace','pcaanalysis','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest',
-                    'pcanormalise','pcalmw','pcahmw','pcaepa','pcasmallpts','pcaorganiccarbon',
-                    'relationareadensity','relationhc','relationtotalsolids','relationorganiccarbon'];
+    subChartNames = ['samplegroup','chemicalgroup','correlationplots','pcaanalysis','gorhamtest','totalhc','pahratios',
+                    'ringfractions','eparatios','simpleratios','congenertest', 'pcanormalise','pcalmw','pcahmw',
+                    'pcaepa','pcasmallpts','pcaorganiccarbon','relationareadensity','relationhc',
+                    'relationtotalsolids','relationorganiccarbon','splitbyweight','splitbyarea',
+                    'totalsolidsandtotalcarbon','cumulative','mapgrid'];
 //    relationNames = ['relationareadensity','relationhc','relationtotalsolids'];
         subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
