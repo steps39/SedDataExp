@@ -1,124 +1,803 @@
-//import { kml } from "https://unpkg.com/@tmcw/togeojson?module";
-
 let permanentTooltipLayer;
+let isHeatmapMode = false;
+let activeContaminant = null;
+let allMapMarkers = [];
+let allMapData = { isReady: false };
+//let map;
+let baseLayers = {};
+let datasetLayers = {};
+let overlayLayers = {};
+let contaminantLayers = {};
+let contaminantStats = {};
+let contaminantHeatmaps = {};
+let dateColors = {};
+let markers = {};
+let minLat = null, maxLat = null, minLon = null, maxLon = null;
+let noLocations = 0, latSum = 0, lonSum = 0;
+const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
 
-function sampleMap(meas) {
-    // Check if there's an existing map and remove it
-    if (map) {
-        map.remove();
+const highlightStyle = {
+    radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
+};
+
+    function getHeatmapColor(intensity) {
+        if (intensity <= 0.2) return '#1a9850';
+        if (intensity <= 0.4) return '#fee08b';
+        if (intensity <= 0.6) return '#fc8d59';
+        if (intensity <= 0.8) return '#f46d43';
+        return '#d73027';
     }
 
-    allMapMarkers = [];
+    function getLogDepthRadius3Levels(depth, depthMin, depthMax) {
+        const rSmall = 6, rMed = 12, rLarge = 18;
+        if (depth == null || isNaN(depth) || depthMin === depthMax) return rSmall;
+        const logMin = Math.log((depthMin ?? 0) + 1);
+        const logMax = Math.log((depthMax ?? 0) + 1);
+        const logVal = Math.log(depth + 1);
+        const t = (logVal - logMin) / (logMax - logMin);
+        if (t <= 1 / 3) return rSmall;
+        if (t <= 2 / 3) return rMed;
+        return rLarge;
+    }
 
-//    permanentTooltipLayer = L.layerGroup.collision({margin: 5});
+    function extractUnit(str) {
+        //const regex = /\(([^)]+)\)|(mg\/kg)/;
+        const regex = /\((µ?g\/kg)\s*dry weight\)|(mg\/kg)/;
+        const match = str.match(regex);
+        if (match) {
+            // The captured group will be in match[1] or match[2]
+            // We check which one is not undefined
+            return match[1] || match[2] || 'Unit not found';
+        }
+        return 'Unit not found';
+    }
 
-    var currentTime = new Date();
-    var year = currentTime.getFullYear();
+const openStreetMapTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+const worldImageryTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.' });
+const currentTime = new Date();
+const year = currentTime.getFullYear();
+const apiKey = 'WYvhmkLwjzAF0LgSL14P7y1v5fySAYy9';
+const serviceUrl = 'https://api.os.uk/maps/raster/v1/zxy';
+const osRoadTiles = L.tileLayer(`${serviceUrl}/Road_3857/{z}/{x}/{y}.png?key=${apiKey}`, { maxZoom: 19, attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year });
+const osOutdoorTiles = L.tileLayer(`${serviceUrl}/Outdoor_3857/{z}/{x}/{y}.png?key=${apiKey}`, { maxZoom: 19, attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year });
+const openStreetMapHOTTiles = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France' });
+const openTopoMapTiles = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)' });
+const openSensorCommunityTiles = L.tileLayer('https://osmc3.maps.sensor.community/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © Sensor Community' });
 
-    //Ordnance Survey
-    var apiKey = 'WYvhmkLwjzAF0LgSL14P7y1v5fySAYy9';
-    var serviceUrl = 'https://api.os.uk/maps/raster/v1/zxy';
+//function createGlobalLayers(selectedSampleMeasurements, selectedSampleInfo) {
+function createGlobalLayers() {
+console.log('Creating global layers...');
+/*    if (allMapData.isReady) {
+        console.log("Layers already generated. Skipping regeneration.");
+        return;
+    }*/
+//console.log(selectedSampleMeasurements, selectedSampleInfo);
+contaminantLayers = {};
+contaminantHeatmaps = {};
+    let allSamples = [];
+    let sampleNo = -1;
+//    let minLat = null, maxLat = null, minLon = null, maxLon = null;
 
-    var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
-
-    var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.'
-    });
-
-    var OS_Road = L.tileLayer(serviceUrl + '/Road_3857/{z}/{x}/{y}.png?key=' + apiKey, {
-        maxZoom: 19,
-        attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year
-    });
-
-    var OS_Outdoor = L.tileLayer(serviceUrl + '/Outdoor_3857/{z}/{x}/{y}.png?key=' + apiKey, {
-        maxZoom: 19,
-        attribution: 'Contains OS Data &copy; Crown copyright and database rights ' + year
-    });
-
-    var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'
-    });
-
-    var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
-    });
-
-    var osSensorCommunity = L.tileLayer('https://osmc3.maps.sensor.community/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © Sensor Community'
-    });
-
-    var mapLayers = {
-        "OpenStreetMap": osm,
-        "WorldImagery": Esri_WorldImagery,
-        "OS Road": OS_Road,
-        "OS Outdoor": OS_Outdoor,
-        "OpenStreetMap.HOT": osmHOT,
-        "OpenTopoMap": openTopoMap,
-        "OpenSensorCommunity": osSensorCommunity
+    baseLayers = {
+        "OpenStreetMap": openStreetMapTiles,
+        "WorldImagery": worldImageryTiles,
+        "OS Road": osRoadTiles,
+        "OS Outdoor": osOutdoorTiles,
+        "OpenStreetMap.HOT": openStreetMapHOTTiles,
+        "OpenTopoMap": openTopoMapTiles,
+        "OpenSensorCommunity": openSensorCommunityTiles
     };
 
-    map = L.map('map', {
-        center: [54.596, -1.177],
-        zoom: 13,
-        layers: [osm]
-    });
+    let colorIndex = 0;
+    let noSamples = 0;
+    let sampleDepths = {};
+    let depthStatsGlobal = { min: Infinity, max: -Infinity };
 
-    // SampleInfo data structure
-    latSum = 0;
-    lonSum = 0;
-    noLocations = 0;
-    minLat = null;
-    maxLat = null;
-    minLon = null;
-    maxLon = null;
-    let hoveredSample = null;
-    markers = [];
-    marker = null;
-
-    const markerColors = [
-        '#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF',
-        '#FFC300', '#33FFA1', '#C70039', '#900C3F'
-    ];
-
-    const highlightStyle = {
-        radius: 10,
-        fillColor: '#FFFF00', // A bright yellow for highlighting
-        color: '#000000',     // Black outline
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 1
-    };
-    
-    sampleNo = -1;
     const datesSampled = Object.keys(selectedSampleInfo);
-
-    noSamples = 0;
-    allSamples = [];
-    const dateColors = {}; 
-    let colorIndex = 0;   
-    markers = {};
-
+//console.log(datesSampled);
     datesSampled.forEach(dateSampled => {
         markers[dateSampled] = {};
         dateColors[dateSampled] = markerColors[colorIndex];
         colorIndex = (colorIndex + 1) % markerColors.length;
-        noSamples += Object.keys(selectedSampleInfo[dateSampled].position).length;
-        
-        dsSamples = (Object.keys(selectedSampleInfo[dateSampled].position));
+        const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
+        noSamples += dsSamples.length;
+        dsSamples.forEach(sample => allSamples.push(`${dateSampled}: ${sample}`));
+    });
+
+if(datesSampled.length > 1) {
+    datesSampled.sort((a, b) => {
+        const labelA = selectedSampleInfo[a].label || a;
+        const labelB = selectedSampleInfo[b].label || b;
+        return labelA.localeCompare(labelB);
+    });
+}
+//console.log(datesSampled);
+//console.log(noSamples, allSamples);
+
+    datesSampled.forEach(dateSampled => {
+        const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
         dsSamples.forEach(sample => {
-            allSamples.push(dateSampled + ": " + sample);
+//console.log(sample);
+            const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
+//console.log(dateSampled, sample, depthInfo);
+            if (depthInfo) {
+                const maxDepth = depthInfo['maxDepth'];
+                if (!isNaN(maxDepth)) {
+                    if (depthStatsGlobal.max === null) {
+                        depthStatsGlobal.min = maxDepth;
+                        depthStatsGlobal.max = maxDepth;
+                    }
+                    const key = `${dateSampled}: ${sample}`;
+                    sampleDepths[key] = maxDepth;
+                    if (maxDepth < depthStatsGlobal.min) depthStatsGlobal.min = maxDepth;
+                    if (maxDepth > depthStatsGlobal.max) depthStatsGlobal.max = maxDepth;
+                }
+            }
+        });
+    });
+//console.log(sampleDepths, depthStatsGlobal);
+
+function computeIndividualStats(statsByChem, unit, values, datasetName, chemicalName, lookupName = chemicalName) {
+//console.log(statsByChem, unit, values, datasetName, chemicalName);
+    if (!statsByChem?.[chemicalName]) {
+        statsByChem[chemicalName] = {};
+        statsByChem[chemicalName] = {
+            valueMin: Infinity, valueMax: -Infinity,
+            depthMin: Infinity, depthMax: -Infinity,
+            unit: unit
+        };
+    } else if (unit && !statsByChem[chemicalName].unit) {
+        statsByChem[chemicalName].unit = unit;
+    }
+
+    Object.keys(values || {}).forEach(sampleName => {
+        const value = values[sampleName];
+        if (value != null && !isNaN(value)) {
+            if (value < statsByChem[chemicalName].valueMin) statsByChem[chemicalName].valueMin = value;
+            if (value > statsByChem[chemicalName].valueMax) statsByChem[chemicalName].valueMax = value;
+        }
+        const info = sampleInfo[datasetName]?.position?.[sampleName];
+        const dObj = info?.['Sampling depth (m)'];
+        const dMax = dObj?.maxDepth;
+        if (dMax != null && !isNaN(dMax)) {
+            if (dMax < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = dMax;
+            if (dMax > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = dMax;
+        }
+    });
+
+    const { valueMax } = statsByChem[chemicalName];
+    if (valueMax === -Infinity || valueMax === Infinity || valueMax === 0) {
+        return statsByChem;
+    }
+    return statsByChem
+}
+
+    function computeContaminationStats() {
+        let statsByChem = {};
+//console.log(Object.keys(selectedSampleMeasurements));
+        Object.keys(selectedSampleMeasurements).forEach(datasetName => {
+            const dataset = selectedSampleMeasurements[datasetName];
+//console.log(datasetName);
+            Object.keys(dataset).forEach(sheetName => {
+                const sheet = dataset[sheetName];
+                if (!sheet?.chemicals) return;
+                const unit = extractUnit(sheet['Unit of measurement']);
+                if (sheet?.total) {
+                    const total = sheet.total;
+                    statsByChem = computeIndividualStats(statsByChem, unit, total, datasetName, 'Total ' + sheetName);
+                }
+                if (sheetName === 'PAH data'){
+                    let lmwSum = {};
+                    let hmwSum = {};
+                    const gorham = sheet.gorhamTest;
+//console.log(gorham);
+                    for(const sample in gorham) {
+//console.log(datasetName,sample,gorham);
+                        lmwSum[sample] = gorham[sample].lmwSum;
+                        hmwSum[sample] = gorham[sample].hmwSum;
+                    }
+                    statsByChem = computeIndividualStats(statsByChem, unit, lmwSum, datasetName, 'LMW PAH Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, hmwSum, datasetName, 'HMW PAH Sum');
+                }
+                if (sheetName === 'PCB data'){
+                    let ices7 = {};
+                    let all = {};
+                    const pcbSums = sheet.congenerTest;
+                    for(const sample in pcbSums) {
+                        ices7[sample] = pcbSums[sample].ICES7;
+                        all[sample] = pcbSums[sample].All;
+                    }
+                    statsByChem = computeIndividualStats(statsByChem, unit, ices7, datasetName, 'ICES7 PCB Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, all, datasetName, 'All PCB Sum');
+                }
+
+
+                Object.keys(sheet.chemicals).forEach(chemicalName => {
+                    const chemical = sheet.chemicals[chemicalName];
+                    statsByChem = computeIndividualStats(statsByChem, unit, chemical.samples, datasetName, chemicalName);
+                });
+            });
+        });
+        Object.keys(statsByChem).forEach(chemicalName => {
+            const s = statsByChem[chemicalName];
+            if (s.valueMin === Infinity) s.valueMin = 0;
+            if (s.valueMax === -Infinity) s.valueMax = 0;
+            if (s.depthMin === Infinity) s.depthMin = 0;
+            if (s.depthMax === -Infinity) s.depthMax = 0;
+            const valueMax = s.valueMax;
+
+            // Correct unit conversion factors relative to g/kg
+            const unitScales = {
+                'g/kg': 1,
+                'mg/kg': 1e-3,
+                'µg/kg': 1e-6,
+                'ng/kg': 1e-9,
+                'pg/kg': 1e-12,
+                'fg/kg': 1e-15
+            };
+
+            const currentUnit = s.unit;
+            const currentScaleFactor = unitScales[currentUnit];
+
+            // Convert max value to a common base (g/kg) for scaling logic
+            let bestRescale = 1;
+            let bestUnit = currentUnit;
+            let bestFitFound = false;
+            if (!(valueMax > 1.0 && valueMax <= 1001.0)) {
+                const valueMaxInG = valueMax * currentScaleFactor;
+//console.log(currentUnit, valueMax, valueMaxInG);
+                // Find the optimal unit that brings the max value into the 1-999 range
+                for (const [newUnit, scaleFactor] of Object.entries(unitScales)) {
+                    const scaledValue = valueMaxInG / scaleFactor;
+//console.log(chemicalName, newUnit, scaleFactor, scaledValue);
+                    if ((scaledValue) > 1.0 && (scaledValue <= 1001)) {
+                        //            bestRescale = 1 / currentScaleFactor / (1 / scaleFactor); // Simplified: scaleFactor / currentScaleFactor
+                        //                bestRescale = scaleFactor / currentScaleFactor;
+//console.log('Inside loop');
+                        bestRescale = currentScaleFactor / scaleFactor;
+                        bestUnit = newUnit;
+                        bestFitFound = true;
+                        break;
+                    }
+                }
+            }
+
+            statsByChem[chemicalName].rescale = bestRescale;
+            if (bestFitFound) {
+                statsByChem[chemicalName].unit = bestUnit;
+            }
+//console.log(chemicalName, valueMax, currentUnit, bestRescale, bestUnit);    
+        });
+        return statsByChem;
+    }
+
+    function applyDynamicStyling(chemicalName) {
+        const stats = contaminantStats[chemicalName];
+        if (!stats) return;
+/*if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+    console.log(chemicalName, stats);
+}*/
+        const { valueMin, valueMax, depthMin, depthMax } = stats;
+        const { breaks, colors } = getColorScale(valueMin*stats.rescale, valueMax*stats.rescale);
+        contaminantLayers[chemicalName].eachLayer(marker => {
+            const value = marker.options._chemValue;
+            const depth = marker.options._depth;
+            let color = colors[0];
+            if (value > breaks[2]) color = colors[3];
+            else if (value > breaks[1]) color = colors[2];
+            else if (value > breaks[0]) color = colors[1];
+            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+            marker.setStyle({ fillColor: color, radius });
+        });
+    }
+
+    function getColorScale(min, max) {
+        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
+        const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+        return { breaks, colors };
+    }
+
+    const depthSortedSampleIds = Object.keys(sampleDepths).sort((a, b) => {
+        return sampleDepths[b] - sampleDepths[a];
+    });
+
+    // delete current max lat etc to account if samples have been added or deleted
+    minLat = null, maxLat = null, minLon = null, maxLon = null;
+//console.log(depthSortedSampleIds);
+    depthSortedSampleIds.forEach(fullSample => {
+        let parts = fullSample.split(": ");
+        if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
+        const dateSampled = parts[0];
+        const sample = parts[1];
+        const currentColor = dateColors[dateSampled];
+        if (selectedSampleInfo[dateSampled].position[sample]?.hasOwnProperty('Position latitude')) {
+            const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
+            const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
+//console.log(dateSampled,sample,lat,lon);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                if (maxLat === null) { minLat = lat; maxLat = lat; minLon = lon; maxLon = lon; }
+                else {
+                    if (lat > maxLat) maxLat = lat; else if (lat < minLat) minLat = lat;
+                    if (lon > maxLon) maxLon = lon; else if (lon < minLon) minLon = lon;
+                }
+                sampleNo += 1;
+                const dateLabel = selectedSampleInfo[dateSampled].label;
+                const sampleLabel = selectedSampleInfo[dateSampled].position[sample].label;
+                const alternateName = `${dateLabel}: ${sampleLabel}`;
+                const depth = sampleDepths[fullSample];
+                const radius = getDepthRadius(depth, depthStatsGlobal.min, depthStatsGlobal.max);
+                const originalCircleOptions = {
+                    radius: radius, fillColor: currentColor, color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9
+                };
+                marker = L.circleMarker([lat, lon], originalCircleOptions)
+                    .bindTooltip(alternateName);
+                marker.options.customId = fullSample;
+                marker.options.originalStyle = originalCircleOptions;
+                // Add a property to track the highlight state
+                marker.options.isHighlighted = false;
+
+/*                marker.on({
+                    mouseover: (e) => {
+                        const layer = e.target;
+                        // Don't change style if already highlighted
+                        if (!layer.options.isHighlighted) {
+                            layer.setStyle(hoverStyle);
+                        }
+                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                            layer.bringToFront();
+                        }
+                    },
+                    mouseout: (e) => {
+                        const layer = e.target;
+                        // Only reset the style if the marker is NOT highlighted
+                        if (!layer.options.isHighlighted) {
+                            layer.setStyle(layer.options.originalStyle);
+                        }
+                    },
+                    click: (e) => {
+                        const layer = e.target;
+                        if (layer.options.isHighlighted) {
+                            // If highlighted, reset to original style
+                            layer.setStyle(layer.options.originalStyle);
+                            layer.options.isHighlighted = false;
+                        } else {
+                            // If not highlighted, apply the highlight style
+                            layer.setStyle(highlightStyle);
+                            layer.options.isHighlighted = true;
+                        }
+                    }
+                });*/
+                marker.on('click', (e) => createHighlights(e.target.options.customId));
+                highlightMarkers[fullSample] = L.circleMarker(new L.LatLng(lat, lon), highlightStyle).bindTooltip(alternateName);
+                highlightMarkers[fullSample].options.customId = fullSample;
+                highlightMarkers[fullSample].on('click', (e) => createHighlights(e.target.options.customId));
+                noLocations += 1;
+                latSum += lat;
+                lonSum += lon;
+/*                marker.on({
+                    mouseover: (e) => { const layer = e.target; layer.setStyle(hoverStyle); if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) layer.bringToFront(); },
+                    mouseout: (e) => { e.target.setStyle(e.target.options.originalStyle); }
+                });
+                marker.on('click', (e) => createHighlights(e.target.options.customId));
+                highlightMarkers[fullSample] = L.circleMarker(new L.LatLng(lat, lon), highlightStyle).bindTooltip(alternateName);
+                highlightMarkers[fullSample].options.customId = fullSample;
+                highlightMarkers[fullSample].on('click', (e) => createHighlights(e.target.options.customId));
+                noLocations += 1; latSum += lat; lonSum += lon;*/
+            }
+        } else {
+            sampleNo += 1;
+            highlightMarkers[fullSample] = null;
+        }
+        markers[dateSampled][fullSample] = marker;
+        if (marker) {
+            allMapMarkers.push(marker);
+            const alternateName = marker.getTooltip().getContent();
+            const permanentMarkerStyle = { ...marker.options.originalStyle, interactive: false };
+            const permanentMarker = L.circleMarker(marker.getLatLng(), permanentMarkerStyle);
+            permanentMarker.bindTooltip(alternateName, { permanent: true, direction: 'auto', className: 'no-overlap-tooltip' });
+        }
+    });
+
+    let markerLayers = {};
+    datesSampled.forEach(dateSampled => {
+        markerLayers[dateSampled] = [];
+        const dsKeys = Object.keys(markers[dateSampled]);
+        dsKeys.forEach(sampleKey => {
+            if (markers[dateSampled][sampleKey]) markerLayers[dateSampled].push(markers[dateSampled][sampleKey]);
+        });
+    });
+    datasetLayers = {};
+    datesSampled.forEach(dateSampled => {
+        datasetLayers[dateSampled] = L.layerGroup(markerLayers[dateSampled]);
+    });
+
+    contaminantStats = computeContaminationStats();
+    let contaminantMarkerData = {};
+
+    Object.keys(selectedSampleMeasurements).forEach(datasetName => {
+        const dataset = selectedSampleMeasurements[datasetName];
+        Object.keys(dataset).forEach(sheetName => {
+            const sheet = dataset[sheetName];
+            if (!sheet?.chemicals) return;
+//            const unit = extractUnit(sheet['Unit of measurement']);
+            if (sheet?.total) {
+                const total = sheet.total;
+                makePointLayer(datasetName, total, 'Total ' + sheetName);
+            }
+            if (sheetName === 'PAH data'){
+                let lmwSum = {};
+                let hmwSum = {};
+                const gorham = sheet.gorhamTest;
+//console.log(sheet,sheet.gorhamTest, gorham);
+                for(const sample in gorham) {
+                    lmwSum[sample] = gorham[sample].lmwSum;
+                    hmwSum[sample] = gorham[sample].hmwSum;
+                }
+//console.log(lmwSum,hmwSum);
+                makePointLayer(datasetName,lmwSum,'LMW PAH Sum');
+                makePointLayer(datasetName,hmwSum,'HMW PAH Sum');
+            }
+            const unit = extractUnit(sheet['Unit of measurement']);
+            if (sheetName === 'PCB data'){
+                let ices7 = {};
+                let all = {};
+                const pcbSums = sheet.congenerTest;
+//console.log(sheet,sheet.congenerTest, pcbSums);
+                for(const sample in pcbSums) {
+                    ices7[sample] = pcbSums[sample].ICES7;
+                    all[sample] = pcbSums[sample].All;
+                }
+//console.log(ices7,all);
+                makePointLayer(datasetName,ices7,'ICES7 PCB Sum');
+                makePointLayer(datasetName,all,'All PCB Sum');
+            }
+            Object.keys(sheet.chemicals).forEach(chemicalName => {
+                const chemical = sheet.chemicals[chemicalName];
+                makePointLayer(datasetName,chemical.samples,chemicalName);
+            });
         });
     });
 
-    // --- SORT and POPULATE LEGEND DATA ---
-    // Sort the datasets alphabetically by their label for a consistent order.
+    function makePointLayer(datasetName,valueSamples,chemicalName) {
+        if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
+        if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
+        unit = contaminantStats[chemicalName].unit;
+        depthSortedSampleIds.forEach(fullSampleName => {
+            let parts = fullSampleName.split(": ");
+            if (parts[0] === datasetName) {
+                if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
+                sampleName = parts[1];
+    //            const value = chemical.samples[sampleName];
+                const value = valueSamples[sampleName] * contaminantStats[chemicalName].rescale;
+                if (value == null || isNaN(value)) return;
+                const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
+                if (!sampleInfo) return;
+                const lat = parseFloat(sampleInfo["Position latitude"]);
+                const lon = parseFloat(sampleInfo["Position longitude"]);
+                if (isNaN(lat) || isNaN(lon)) return;
+                const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
+                const unitSuffix = unit ? ` ${unit}` : "";
+                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${value.toFixed(2)}${unitSuffix}<br>Depth: ${sampleDepths[fullSampleName]} m`;
+                const m = L.circleMarker([lat, lon], {
+                    radius: 6,
+                    fillColor: "#999",
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).bindTooltip(tooltipHtml);
+                m.options._chemValue = value.toFixed(2);
+                m.options._chemUnit = unit || "";
+                m.options._depth = sampleDepths[fullSampleName];
+                contaminantLayers[chemicalName].addLayer(m);
+                contaminantMarkerData[chemicalName].push(m);
+            }
+        });
+    }
+
+    Object.keys(contaminantLayers).forEach(chem => applyDynamicStyling(chem));
+
+    Object.keys(contaminantMarkerData).forEach(chemicalName => {
+        const items = contaminantMarkerData[chemicalName];
+        if (!items || items.length === 0) return;
+        const stats = contaminantStats[chemicalName];
+        if (!stats) return;
+        const heatmapLayer = L.layerGroup();
+        items.sort((a, b) => (b.options._depth ?? -1) - (a.options._depth ?? -1)).forEach(marker => {
+            const point = {
+                lat: marker.getLatLng().lat,
+                lng: marker.getLatLng().lng,
+                value: marker.options._chemValue,
+                depth: marker.options._depth
+            };
+            if (isNaN(point.lat) || isNaN(point.lng)) return;
+            const normalizedLevel = Math.min((point.value - stats.valueMin) / (stats.valueMax - stats.valueMin || 1), 1);
+            for (let i = 3; i >= 1; i--) {
+                let baseRadius = (point.depth != null && !isNaN(point.depth)) ? 100 + (getLogDepthRadius3Levels(point.depth, stats.depthMin, stats.depthMax) - 6) * 5 : 100;
+                const layerScale = 0.3 + (i - 1) * 0.35;
+                const valueScale = 0.5 + normalizedLevel * 1.0;
+                const radius = baseRadius * layerScale * valueScale;
+                const opacity = (0.4 / i) * (0.4 + normalizedLevel * 0.8);
+                const color = getHeatmapColor(normalizedLevel);
+                L.circle([point.lat, point.lng], {
+                    radius: radius,
+                    fillColor: color,
+                    color: 'transparent',
+                    fillOpacity: opacity,
+                    weight: 0
+                }).addTo(heatmapLayer);
+            }
+        });
+        contaminantHeatmaps[chemicalName] = heatmapLayer;
+    });
+
+    allMapData.isReady = true;
+    allMapData.contaminantLayers = contaminantLayers;
+    allMapData.contaminantHeatmaps = contaminantHeatmaps;
+    allMapData.contaminantStats = contaminantStats;
+}
+
+// Helper function to force a complete map refresh
+function forceMapRefresh(containerId) {
+    const container = document.getElementById(containerId);
+    if (container && container._leaflet_map) {
+        const map = container._leaflet_map;
+        
+        // Force multiple invalidateSize calls with different parameters
+        setTimeout(() => {
+            map.invalidateSize(true);
+            setTimeout(() => {
+                map.invalidateSize({ pan: false });
+                setTimeout(() => {
+                    map.invalidateSize(true);
+                    // Force tiles to reload
+                    map.eachLayer(layer => {
+                        if (layer._url) { // It's a tile layer
+                            layer.redraw();
+                        }
+                    });
+                }, 50);
+            }, 50);
+        }, 50);
+    }
+}
+
+// You can call this function after creating your maps if they still don't render properly:
+// Example usage:
+// forceMapRefresh('large-contaminant-map');
+// allContaminants.forEach((_, index) => {
+//     forceMapRefresh(`smallmap-${index}`);
+// });
+
+
+function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
+    if (!allMapData.isReady) {
+        console.error("Data not yet processed. Call createGlobalLayers first.");
+        return;
+    }
+
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Container with ID '${containerId}' not found.`);
+        return;
+    }
+    
+    // Check if the container already has an active Leaflet map instance
+    if (container._leaflet_id !== undefined) {
+        console.log(`Removing existing map from container with ID: ${containerId}`);
+        container._leaflet_map.remove();
+        delete container._leaflet_map;
+    }
+    
+    const staticMap = L.map(containerId, {
+        center: [54.596, -1.177],
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        dragging: false,
+    });
+    container._leaflet_map = staticMap;
+
+    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
+    const tileLayerUrl = baseLayerInstance._url;
+    const tileLayerOptions = baseLayerInstance.options;
+
+    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
+
+    let layerToAdd;
+/*    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
+        layerToAdd = contaminantLayers[contaminantName];
+    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
+        layerToAdd = contaminantHeatmaps[contaminantName];
+    }*/
+    // Clone the relevant layer to avoid layer being removed when expanded in larger map
+    if (visualizationType === 'points' && allMapData.contaminantLayers[contaminantName]) {
+        // Create a new LayerGroup for this specific map
+        layerToAdd = L.layerGroup();
+        // Iterate over the master layer's components and clone them
+        allMapData.contaminantLayers[contaminantName].eachLayer(layer => {
+            const clonedLayer = L.circleMarker(layer.getLatLng(), { ...layer.options });
+            if (layer.getTooltip()) {
+                clonedLayer.bindTooltip(layer.getTooltip().getContent(), { ...layer.getTooltip().options });
+            }
+            layerToAdd.addLayer(clonedLayer);
+        });
+    } else if (visualizationType === 'heatmap' && allMapData.contaminantHeatmaps[contaminantName]) {
+        // Do the same for heatmap layers
+        layerToAdd = L.layerGroup();
+        allMapData.contaminantHeatmaps[contaminantName].eachLayer(layer => {
+            layerToAdd.addLayer(L.circle(layer.getLatLng(), { ...layer.options }));
+        });
+    }
+
+    if (layerToAdd) {
+        layerToAdd.addTo(staticMap);
+        const bounds = new L.LatLngBounds([]);
+        layerToAdd.eachLayer(layer => {
+            if (layer.getLatLng) {
+                bounds.extend(layer.getLatLng());
+            }
+        });
+        if (bounds.isValid()) {
+            // Simple timeout approach - just like your original working code but with a small delay
+            setTimeout(() => {
+                container.offsetWidth; // Force layout recalculation
+                staticMap.invalidateSize();
+                staticMap.fitBounds(bounds, { padding: [20, 20] });
+            }, 150); // Slightly longer timeout
+        }
+    } else {
+        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
+    }
+}
+
+//Claude V6
+// APPROACH 2: Use ResizeObserver to detect when container gets proper dimensions
+function createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', showLegend = false , mapTile = 'OpenStreetMap') {
+    if (!allMapData.isReady) {
+        console.error("Data not yet processed. Call createGlobalLayers first.");
+        return;
+    }
+
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Container with ID '${containerId}' not found.`);
+        return;
+    }
+    
+    // Check if the container already has an active Leaflet map instance
+    if (container._leaflet_id !== undefined) {
+        console.log(`Removing existing map from container with ID: ${containerId}`);
+        container._leaflet_map.remove();
+        delete container._leaflet_map;
+    }
+
+    let mapCreated = false;
+    const resizeObserver = new ResizeObserver((entries) => {
+        entries.forEach(entry => {
+            const { width, height } = entry.contentRect;
+            console.log(`Container ${containerId} resized to: ${width}x${height}`);
+            
+            if (!mapCreated && width > 100 && height > 100) { // Reasonable minimum sizes
+                mapCreated = true;
+                resizeObserver.disconnect();
+                
+                console.log(`Creating map for ${containerId} with dimensions ${width}x${height}`);
+                
+                const staticMap = L.map(containerId, {
+                    center: [54.596, -1.177],
+                    zoom: 13,
+                    zoomControl: false,
+                    attributionControl: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    boxZoom: false,
+                    keyboard: false,
+                    dragging: false,
+                });
+                container._leaflet_map = staticMap;
+
+                const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
+                const tileLayerUrl = baseLayerInstance._url;
+                const tileLayerOptions = baseLayerInstance.options;
+
+                L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
+
+                let layerToAdd;
+                if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
+                    layerToAdd = contaminantLayers[contaminantName];
+                } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
+                    layerToAdd = contaminantHeatmaps[contaminantName];
+                }
+
+                if (layerToAdd) {
+                    layerToAdd.addTo(staticMap);
+                    const bounds = new L.LatLngBounds([]);
+                    layerToAdd.eachLayer(layer => {
+                        if (layer.getLatLng) {
+                            bounds.extend(layer.getLatLng());
+                        }
+                    });
+                    if (bounds.isValid()) {
+                        setTimeout(() => {
+                            staticMap.invalidateSize();
+                            staticMap.fitBounds(bounds, { padding: [20, 20] });
+                        }, 50);
+                    }
+                    if (showLegend) {
+                        if (contaminantStats[contaminantName]) {
+                            const legend = L.control({ position: 'leftright' });
+                            legend.onAdd = function () {
+                                const div = L.DomUtil.create('div', 'info legend');
+                                const stats = contaminantStats[contaminantName];
+                                const unit = stats.unit ? ` ${stats.unit}` : "";
+                                const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
+                                const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+                                div.innerHTML = `
+                <h4>${contaminantName}</h4>
+                <strong>Value</strong>
+                <div style="
+                    height: 20px;
+                    width: 100%;
+                    background: linear-gradient(to right, ${colors.join(",")});
+                    border: 1px solid #999;
+                    margin-bottom: 5px;
+                "></div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
+                    <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
+                </div>
+            `;
+                                return div;
+                            };
+                            legend.addTo(staticMap);
+                        }
+                    }
+                } else {
+                    console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
+                }
+            }
+        });
+    });
+
+    resizeObserver.observe(container);
+    
+}
+
+function sampleMap(meas) {
+    if (map) map.remove();
+//    allMapMarkers = [];
+    isHeatmapMode = false;
+    activeContaminant = null;
+
+/*    if (!allMapData.isReady) {
+        createGlobalLayers(meas, selectedSampleInfo);
+    }*/
+    
+//    let latSum = 0, lonSum = 0, noLocations = 0;
+//    minLat = null, maxLat = null, minLon = null, maxLon = null;
+    const markerColors = ['#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF', '#FFC300', '#33FFA1', '#C70039', '#900C3F'];
+    const datesSampled = Object.keys(selectedSampleInfo);
+    let colorIndex = 0;
+    let allSamples = [];
+    let noSamples = 0;
+    let markers = {};
+    let marker = null;
+    let sampleNo = -1;
+    dateColors = {};
+    datesSampled.forEach(dateSampled => {
+        markers[dateSampled] = {};
+        dateColors[dateSampled] = markerColors[colorIndex];
+        colorIndex = (colorIndex + 1) % markerColors.length;
+        const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
+        noSamples += dsSamples.length;
+        dsSamples.forEach(sample => allSamples.push(`${dateSampled}: ${sample}`));
+    });
+
     datesSampled.sort((a, b) => {
         const labelA = selectedSampleInfo[a].label || a;
         const labelB = selectedSampleInfo[b].label || b;
@@ -129,190 +808,331 @@ function sampleMap(meas) {
     datesSampled.forEach(dateSampled => {
         const color = dateColors[dateSampled];
         const label = selectedSampleInfo[dateSampled].label || dateSampled;
-        // Create an SVG circle as a Data URL to represent the marker
         const svgIcon = `<svg height="18" width="18" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="7" stroke="black" stroke-width="1" fill="${color}" /></svg>`;
         const iconUrl = `data:image/svg+xml;base64,${btoa(svgIcon)}`;
-        legendData.push({ label: label, iconUrl: iconUrl });
+        legendData.push({ label, iconUrl });
     });
-    // Call the function from the main HTML file to build the legend
     populateMapLegend(legendData);
-    // --- END ---
-
-
     if (!(xAxisSort === 'normal')) {
         allSamples.sortComplexSamples();
     }
-    highlighted = Array(noSamples).fill(false);
+//    let highlighted = Array(noSamples).fill(false);
+    const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
+/*    const highlightStyle = {
+        radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
+    };*/
 
-    const hoverStyle = {
-        radius: 10,
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 1
-    };
-
-    allSamples.forEach(fullSample => {
-        let parts = fullSample.split(": ");
-        if (parts.length > 2) {
-            parts[1] = parts[1] + ': ' + parts[2];
-        }
-        const dateSampled = parts[0];
-        const sample = parts[1];
-        
-        const currentColor = dateColors[dateSampled];
-        
-        if (selectedSampleInfo[dateSampled].position[sample].hasOwnProperty('Position latitude')) {
-            const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
-            const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
-            
-            if (!isNaN(lat) && !isNaN(lon)) {
-                if (maxLat === null) { minLat = lat; maxLat = lat; minLon = lon; maxLon = lon; } 
-                else { if (lat > maxLat) maxLat = lat; else if (lat < minLat) minLat = lat; if (lon > maxLon) maxLon = lon; else if (lon < minLon) minLon = lon; }
-
-                sampleNo += 1;
-
-                const dateLabel = selectedSampleInfo[dateSampled].label;
-                const sampleLabel = selectedSampleInfo[dateSampled].position[sample].label;
-                const alternateName = `${dateLabel}: ${sampleLabel}`;
-                
-                const originalCircleOptions = {
-                    radius: 7,
-                    fillColor: currentColor,
-                    color: "#000",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.9
-                };
-
-                marker = L.circleMarker([lat, lon], originalCircleOptions)
-                    .bindTooltip(alternateName);
-
-                marker.options.customId = fullSample;
-                marker.options.originalStyle = originalCircleOptions;
-
-                marker.on({
-                    mouseover: function (e) {
-                        const layer = e.target;
-                        layer.setStyle(hoverStyle);
-                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                            layer.bringToFront();
-                        }
-                    },
-                    mouseout: function (e) {
-                        e.target.setStyle(e.target.options.originalStyle);
-                    }
-                });
-
-                marker.on('click', function (e) {
-                    const clickedId = e.target.options.customId;
-                    createHighlights(meas, clickedId);
-                });
-
-                highlightMarkers[sampleNo] = L.circleMarker(new L.LatLng(lat, lon), highlightStyle);
-                highlightMarkers[sampleNo].bindTooltip(alternateName);
-                highlightMarkers[sampleNo].options.customId = fullSample;
-                highlightMarkers[sampleNo].on('click', function (e) {
-                    const clickedId = e.target.options.customId;
-                    createHighlights(meas, clickedId);
-                });
-
-                noLocations += 1;
-                latSum += lat;
-                lonSum += lon;
-            }
-        } else {
-            sampleNo += 1;
-            highlightMarkers[sampleNo] = null;
-        }
-        markers[dateSampled][fullSample] = marker;
-        if (marker) {
-            allMapMarkers.push(marker);
-        }
-        if (marker) {
-            const alternateName = marker.getTooltip().getContent();
-            const permanentMarkerStyle = { ...marker.options.originalStyle, interactive: false };
-            const permanentMarker = L.circleMarker(marker.getLatLng(), permanentMarkerStyle);
-            permanentMarker.bindTooltip(alternateName, { 
-                permanent: true, 
-                direction: 'auto',
-                className: 'no-overlap-tooltip'
-            });
-        }
-    });
-
-    let markerLayers = {};
+/*    let depthStatsGlobal = { min: Infinity, max: -Infinity };
+    let sampleDepths = {};
     datesSampled.forEach(dateSampled => {
-        markerLayers[dateSampled] = [];
-        allSamples = Object.keys(markers[dateSampled]);
-        allSamples.forEach(sample => {
-            if (markers[dateSampled][sample]) {
-                markerLayers[dateSampled].push(markers[dateSampled][sample]);
+        const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
+        dsSamples.forEach(sample => {
+            const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
+            if (depthInfo) {
+                const maxDepth = depthInfo['maxDepth'];
+                if (!isNaN(maxDepth)) {
+                    const key = `${dateSampled}: ${sample}`;
+                    sampleDepths[key] = maxDepth;
+                    if (maxDepth < depthStatsGlobal.min) depthStatsGlobal.min = maxDepth;
+                    if (maxDepth > depthStatsGlobal.max) depthStatsGlobal.max = maxDepth;
+                }
             }
         });
-    });
+    });*/
+
+/*    function getDepthRadius(depth, min, max) {
+        const minRadius = 4, maxRadius = 20;
+        if (depth == null || isNaN(depth)) return minRadius;
+        const logMin = Math.log((min ?? 0) + 1);
+        const logMax = Math.log((max ?? 0) + 1);
+        const logVal = Math.log(depth + 1);
+        if (logMax === logMin) return minRadius;
+        const t = (logVal - logMin) / (logMax - logMin);
+        return minRadius + t * (maxRadius - minRadius);
+    }*/
+
+    function getColorScale(min, max) {
+        // returns gradient endpoints & discrete breaks for 4-step color pick
+        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
+        const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+        return { breaks, colors };
+    }
     
-    markerLayer = {};
-    datesSampled.forEach(dateSampled => {
-        markerLayer[dateSampled] = L.layerGroup(markerLayers[dateSampled]).addTo(map);
+    map = L.map('map', {
+        center: [54.596, -1.177],
+        zoom: 13,
+        layers: [baseLayers.OpenStreetMap]
     });
 
-    var shapeOverlay = {};
-    let kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
-    let colorNo = 0;
+    Object.keys(datasetLayers).forEach(datasetName => {
+        datasetLayers[datasetName].addTo(map);
+    });
 
-    for (filename in kmlLayers) {
-        url = kmlLayers[filename];
-        kmlLayer = new L.KML(url, {async: true});
+    let shapeOverlay = {};
+    const kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
+    let colorNo = 0;
+    for (const filename in kmlLayers) {
+        const url = kmlLayers[filename];
+        const kmlLayer = new L.KML(url, { async: true });
         kmlLayer.on("loaded", function (e) {
             const mainLayer = Object.values(e.target._layers)[0];
             if (mainLayer && mainLayer._layers) {
-                Object.values(mainLayer._layers).forEach(function (layer) {
+                Object.values(mainLayer._layers).forEach(layer => {
                     if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
                         layer.setStyle({
-                            color: kmlColors[colorNo],
-                            weight: 2,
-                            opacity: 0.5,
-                            fillColor: kmlColors[colorNo],
-                            fillOpacity: 0.2
+                            color: kmlColors[colorNo], weight: 2, opacity: 0.5,
+                            fillColor: kmlColors[colorNo], fillOpacity: 0.2
                         });
                     }
                 });
             }
-            if (colorNo < 2) {
-                colorNo += 1;
-            } else {
-                colorNo = 0;
-            }
+            colorNo = (colorNo + 1) % kmlColors.length;
         });
         shapeOverlay[filename] = kmlLayer;
+        kmlLayer.addTo(map);
     }
-    datesSampled.forEach(dateSampled => {
-        shapeOverlay[dateSampled] = markerLayer[dateSampled];
-    });
-
+    
     if (noLocations > 0) {
-        const centreLat = latSum / noLocations;
-        const centreLon = lonSum / noLocations;
-        var bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+//console.log(minLat,maxLat,minLon,maxLon);
+let seCorner = L.latLng(minLat, minLon);
+let nwCorner = L.latLng(maxLat, maxLon);
+//        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+        const bounds = L.latLngBounds(seCorner, nwCorner);
         map.fitBounds(bounds);
     }
 
-    var layerControl = L.control.layers(mapLayers, shapeOverlay).addTo(map);
-}
+console.log("Map created", noLocations, noSamples);
 
-function randomColor() {
-    return '#' + Math.floor(Math.random() * 16777215).toString(16);
-}
+    //DUPLICATE from sampleMap
+    function applyDynamicStyling(chemicalName) {
+        const stats = contaminantStats[chemicalName];
+        if (!stats) return;
+//if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+//    console.log(chemicalName, stats);
+//}
+        const { valueMin, valueMax, depthMin, depthMax } = stats;
+        const { breaks, colors } = getColorScale(valueMin * stats.rescale, valueMax * stats.rescale);
+        contaminantLayers[chemicalName].eachLayer(marker => {
+            const value = marker.options._chemValue;
+            const depth = marker.options._depth;
+            let color = colors[0];
+            if (value > breaks[2]) color = colors[3];
+            else if (value > breaks[1]) color = colors[2];
+            else if (value > breaks[0]) color = colors[1];
+            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+            marker.setStyle({ fillColor: color, radius });
+        });
+    }
 
-function exportCharts() {
-    for (i = 1; i<lastInstanceNo+1 ; i++) {
-        if (!(instanceType[i].includes('Scatter'))){
-            exportChart(i);
+    function toggleVisualizationMode() {
+        if (!activeContaminant) return;
+        let currentContaminant = activeContaminant;
+        if (isHeatmapMode) {
+            if (contaminantHeatmaps[activeContaminant] && map.hasLayer(contaminantHeatmaps[activeContaminant])) {
+                map.removeLayer(contaminantHeatmaps[activeContaminant]);
+            }
+            activeContaminant = currentContaminant;
+            if (contaminantLayers[activeContaminant]) {
+                map.addLayer(contaminantLayers[activeContaminant]);
+                applyDynamicStyling(activeContaminant);
+            }
+            isHeatmapMode = false;
+            updateLegendForMode();
+        } else {
+            if (contaminantLayers[activeContaminant] && map.hasLayer(contaminantLayers[activeContaminant])) {
+                map.removeLayer(contaminantLayers[activeContaminant]);
+            }
+            activeContaminant = currentContaminant;
+            if (contaminantHeatmaps[activeContaminant]) {
+                map.addLayer(contaminantHeatmaps[activeContaminant]);
+            }
+            isHeatmapMode = true;
+            updateLegendForMode();
         }
     }
+
+    let legend = L.control({ position: "bottomleft" });
+    legend.onAdd = function () {
+        this._div = L.DomUtil.create("div", "info legend");
+        this.update();
+        return this._div;
+    };
+    function makeDepthLegend(min, max) {
+        const mid = (min + max) / 2;
+        const values = [min, mid, max];
+        return values.map(v => `
+<svg height="30" width="60" style="vertical-align:middle">
+<circle cx="25" cy="15" r="${getDepthRadius(v, min, max)}"
+stroke="black" stroke-width="1"
+fill="grey" fill-opacity="0.6" />
+</svg> ≈ ${isFinite(v) ? v.toFixed(2) : '—'} m
+`).join("<br>");
+    }
+
+    function updateLegendForMode() {
+        if (!activeContaminant) {
+            legend.update();
+            return;
+        }
+        legend.update({ chemicalName: activeContaminant });
+    }
+
+    legend.update = function (props) {
+        if (!props || !activeContaminant) {
+            this._div.innerHTML = `<h4>Contaminant legend</h4><i>Toggle a contaminant layer</i>`;
+            return;
+        }
+        const { chemicalName } = props;
+        const stats = contaminantStats[chemicalName];
+        if (!stats) {
+            this._div.innerHTML = "<h4>Contaminant legend</h4><i>No data</i>";
+            return;
+        }
+        const unit = stats.unit ? ` ${stats.unit}` : "";
+//        const min = 1, max = 2;
+//console.log(chemicalName,stats.valueMin,stats.valueMax,stats.rescale);
+        const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
+//console.log(chemicalName,min,max,stats.rescale);
+        const { colors } = getColorScale(min, max);
+        const toggleButton = `<button onclick="window.toggleVisualizationMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Switch to ${isHeatmapMode ? 'Points' : 'Heatmap'}</button>`;
+        const legendType = isHeatmapMode ? 'Heat Intensity' : 'Point Colours';
+        const legendContent = isHeatmapMode ? `
+<div style="height: 20px; width: 100%; background: linear-gradient(to right, #1a9850, #fee08b, #fc8d59, #d73027); border: 1px solid #999; margin-bottom: 5px;"></div>
+<div style="display: flex; justify-content: space-between; font-size: 12px;">
+<span>Low</span>
+<span>High</span>
+</div>
+` : `
+<div style="height: 20px; width: 100%; background: linear-gradient(to right, ${colors.join(",")}); border: 1px solid #999; margin-bottom: 5px;"></div>
+<div style="display: flex; justify-content: space-between; font-size: 12px;">
+<span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
+<span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
+</div>
+`;
+        const depthLegend = (!isHeatmapMode & !(stats.depthMin === stats.depthMax)) ? `
+<br>
+<div><strong>Sample depth → radius</strong><br>
+${makeDepthLegend(stats.depthMin, stats.depthMax)}</div>
+` : '';
+        this._div.innerHTML = `
+<h4>${chemicalName}</h4>
+${toggleButton}
+<strong>${legendType}</strong>
+${legendContent}
+${depthLegend}
+`;
+    };
+    legend.addTo(map);
+    window.toggleVisualizationMode = toggleVisualizationMode;
+
+    function createScrollableContaminantControl() {
+        const contaminantControl = L.control({ position: 'topright' });
+        contaminantControl.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'leaflet-control-layers leaflet-control-layers-expanded contaminant-control');
+            const style = document.createElement('style');
+            style.textContent = `
+                .contaminant-control { width: 250px; max-height: 400px; background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 5px; }
+                .contaminant-search { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; }
+                .contaminant-list { max-height: 300px; overflow-y: auto; padding: 0 8px; }
+                .contaminant-item { margin: 4px 0; display: flex; align-items: center; }
+                .contaminant-item input { margin-right: 8px; }
+                .contaminant-item label { cursor: pointer; display: flex; align-items: center; width: 100%; padding: 2px 0; font-size: 13px; }
+                .contaminant-item label:hover { background-color: #f0f0f0; }
+                .contaminant-header { font-weight: bold; padding: 8px; border-bottom: 1px solid #eee; background-color: #f9f9f9; }
+            `;
+            document.head.appendChild(style);
+            
+            const contaminantNames = Object.keys(contaminantLayers).sort();
+            div.innerHTML = `
+                <div class="contaminant-header">Contaminant Layers</div>
+                <input type="text" class="contaminant-search" placeholder="Search contaminants..." />
+                <div class="contaminant-list">
+                    <div class="contaminant-item">
+                        <label>
+                            <input type="radio" name="contaminant" value="none" checked />
+                            <strong>None (show all datasets)</strong>
+                        </label>
+                    </div>
+                    <div style="border-bottom: 1px solid #eee; margin: 8px 0;"></div>
+                    ${contaminantNames.map(chem => `
+                        <div class="contaminant-item" data-name="${chem.toLowerCase()}">
+                            <label>
+                                <input type="radio" name="contaminant" value="${chem}" />
+                                <span title="${chem}">${chem}</span>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            const searchInput = div.querySelector('.contaminant-search');
+            const contaminantItems = div.querySelectorAll('.contaminant-item[data-name]');
+            
+            searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                contaminantItems.forEach(item => {
+                    const name = item.getAttribute('data-name');
+                    if (name.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            div.addEventListener('change', function(e) {
+                if (e.target.type === 'radio') {
+                    const selectedContaminant = e.target.value;
+                    Object.keys(contaminantLayers).forEach(chem => {
+                        if (map.hasLayer(contaminantLayers[chem])) map.removeLayer(contaminantLayers[chem]);
+                        if (contaminantHeatmaps[chem] && map.hasLayer(contaminantHeatmaps[chem])) map.removeLayer(contaminantHeatmaps[chem]);
+                    });
+                    
+                    if (selectedContaminant === 'none') {
+                        Object.keys(datasetLayers).forEach(datasetName => {
+                            if (!map.hasLayer(datasetLayers[datasetName])) map.addLayer(datasetLayers[datasetName]);
+                        });
+                        activeContaminant = null;
+                        isHeatmapMode = false;
+                        legend.update();
+                    } else {
+                        Object.keys(datasetLayers).forEach(datasetName => {
+                            if (map.hasLayer(datasetLayers[datasetName])) map.removeLayer(datasetLayers[datasetName]);
+                        });
+                        activeContaminant = selectedContaminant;
+                        if (isHeatmapMode) {
+                            if (contaminantHeatmaps[activeContaminant]) map.addLayer(contaminantHeatmaps[activeContaminant]);
+                        } else {
+                            if (contaminantLayers[selectedContaminant]) map.addLayer(contaminantLayers[selectedContaminant]);
+                        }
+                        legend.update({ chemicalName: selectedContaminant });
+                    }
+                }
+            });
+
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+            return div;
+        };
+        return contaminantControl;
+    }
+
+    let baseLayerControl = L.control.layers(baseLayers, {}).addTo(map);
+    let contaminantControl = createScrollableContaminantControl().addTo(map);
 }
 
-let allMapMarkers = [];
+
+    function getDepthRadius(depth, min, max) {
+        const minRadius = 4, maxRadius = 20;
+        if (depth == null || isNaN(depth)) return minRadius;
+        const logMin = Math.log((min ?? 0) + 1);
+        const logMax = Math.log((max ?? 0) + 1);
+        const logVal = Math.log(depth + 1);
+        if (logMax === logMin) return minRadius;
+        const t = (logVal - logMin) / (logMax - logMin);
+        return minRadius + t * (maxRadius - minRadius);
+    }
+
 let tooltipsAreVisible = false;
 
 function isOverlapping(el1, el2) {
@@ -359,100 +1179,4 @@ function toggleAllTooltips() {
         if (button) button.textContent = 'Show All Sample Names';
         allMapMarkers.forEach(marker => marker.closeTooltip());
     }
-}
-
-function exportChart(currentInstanceNo) {
-    const now = new Date();
-    const formattedDate = now
-        .toISOString()
-        .slice(2, 16)
-        .replace(/[-T:]/g, '');
-    canvas = document.getElementById('chart' + currentInstanceNo);
-    const url = canvas.toDataURL('image/png');
-    exportLink = document.createElement('a');
-    const filename = `${formattedDate}-${instanceSheet[currentInstanceNo]}-${instanceType[currentInstanceNo]}.png`;
-    exportLink.href = url;
-    exportLink.download = filename;
-    exportLink.click();
-}
-
-function parseCoordinate(input) {
-    if (input == undefined || input == null) {
-        return null;
-    }
-    const digitalFormatRegex = /^[-+]?\d+(\.\d+)?$/;
-    if (digitalFormatRegex.test(input)) {
-        return parseFloat(input);
-    }
-    const dmsRegex = /^(\d+)\s+(\d+)\s+([\d.]+)\s*([NSEW])$/i;
-    const dmsMatch = input.match(dmsRegex);
-    if (dmsMatch) {
-        const degrees = parseFloat(dmsMatch[1]);
-        const minutes = parseFloat(dmsMatch[2]);
-        const seconds = parseFloat(dmsMatch[3]);
-        const direction = dmsMatch[4].toUpperCase();
-        let result = degrees + minutes / 60 + seconds / 3600;
-        if (direction === 'S' || direction === 'W') {
-            result = -result;
-        }
-        return result;
-    }
-    const dmRegex = /^(\d+)[\s\:]+([\d.]+)\s*([NSEW])$/i;
-    const dmMatch = input.match(dmRegex);
-    if (dmMatch) {
-        const degrees = parseFloat(dmMatch[1]);
-        const minutes = parseFloat(dmMatch[2]);
-        const direction = dmMatch[3].toUpperCase();
-        let result = degrees + minutes / 60;
-        if (direction === 'S' || direction === 'W') {
-            result = -result;
-        }
-        return result;
-    }
-    return null;
-}
-
-function parseCoordinates(latitude, longitude) {
-    if ((!(latitude == undefined || latitude == null)) && (longitude == undefined || longitude == null)) {
-        const en = os.Transform.fromGridRef(latitude);
-        if (en.ea === undefined || en.ea === null) {
-            console.log('Looks like this is an invalid grid reference ', latitude);
-            return null;
-        }
-        const latlong = os.Transform.toLatLng(en);
-        if (latlong === undefined || latlong == null) {
-            return null;
-        }
-        return { latitude: latlong.lat, longitude: latlong.lng };
-    }
-    if ((latitude == undefined || latitude == null) && (longitude == undefined || longitude == null)) {
-        return null;
-    }
-    if (latitude > 360) {
-        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
-        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
-        return { latitude: point[1], longitude: point[0] };
-    }
-    const digitalDegreesRegex = /^([-+]?\d+(\.\d+)?)\s*([NSEW])\s*([-+]?\d+(\.\d+)?)\s*([NSEW])$/i;
-    const digitalDegreesMatch = `${latitude} ${longitude}`.match(digitalDegreesRegex);
-    if (digitalDegreesMatch) {
-        const latValue = parseFloat(digitalDegreesMatch[1]) * (digitalDegreesMatch[3].toUpperCase() === 'S' ? -1 : 1);
-        const lonValue = parseFloat(digitalDegreesMatch[4]) * (digitalDegreesMatch[6].toUpperCase() === 'W' ? -1 : 1);
-        return { latitude: latValue, longitude: lonValue };
-    }
-    const digitalMinutesRegex = /^(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*(\d{1,3})°\s*(\d{1,2}\.\d+)’\s*([NSEW])\s*$/i;
-    const digitalMinutesMatch = `${latitude} ${longitude}`.match(digitalMinutesRegex);
-    if (digitalMinutesMatch) {
-        const latValue = (parseInt(digitalMinutesMatch[1]) + parseFloat(digitalMinutesMatch[2])/60) * (digitalMinutesMatch[3].toUpperCase() === 'S' ? -1 : 1);
-        const lonValue = (parseInt(digitalMinutesMatch[4]) + parseFloat(digitalMinutesMatch[5])/60) * (digitalMinutesMatch[6].toUpperCase() === 'W' ? -1 : 1);
-        return { latitude: latValue, longitude: lonValue };
-    }
-    if (latitude > 360) {
-        proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
-        const point = proj4("EPSG:27700", "EPSG:4326", [parseInt(latitude, 10), parseInt(longitude, 10)]);
-        return { latitude: point[1], longitude: point[0] };
-    } else {
-        return { latitude: parseCoordinate(latitude), longitude: parseCoordinate(longitude) };
-    }
-    return null;
 }

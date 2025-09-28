@@ -105,17 +105,53 @@
         disableRadioButtons(sortButtonGroups[sheetName], false);
         completeSheet[sheetName] = true;
     })*/
-    subChartNames = ['samplegroup','chemicalgroup','positionplace','pcaanalysis','gorhamtest','totalhc','pahratios','ringfractions','eparatios','simpleratios','congenertest',
-                    'pcanormalise','pcalmw','pcahmw','pcaepa','pcasmallpts','pcaorganiccarbon',
-                    'relationareadensity','relationhc','relationtotalsolids','relationorganiccarbon'];
+    subChartNames = ['samplegroup','chemicalgroup','correlationplots','pcaanalysis','gorhamtest','totalhc','pahratios',
+                    'ringfractions','eparatios','simpleratios','congenertest', 'pcanormalise','pcalmw','pcahmw',
+                    'pcaepa','pcasmallpts','pcaorganiccarbon','relationareadensity','relationhc',
+                    'relationtotalsolids','relationorganiccarbon','splitbyweight','splitbyarea',
+                    'totalsolidsandtotalcarbon','cumulative','mapgrid'];
 //    relationNames = ['relationareadensity','relationhc','relationtotalsolids'];
         subsToDisplay = {};
     for (i = 0; i < subChartNames.length; i++) {
         subName = subChartNames[i];
         subsToDisplay[subName] = false;
     }
-    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'totalsolids', 'organicmatter', 'silt', 'siltsand', 'sand', 'gravel',
-        'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
+    const sortingOptions = [
+        'Unsorted', 'Date of Sampling', 'Latitude', 'Longitude', 'Total Area', 
+        'Total Solids', 'Organic Matter', 'Silt', 'Silt and Sand', 'Sand', 'Gravel',
+        'Total Hydrocarbon', 'Gorham LMW Sum', 'Gorham HMW Sum', 'ICES7 PCB Sum'
+    ];
+
+    const primarySortingOptions = [
+        'None', 'Date of Sampling', 'Sample Name', 'Date & Sample Name', 'Sample Name & Date',
+        'Dataset Name', 'Dataset Name & Sample Name ', 'Sample Name & Dataset Name'];
+    const secondarySortingOptions = [
+        'Latitude', 'Longitude', 'Min Depth', 'Max Depth', 'Mean Depth',
+        'Total Area', 'Total Solids', 'Organic Matter', 
+        'Silt', 'Silt and Sand', 'Sand', 'Gravel', 'Total Hydrocarbon', 
+        'Gorham LMW Sum', 'Gorham HMW Sum', 'ICES7 PCB Sum', 'All PCBs Sum'
+    ];
+
+
+    const sortOptionDependencies = {
+        'totalsolids': 'Physical Data',
+        'organicmatter': 'Physical Data',
+        'silt': 'Physical Data',
+        'siltsand': 'Physical Data',
+        'sand': 'Physical Data',
+        'gravel': 'Physical Data',
+        'totalhydrocarbon': 'PAH data',
+        'gorhamlmwsum': 'PAH data',
+        'gorhamhmwsum': 'PAH data',
+        'ices7pcbsum': 'PCB data',
+        'allpcbssum': 'PCB data'
+        // Add any other dependencies here.
+        // Options like 'Latitude', 'Longitude', etc., don't need to be listed
+        // as they are always available.
+    };
+
+//    sortingOptions = ['unsorted', 'normal', 'datelatitude', 'datelongitude', 'datetotalarea', 'latitude', 'longitude', 'totalarea', 'totalsolids', 'organicmatter', 'silt', 'siltsand', 'sand', 'gravel',
+//        'totalhcsort', 'lmw', 'hmw', 'ices7', 'allpcbs', 'datelmw', 'datehmw', 'dateices7', 'dateallpcbs'];
     lookOptions = ['colour', 'blackandwhite'];
     sortButtonGroups['area'] = [...sortingOptions.filter(option => option.includes('area')), ...subChartNames.filter(option => option.includes('area'))];
     sortButtonGroups['PCB data'] = [...sortingOptions.filter(option => option.includes('pcb') || option.includes('ices7'))];/*,
@@ -126,6 +162,7 @@
     sortButtonGroups['Physical Data'] = [...sortingOptions.filter(option => option.includes('silt') || option.includes('sand') || option.includes('area') || option.includes('gravel')),
                 ...subChartNames.filter(option => option.includes('area') || option.includes('solid') || option.includes('organic'))];
 //                ...relationNames.filter(option => option.includes('area') || option.includes('solid'))];
+populateSortDropdowns();
     for (group in sortButtonGroups) {
 //console.log(group);
         disableRadioButtons(sortButtonGroups[group], false);
@@ -408,10 +445,14 @@ function postLoadSnapShot() {
             const jsonData = JSON.parse(decodedData);
     
             // Now jsonData contains the loaded data
-            sampleInfo = jsonData.sampleInfo;
+/*            sampleInfo = jsonData.sampleInfo;
             sampleMeasurements = jsonData.sampleMeasurements;
             selectedSampleInfo = jsonData.selectedSampleInfo;
-            selectedSampleMeasurements = jsonData.selectedSampleMeasurements;
+            selectedSampleMeasurements = jsonData.selectedSampleMeasurements;*/
+            Object.assign(sampleInfo, jsonData.sampleInfo);
+            Object.assign(sampleMeasurements, jsonData.sampleMeasurements);
+            Object.assign(selectedSampleInfo, jsonData.selectedSampleInfo);
+            Object.assign(selectedSampleMeasurements, jsonData.selectedSampleMeasurements);
             postLoadSnapShot();
             updateChart();
             return jsonData;
@@ -443,7 +484,7 @@ function postLoadSnapShot() {
 
     function importChemInfo() {
         urls = {};
-console.log('importChemInfo');
+//console.log('importChemInfo');
         if (firstTime) {
             firstTime = false;
             files = {};
@@ -526,8 +567,6 @@ console.log('importChemInfo');
         }
 //console.log('End of processChemInfo');
     }
-
-
 
     function importLocations() {
         urls = {};
@@ -679,8 +718,8 @@ console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
             cleanSample = sample.replace(/\s+/g, '').toLowerCase();
             namedLocations[cleanSample] = {};
             namedLocations[cleanSample].label = sample;
-            namedLocations[cleanSample].latitude = df[r][1];
-            namedLocations[cleanSample].longitude = df[r][2];
+            namedLocations[cleanSample].latitude = parseFlost(df[r][1]);
+            namedLocations[cleanSample].longitude = parseFlost(df[r][2]);
 //console.log(sample,namedLocations[sample]);
         }
 //console.log('End of processExcelLocations');
@@ -724,9 +763,6 @@ function toggleSidebar() {
     toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
 }
 
-
-
-
 function importData() {
     var urls = {};
     if (firstTime) {
@@ -741,12 +777,12 @@ function importData() {
         const statusParam = suppliedParams.get('status');
         if (statusParam) {
             loadStatus(statusParam);
-        } else {
+        }// else {
             const urlParam = suppliedParams.get('urls');
             if (urlParam) {
                 urls = urlParam.split(',').map(url => url.trim()); // Split comma-separated URLs
             }
-        }
+//        }
         checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
         checkboxParameters(suppliedParams, 'subcharts', subChartNames);
         const featuresParams = suppliedParams.get('features');
@@ -769,9 +805,9 @@ function importData() {
 //            const everything = document.getElementById('controls-sidebar');
 //            everything.style.display = 'inline';
         }
-console.log(suppliedParams);
+//console.log(suppliedParams);
         const durlParam = suppliedParams.get('durl');
-console.log(durlParam);
+//console.log(durlParam);
         if (durlParam) {
 /*            var urlInputDD = document.getElementById('urlInputDD');
             urlInputDD.value = durlParam;
@@ -995,7 +1031,7 @@ function processExcelData(data, url, fileNumber) {
                         measurementUnit = df[r][c + 3];
                     }
                     //}
-console.log('unit ',measurementUnit);
+//console.log('unit ',measurementUnit);
                     if (!(sheetName === 'Physical Data')) {
                         if (!(sheetName === 'PCB data')) {
                             startRow = r + 2;
@@ -1099,25 +1135,26 @@ console.log('unit ',measurementUnit);
                                 }
                             }
                         }
-console.log('meas ',meas,sheetName,dateSampled);
-fred = df;
+//console.log('meas ',meas,sheetName,dateSampled);
+//fred = df;
                         if ('total' in meas) {
 
                         allSamples = Object.keys(meas.total);
-console.log('allSamples ',allSamples,sheetName,dateSampled);
-console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
+//console.log('allSamples ',allSamples,sheetName,dateSampled);
+//console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
 //fred = sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]];
 //                        if (!sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)']) {
 //                        if (sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)'] === undefined) {
-console.log('New test: No total solids');
+//console.log('New test: No total solids',dateSampled, sheetName, allSamples[0]);
+//console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
 // Code that reads Total Solids column into physical data
-                        if (!('Total solids (% total sediment)' in sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]])) {
+                        if (!(sampleMeasurements[dateSampled]?.['Physical Data']?.samples?.[allSamples[0]]?.['Total solids (% total sediment)'])) {
 col = startCol + 3;
 row = startRow - 2;
-console.log('col ',col,' row ',row, df[row][col]);
+//console.log('col ',col,' row ',row, df[row][col]);
 if(!(df[row][col] === undefined)) {
                             if (df[row][col].includes('Total Solids (%)')) {
-console.log('Total Solids found column found');
+//console.log('Total Solids found column found');
 let ts = {};
 let missingTotalSolids = true;
                                         for (let row = startRow; row < df.length; row++) {
@@ -1143,7 +1180,12 @@ let missingTotalSolids = true;
                                         }
                                         if (!missingTotalSolids) {
                                         for (let sample in ts) {
-                                            if (!(sampleMeasurements[dateSampled]['Physical Data'].samples[sample] === undefined)) {
+//                                            if (!(sampleMeasurements[dateSampled]['Physical Data'].samples[sample] === undefined)) {
+                                            if (!sampleMeasurements[dateSampled]?.['Physical Data']) {
+                                                sampleMeasurements[dateSampled]['Physical Data'] = {};
+                                                sampleMeasurements[dateSampled]['Physical Data'].samples = {};
+                                            }
+                                            if (sampleMeasurements[dateSampled]?.['Physical Data']?.samples[sample]) {
                                                 sampleMeasurements[dateSampled]['Physical Data'].samples[sample]['Total solids (% total sediment)'] = ts[sample];
                                                 if (!(ts[sample] === undefined)) {
                                                     missingTotalSolids = false;
@@ -1170,14 +1212,16 @@ let missingTotalSolids = true;
                         if (df[startRow - 3][startCol + 4].includes('Exempt')) {
                             deltaExempt = 1;
                         }
+                        let blankLine = 0;
                         for (let col = startCol + 6 + deltaExempt; col < df[startRow - 1].length; col++) {
                             meas.sizes.push(parseFloat(df[startRow - 2][col]) || 0);
-                            for (let row = startRow; row < 38; row++) {
+                            for (let row = startRow; row < df.length; row++) {
                                 sample = df[row][startCol + 2]; //bodge to pick up sample id
                                 // If sample id not present then use Laboratory sample number instead
                                 if (sample == undefined || sample == null) {
                                     sample = df[row][startCol];
                                 }
+                                //Stop if no sample id - end of data - may break if blank rows in data
                                 if (!(sample == undefined || sample == null)) {
                                     //console.log(sheetName, col, row, sample);
                                     if (!meas.samples) {
@@ -1209,10 +1253,20 @@ let missingTotalSolids = true;
                                     //console.log(sample);
                                     meas.samples[sample].psd.push(parseFloat(df[row][col]) || 0);
                                     //console.log('meas.psd ',df[row][col]);
+                                } else {
+                                    blankLine += 1;
+                                    if (blankLine > 5) { // Allow for up to 5 blank lines in PSD data
+                                        break;
+                                    }
                                 }
+//console.log(sample);
+                                        if (!(sample in sampleInfo[dateSampled].position)) {
+                                            break;
+                                        }
                             }
                         }
                         totalOfTotalArea = 0;
+//console.log(meas.samples);
                         for (sample in meas.samples) {
                             currentPsd = meas.samples[sample].psd;
                             retData = psdPostProcess(currentPsd,meas.sizes);
@@ -1227,6 +1281,7 @@ let missingTotalSolids = true;
                             meas.samples[sample].totalArea = retData['totalArea'];
 //                            totalOfTotalArea += retData['totalArea'];
                             totalSum += retData['totalArea'];
+//console.log(totalSum);
                         }
                         meas.sizes = [...standard_phiSizes, 0];
                     }
@@ -1240,25 +1295,16 @@ let missingTotalSolids = true;
         meas['Date analysed'] = dateAnalysed;
         meas['Unit of measurement'] = measurementUnit;
         meas['Laboratory/contractor'] = contractor;
+//if (sheetName === 'Physical Data') {console.log(meas,totalSum);}
 //        if (!(sheetName === 'Physical Data')) {
             if (!totalSum > 0) {
                 disableRadioButtons(sortButtonGroups[sheetName], true);
                 return 'No data for ' + sheetName;
-            } /*else {
-                disableRadioButtons(sortButtonGroups[sheetName], false);
-            }*/
-/*        }
-//        if (sheetName === 'Physical Data' && Object.keys(meas.samples).length === 0) {
-        if (sheetName === 'Physical Data') {
-            if (totalOfTotalArea === 0) {
-                return 'No data for ' + sheetName;
-            } else {
-                disableRadioButtons(sortButtonGroups[sheetName], false);
             }
-        }*/
         //console.log(dateSampled, sheetName, 'meas ', meas);
 //        if (!(meas.samples === undefined || meas.samples === null)) {
         if (sheetName === 'Physical Data') {
+//console.log(meas);
             for (sample in meas.samples) {
                 if (missingVisualAppearance) {
                     delete meas.samples[sample]['Visual Appearance'];
@@ -1271,6 +1317,7 @@ let missingTotalSolids = true;
                 }
             }
         }
+//if (sheetName === 'Physical Data') {console.log(meas);}
             sampleMeasurements[dateSampled][sheetName] = meas;
             const sums = {};
             //console.log(meas);
@@ -1450,9 +1497,9 @@ let missingTotalSolids = true;
 //                });
         sheetName = 'Application info';
         sheetData = workbook.Sheets[sheetName];
-console.log('fileNumber',fileNumber);
+//console.log('fileNumber',fileNumber);
         dateSampled = extractApplicationDataFromSheet(sheetName, sheetData, url, fileNumber);
-console.log('dateSampled',dateSampled);
+//console.log('dateSampled',dateSampled);
 
         sheetName = 'Physical Data';
         sheetData = workbook.Sheets[sheetName];
@@ -1897,3 +1944,24 @@ function toggleFileDisplay() {
         fileDisplayDiv.style.display = 'block';
     }
 }
+
+    function toggleMapPosition() {
+        const fixMapCheckbox = document.getElementById('fixMap');
+        const outputArea = document.querySelector('.output-area');
+        const mapContainer = document.getElementById('everything-maps');
+        const chartsAndTablesContainer = document.getElementById('charts-and-tables-container');
+
+        if (fixMapCheckbox.checked) {
+            outputArea.style.overflowY = 'auto';
+            mapContainer.classList.add('fixed-map-container');
+            if (chartsAndTablesContainer) {
+                chartsAndTablesContainer.classList.add('scrollable-charts-container');
+            }
+        } else {
+            outputArea.style.overflowY = 'hidden';
+            mapContainer.classList.remove('fixed-map-container');
+            if (chartsAndTablesContainer) {
+                chartsAndTablesContainer.classList.remove('scrollable-charts-container');
+            }
+        }
+    }

@@ -7,13 +7,16 @@
     <title>Sediment Data Explorer</title>
     
     <!-- External Scripts and Styles (Unchanged) -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  -->
     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>
     <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
+    <script src="https://unpkg.com/chroma-js/dist/chroma.min.cjs"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-autocolors"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="chart-plugin-select-sample.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.4/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.0.0/math.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -21,8 +24,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="https://harrywood.co.uk/maps/examples/leaflet/leaflet-plugins/layer/vector/KML.js"></script>
     <script src="https://unpkg.com/leaflet.layergroup.collision@0.2.0/dist/leaflet.layergroup.collision-src.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pca-js@1.0.0/pca.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
+  <script src="https://www.patrick-wied.at/static/heatmapjs/assets/js/heatmap.min.js"></script>
+  <script src="https://www.patrick-wied.at/static/heatmapjs/assets/js/leaflet-heatmap.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
     <!-- UI Styles -->
     <style>
@@ -67,13 +75,43 @@
             position: relative;
         }
 
+/*        
         .output-area {
             flex-grow: 1;
             padding: 1.5rem;
             overflow-y: auto;
             position: relative;
         }
-        
+*/
+/* Update the .output-area to be a flex container that is fixed in height */
+.output-area {
+    flex-grow: 1;
+    padding: 1.5rem;
+    position: relative;
+    display: flex; /* Make it a flex container */
+    flex-direction: column; /* Stack children vertically */
+    overflow: hidden; /* Prevent the main output area from scrolling */
+}
+
+/* NEW: Add a fixed container for the map and tabs */
+.fixed-header-container {
+    position: sticky; /* This is the key */
+    top: 0; /* Stick it to the top */
+    z-index: 10; /* Ensure it's above the charts */
+    background-color: var(--background-color);
+    padding-bottom: 1.5rem;
+    padding-top: 1.5rem;
+    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.1); /* Optional: Adds a subtle shadow on scroll */
+}
+
+/* NEW: Add a scrollable container for the charts */
+.scrollable-content {
+    flex-grow: 1; /* This makes the container fill the remaining space */
+    overflow-y: auto; /* This adds the vertical scrollbar */
+    /* Add padding to account for the space taken by the fixed header, preventing overlap */
+    padding-top: 1rem; 
+}
+
         /* Collapsible Sidebar Styles */
         .controls-sidebar.collapsed {
             width: 0;
@@ -180,12 +218,6 @@
             color: var(--primary-color);
         }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
         label {
             font-size: 0.85rem;
             font-weight: 500;
@@ -257,7 +289,8 @@
 
         /* Map and Chart Containers */
         #map {
-            height: 500px;
+            aspect-ratio: 2 / 1; /* Width:Height = 2:1 (height is 50% of width) */
+            width: 100%; /* Or any other width value */
             border-radius: 6px;
             border: 1px solid var(--border-color);
         }
@@ -334,6 +367,227 @@
             height: 18px;
             margin-right: 8px;
         }
+
+
+        .scatter-chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 400px; /* Set a fixed height or use min-height */
+    flex: 1; /* If using flexbox */
+}
+
+.scatter-chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.scatter-flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+                .scatter-flex-container {
+            display: flex;
+            flex-wrap: wrap;
+/*            gap: 1rem; /* Adds space between charts */
+        }
+
+        .scatter-chart-wrapper {
+            flex: 1 1 100%; /* Default to full width on small screens */
+            /*flex-grow: 0; This prevents items from growing to fill space */
+/*            flex-shrink: 0;*/
+            min-width: 140px; /* Prevents charts from becoming too small */
+/*            height: 300px; /* Crucial: Gives the container a height */
+            position: relative; /* Required for Chart.js responsiveness */
+        }
+
+
+        /* Media queries for responsive columns */
+        @media (min-width: 768px) {
+            .scatter-chart-wrapper {
+                flex-basis: 24%; /* 4 columns on medium screens */
+/*                flex-basis: 48%; /* 2 columns on medium screens */
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .scatter-chart-wrapper {
+                flex-basis: 23%; /* 4 columns on large screens */
+            }
+        }
+
+        .info.legend {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+            }
+        .legend.circle-legend-item {
+                display: flex;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+
+.output-area.fixed-map {
+    display: flex;
+    flex-direction: column;
+    height: 40%; /* Important: Ensure the container has a defined height */
+    overflow-y: hidden; /* Prevent the main area from scrolling */
+}
+
+.fixed-map-container {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: var(--background-color);
+    padding-bottom: 1.5rem;
+}
+
+.scrollable-charts-container {
+    flex-grow: 1; /* This makes the container fill the remaining space */
+    overflow-y: auto; /* This adds the scrollbar */
+    padding-top: 1.5rem;
+}        
+        
+/* Ensure map containers render properly 
+div[id$="-contaminant-map"], div[id^="smallmap-"] {
+    position: relative !important;
+    display: block !important;
+    overflow: hidden !important;
+}*/
+
+/* Force Leaflet containers to take full space */
+.leaflet-container {
+    width: 100% !important;
+    min-height: 90% !important;
+}
+
+/* Force Leaflet normal map containers to take half height */
+.map-container-original {
+    width: 100% !important;
+    min-height: 50% !important;
+}
+
+/* Ensure tiles render in correct position */
+.leaflet-map-pane {
+    left: 0 !important;
+    top: 0 !important;
+}
+
+/*div[id$="contaminant-map"], div[id^="smallmap-"] {
+    position: relative;
+}*/
+
+/*
+.leaflet-container {
+    position: relative;
+    outline: 0;
+}*/
+
+.small-map-wrapper {
+    min-height: 280px !important;
+    min-width: 250px !important;
+    display: block !important;
+}
+
+div[id^="smallmap-"] {
+    display: block !important;
+    width: 100% !important;
+    height: calc(100% - 50px) !important;
+    min-height: 200px !important;
+}
+
+div[id^="largemap-"] {
+    display: block !important;
+    width: 100% !important;
+    height: calc(100% - 50px) !important;
+    min-height: 700px !important;
+}
+
+#largeContaminantMapId {
+    height: 500px; /* Or whatever height you need */
+    width: 100%;
+}
+
+.collapsible-legend {
+    cursor: pointer;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out; /* Adjust the duration as needed */
+}
+
+.collapsible-content.show-content {
+    max-height: 750px; /* Use a value larger than your content will ever be */
+}
+
+/* Make the app container take up the full viewport height */
+.app-container {
+    display: flex; /* Use flexbox to align children */
+    height: 100vh; /* Set height to 100% of the viewport height */
+}
+
+/* Make the main content area flexible */
+.output-area {
+    flex-grow: 1; /* This will make the main content area take up the remaining space */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure the sidebar scrolls if its content overflows */
+.controls-sidebar {
+    overflow-y: auto; /* Enable vertical scrolling */
+    /* Other sidebar styles (width, etc.) go here */
+}
+
+/* Add this new class for horizontal layouts */
+.horizontal-group {
+    flex-direction: row;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px; /* Adds space between items */
+    align-items: center; /* Vertically aligns elements */
+}
+
+
+.input-group {
+    display: flex;
+    flex-direction: row; /* Change to row to align items horizontally */
+    flex-wrap: wrap; /* Allows items to wrap onto a new line if the container is too narrow */
+    gap: 15px; /* Adds horizontal space between the elements */
+    align-items: center; /* Vertically aligns the labels and inputs */
+    margin-bottom: 15px; /* Adds space between lines */
+}
+
+.input-line {
+    /* Make this container a flexbox container */
+    display: flex;
+    /* This aligns the items horizontally */
+    flex-wrap: wrap; 
+    /* This adds space between the items */
+    gap: 15px;
+    /* This vertically centers the labels and inputs */
+    align-items: center;
+    /* Adds vertical space between the lines of inputs */
+    margin-bottom: 15px; 
+}
+
+.input-line label {
+    white-space: nowrap; /* Prevents the label text from wrapping */
+}
+
     </style>
 </head>
 
@@ -341,18 +595,20 @@
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250811</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v1.20250928</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
             <button onclick="clearData()" class="secondary">Clear Data</button>
+            <button id="toggleMapBtn" onclick="toggleMap()">Hide Map</button>
         </div>
     </header>
 
-    <div class="app-container">
-        <aside id="controls-sidebar" class="controls-sidebar collapsed">
-            <fieldset>
-                <legend>Data Sources</legend>
+<div class="app-container">
+    <aside id="controls-sidebar" class="controls-sidebar collapsed">
+        <fieldset>
+            <legend class="collapsible-legend">Data Sources</legend>
+            <div class="collapsible-content">
                 <div class="input-group">
                     <label for="fileInput">MMO Templates (Local Files)</label>
                     <input type="file" id="fileInput" multiple onchange="importData()">
@@ -365,88 +621,12 @@
                 <hr>
                 <button onclick="openCEFASSelection()">Select CEFAS Data</button>
                 <button onclick="openAdditionalInfoModal()">Additional Information</button>
-            </fieldset>
+            </div>
+        </fieldset>
 
-            <fieldset>
-                <legend>Selection Tools</legend>
-                <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
-                <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
-                <button onclick="openChemicalSelection()">Select Chemicals</button>
-                <button onclick="clearSelections()" class="secondary">Clear All Selections</button>
-            </fieldset>
-
-            <fieldset>
-                <legend>Chart Customisation</legend>
-                <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
-                <button onclick="openSampleLabels()">Enter Sample Labels</button>
-                <button onclick="openChartModifiersModal()">Chart Modifiers</button>
-                <hr>
-                <div class="input-group">
-                    <label for="sorting-select">Sort Samples By:</label>
-                    <select name="sorting" id="sorting-select">
-                        <option id="unsorted" value="unsorted" selected>Unsorted</option>
-                        <option id="longitude" value="longitude">Longitude</option>
-                        <option id="latitude" value="latitude">Latitude</option>
-                        <option id="totalarea" value="totalarea">Total surface area</option>
-                        <option id="totalsolids" value="totalsolids">Total solids</option>
-                        <option id="organicmatter" value="organicmatter">Organic matter</option>
-                        <option id="lmw" value="lmw">LMW PAHs Sum</option>
-                        <option id="hmw" value="hmw">HMW PAHs Sum</option>
-                        <option id="totalhcsort" value="totalhcsort">Total hydrocarbon</option>
-                        <option id="ices7" value="ices7">ICES7 PCBs Sum</option>
-                        <option id="allpcbs" value="allpcbs">All PCBs Sum</option>
-                        <option id="silt" value="silt">Silt & Clay Fraction</option>
-                        <option id="siltsand" value="siltsand">Silt, Clay & Fine Sand</option>
-                        <option id="sand" value="sand">Sand Fraction</option>
-                        <option id="gravel" value="gravel">Gravel Fraction</option>
-                        <option id="normal" value="normal">Date of sampling</option>
-                        <option id="datelongitude" value="datelongitude">Date then longitude</option>
-                        <option id="datelatitude" value="datelatitude">Date then latitude</option>
-                        <option id="datetotalarea" value="datetotalarea">Date then total area</option>
-                        <option id="datetotalhc" value="datetotalhc">Date then total hydrocarbon</option>
-                        <option id="datelmw" value="datelmw">Date then LMW sum</option>
-                        <option id="datehmw" value="datehmw">Date then HMW sum</option>
-                        <option id="dateices7" value="dateices7">Date then ICES7 sum</option>
-                        <option id="dateallpcbs" value="dateallpcbs">Date then All PCBs sum</option>
-                    </select>
-                 </div>
-            </fieldset>
-
-            <fieldset>
-                <legend>Chart Configuration</legend>
-                <p><strong>Sheetnames to Include:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
-                    <label><input type="checkbox" id="pahdata" checked> PAH data</label>
-                    <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
-                    <label><input type="checkbox" id="bdedata" checked> BDE data</label>
-                    <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
-                    <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
-                    <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
-                </div>
-                <hr>
-                <p><strong>Chart Types:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
-                    <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
-                    <label><input type="checkbox" id="positionplace" checked> Plot by position</label>
-                    <label><input type="checkbox" id="pcaanalysis" checked> PCA analysis</label>
-                </div>
-                <button onclick="openAdditionalChartsModal()">Additional Charts</button>
-                <button onclick="openPcaOptionsModal()">PCA Options</button>
-                 <hr>
-                 <p><strong>Relations:</strong></p>
-                 <div class="checkbox-group">
-                    <label><input type="checkbox" id="relationareadensity" checked> Area density</label>
-                    <label><input type="checkbox" id="relationhc" checked> Total hydrocarbons</label>
-                    <label><input type="checkbox" id="relationtotalsolids" checked> Total solids</label>
-                    <label><input type="checkbox" id="relationorganiccarbon" checked> Organic Carbon</label>
-                 </div>
-                 <button onclick="openParticleSizeModal()">Particle Size Details</button>
-            </fieldset>
-
-            <fieldset>
-                <legend>Save / Load State</legend>
+        <fieldset>
+            <legend class="collapsible-legend">Save / Load State</legend>
+            <div class="collapsible-content">
                 <div class="input-group">
                     <label for="fileSave">Save Snapshot</label>
                     <input type="text" id="fileSave" placeholder="Enter file name to save" onchange="saveSnapShot()">
@@ -459,33 +639,111 @@
                     <label for="urlLoad">Load Snapshot from URL</label>
                     <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
                 </div>
-            </fieldset>
-        </aside>
+            </div>
+        </fieldset>
 
-        <main class="output-area">
-            <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
+        <fieldset>
+            <legend class="collapsible-legend">Selection Tools</legend>
+            <div class="collapsible-content">
+                <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
+                <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
+                <button onclick="openChemicalSelection()">Select Chemicals</button>
+                <button onclick="clearSelections()" class="secondary">Clear All Selections</button>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend class="collapsible-legend">Chart Configuration</legend>
+            <div class="collapsible-content">
+                <p><strong>Sheetnames to Include:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
+                    <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
+                    <label><input type="checkbox" id="pahdata" checked> PAH data</label>
+                    <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
+                    <label><input type="checkbox" id="bdedata" checked> BDE data</label>
+                    <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
+                    <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
+                </div>
+                <hr>
+                <p><strong>Physical Chart Types:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="splitbyweight" checked> Split by weight</label>
+                    <label><input type="checkbox" id="splitbyarea" checked> Split by area</label>
+                    <label><input type="checkbox" id="totalsolidsandtotalcarbon" checked> Total solids and total carbon</label>
+                    <label><input type="checkbox" id="cumulative" checked> Cumulative</label>
+                </div>
+                <button onclick="openParticleSizeModal()">Small particle details</button>
+                <p><strong>Chemical Chart Types:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
+                    <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
+                    <label><input type="checkbox" id="correlationplots"> Correlation plots</label>
+                    <label><input type="checkbox" id="pcaanalysis"> PCA analysis</label>
+                    <label><input type="checkbox" id="mapgrid"> Map grid</label>
+                <button onclick="openAdditionalChartsModal()">Additional Charts</button>
+                <button onclick="openPcaOptionsModal()">PCA Options</button>
+                <hr>
+                </div>
+                <p><strong>Relations:</strong></p>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="relationareadensity"> Area density</label>
+                    <label><input type="checkbox" id="relationhc"> Total hydrocarbons</label>
+                    <label><input type="checkbox" id="relationtotalsolids"> Total solids</label>
+                    <label><input type="checkbox" id="relationorganiccarbon"> Organic Carbon</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend class="collapsible-legend">Chart Customisation</legend>
+            <div class="collapsible-content">
+                <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
+                <button onclick="openSampleLabels()">Enter Sample Labels</button>
+                <button onclick="openChartModifiersModal()">Chart Modifiers</button>
+                <hr>
+                <div class="input-group">
+                    <label for="primary-sorting-select">Primary Sort:</label>
+                    <select id="primary-sorting-select"></select>
+                </div>
+                <div class="input-group">
+                    <label for="secondary-sorting-select">Secondary Sort:</label>
+                    <select id="secondary-sorting-select"></select>
+                </div>
+            </div>
+        </fieldset>
+    </aside>
+
+    <main class="output-area">
+        <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
+
+        <div class="fixed-header-container">
             <div id="sedDredgeData" style="display: none;"></div>
             <div id="fileDisplay"></div>
             <div id="sample-info-table-container"></div>
             <div id="everything-maps" style="display: none; margin-top: 1rem;">
-                <div id="map"></div>
-                <!-- NEW: Map Legend Container -->
+                <div id="map" class="map-container-original"></div>
                 <div id="map-legend" class="map-legend-container" style="display: none;">
                     <h4>Legend</h4>
-                    <!-- Legend items will be populated here by Javascript -->
-                </div>
+                    </div>
                 <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
                     <button onclick="toggleFileDisplay()">Toggle File Display</button>
                     <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
                     <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
-                    <!-- NEW: Toggle Legend Button -->
                     <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
                 </div>
             </div>
-            <div id="chartContainer"></div>
-            <div id="chartsForMapContainer"></div>
-        </main>
-    </div>
+            
+            <div id="chart-tab-buttons" class="tab-buttons"></div>
+        </div>
+        <div class="scrollable-content">
+            <div id="charts-and-tables-container">
+                <div id="chartContainer"></div>
+                <div id="chartsForMapContainer"></div>
+            </div>
+        </div>
+    </main>
+</div>
 
     <!-- Modals -->
     <div id="sedDataModal" class="modal">
@@ -522,15 +780,31 @@
             <h2>Select Samples</h2>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipSampleSelections(true)">Select All</button><button onclick="flipSampleSelections(false)">Select None</button><button onclick="selectHighlighted()">Select Highlighted</button></div>
             <hr>
+
             <p><strong>Filter Samples:</strong></p>
-            <div class="input-group">
-                <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
-                <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
-                <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
-                <br>
-                <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
-                <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
-                <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
+
+<div class="horizontal-group">
+  <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
+  <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
+  <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
+</div>
+
+<div class="horizontal-group">
+  <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
+  <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
+</div>
+
+<div class="input-group">
+  <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
+</div>
+
+            <div>Must have measurement of - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label>
+                <input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label>
+                <input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label>
+                <input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label>
+                <input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label>
+                <input type="checkbox" id="organochlorinedatasample"><label for="organochlorinedatasample">Organochlorine data</label>
+                <input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label>
             </div>
             <button onclick="applySampleFilter()">Apply Filter</button>
             <hr>
@@ -539,7 +813,6 @@
                 <button onclick="cancelSampleSelection()" class="secondary">Cancel</button>
                 <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
             </div>
-            <div style="display:none;">Must have non-zero - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label><input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label><input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label><input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label><input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label><input type="checkbox" id="organochlorinedataset"><label for="organochlorinedataset">Organochlorine data</label><input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label></div>
         </div>
     </div>
     <div id="chemicalModal" class="modal">
@@ -589,8 +862,12 @@
             </div>
             <hr>
             <div class="checkbox-group">
-                <label><input type="checkbox" id="useTabs"> Display charts in tabs</label>
+                <label><input type="checkbox" id="useTabs" checked> Display charts in tabs</label>
             </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="fixMap" onchange="toggleMapPosition()"> Fix map at top when scrolling</label>
+            </div>
+
             <div class="modal-footer"><button onclick="closeChartModifiersModal()" class="secondary">Close</button></div>
         </div>
     </div>
@@ -655,6 +932,19 @@
     <script src="sdeTables.js"></script>
     
     <script>
+        function toggleMap() {
+            const mapContainer = document.getElementById('everything-maps');
+            const button = document.getElementById('toggleMapBtn');
+            
+            if (mapContainer.style.display === 'none') {
+                mapContainer.style.display = 'block';
+                button.textContent = 'Hide Map';
+            } else {
+                mapContainer.style.display = 'none';
+                button.textContent = 'Show Map';
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('controls-sidebar');
             const toggleBtn = document.getElementById('sidebar-toggle');
@@ -670,16 +960,188 @@
         }
 
         function openTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
             const tabcontent = document.getElementsByClassName("tab-content");
             for (let i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
+
+            // Get all elements with class="tab-button" and remove the class "active"
             const tablinks = document.getElementsByClassName("tab-button");
             for (let i = 0; i < tablinks.length; i++) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
-            document.getElementById(tabName).style.display = "block";
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- CORRECTED RESIZE LOGIC ---
+                // Use setTimeout to delay the resize call. This gives the browser time
+                // to render the newly visible tab panel before the chart tries to measure it.
+                setTimeout(() => {
+                    const canvases = activeTabPanel.getElementsByTagName('canvas');
+                    for (const canvas of canvases) {
+                        const chart = Chart.getChart(canvas); 
+                        
+                        if (chart) {
+                            chart.resize();
+                        }
+                    }
+                }, 0); // A 0ms delay is enough to push this to the next event cycle.
+            }
+        }
+
+        function NoTimongopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- CORRECTED RESIZE LOGIC ---
+                // After making the tab visible, find all chart instances and tell them to resize.
+                const canvases = activeTabPanel.getElementsByTagName('canvas');
+                for (const canvas of canvases) {
+                    // Use the built-in Chart.js method to get the instance directly from the canvas
+                    const chart = Chart.getChart(canvas); 
+                    
+                    if (chart) {
+                        chart.resize();
+                        console.log(`Resized chart for canvas ${canvas.id}`);
+                    } else {
+                        // This warning is now less critical, as it might just mean a canvas is empty.
+                        console.warn(`No chart instance was registered with Chart.js for canvas ${canvas.id}`);
+                    }
+                }
+            }
+        }
+
+
+
+        function WndowApproachopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- FIX: RESIZE CHARTS ON TAB CLICK ---
+                // After making the tab visible, find all chart instances inside it and tell them to resize.
+                const canvases = activeTabPanel.getElementsByTagName('canvas');
+                for (const canvas of canvases) {
+                    const chartId = canvas.id;
+                    const instanceNo = parseInt(chartId.replace('chart', ''), 10);
+                    // If a chart instance exists for this canvas, resize it.
+console .log(window.chartInstance);
+                    if (window.chartInstance && window.chartInstance[instanceNo]) {
+                        window.chartInstance[instanceNo].resize();
+    console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
+                    } else {
+                        console.warn(`No chart instance found for canvas ${chartId}`);
+                    }
+                }
+            }
+        }
+
+
+        function ReportingopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            if (activeTabPanel) {
+                activeTabPanel.style.display = "block";
+                evt.currentTarget.className += " active";
+
+                // --- FIX: RESIZE CHARTS ON TAB CLICK ---
+                // After making the tab visible, find all chart instances inside it and tell them to resize.
+                const canvases = activeTabPanel.getElementsByTagName('canvas');
+                for (const canvas of canvases) {
+                    const chartId = canvas.id;
+                    const instanceNo = parseInt(chartId.replace('chart', ''), 10);
+                    
+                    // If a chart instance exists for this canvas, resize it.
+                    if (window.chartInstance && window.chartInstance[instanceNo]) {
+                        window.chartInstance[instanceNo].resize();
+console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
+                    } else {
+                        console.warn(`No chart instance found for canvas ${chartId}`);
+                    }
+                }
+            }
+        }
+
+
+
+        function OLDopenTab(evt, tabName) {
+            // Get all elements with class="tab-content" and hide them
+            const tabcontent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tab-button" and remove the class "active"
+            const tablinks = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            const activeTabPanel = document.getElementById(tabName);
+            activeTabPanel.style.display = "block";
             evt.currentTarget.className += " active";
+
+            // --- NEW CODE TO FIX RESIZING ---
+            // After making the tab visible, find all chart instances inside it and tell them to resize.
+            // This ensures they render correctly.
+            const canvases = activeTabPanel.getElementsByTagName('canvas');
+            for (const canvas of canvases) {
+                const chartId = canvas.id;
+                // Extract the instance number from the canvas ID (e.g., "chart5" -> 5)
+                const instanceNo = parseInt(chartId.replace('chart', ''), 10);
+                
+                // If a chart instance exists for this canvas, resize it.
+                if (chartInstance && chartInstance[instanceNo]) {
+                    chartInstance[instanceNo].resize();
+                }
+            }
         }
 
         function toggleMapLegend() {
@@ -730,6 +1192,22 @@
                 }
             }
         });
+
+        document.addEventListener("DOMContentLoaded", function() {
+    const legends = document.querySelectorAll(".collapsible-legend");
+
+    legends.forEach(legend => {
+        legend.addEventListener("click", function() {
+            // Find the immediate sibling which is the div containing the content
+            const content = this.nextElementSibling;
+            
+            // Toggle the 'show-content' class on the content div
+            if (content) {
+                content.classList.toggle("show-content");
+            }
+        });
+    });
+});
     </script>
 </body>
 </html>
