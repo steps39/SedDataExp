@@ -218,12 +218,6 @@
             color: var(--primary-color);
         }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
         label {
             font-size: 0.85rem;
             font-weight: 500;
@@ -558,6 +552,42 @@ div[id^="largemap-"] {
     /* Other sidebar styles (width, etc.) go here */
 }
 
+/* Add this new class for horizontal layouts */
+.horizontal-group {
+    flex-direction: row;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px; /* Adds space between items */
+    align-items: center; /* Vertically aligns elements */
+}
+
+
+.input-group {
+    display: flex;
+    flex-direction: row; /* Change to row to align items horizontally */
+    flex-wrap: wrap; /* Allows items to wrap onto a new line if the container is too narrow */
+    gap: 15px; /* Adds horizontal space between the elements */
+    align-items: center; /* Vertically aligns the labels and inputs */
+    margin-bottom: 15px; /* Adds space between lines */
+}
+
+.input-line {
+    /* Make this container a flexbox container */
+    display: flex;
+    /* This aligns the items horizontally */
+    flex-wrap: wrap; 
+    /* This adds space between the items */
+    gap: 15px;
+    /* This vertically centers the labels and inputs */
+    align-items: center;
+    /* Adds vertical space between the lines of inputs */
+    margin-bottom: 15px; 
+}
+
+.input-line label {
+    white-space: nowrap; /* Prevents the label text from wrapping */
+}
+
     </style>
 </head>
 
@@ -565,11 +595,12 @@ div[id^="largemap-"] {
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v0.20250919</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v1.20250928</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
             <button onclick="clearData()" class="secondary">Clear Data</button>
+            <button id="toggleMapBtn" onclick="toggleMap()">Hide Map</button>
         </div>
     </header>
 
@@ -681,8 +712,6 @@ div[id^="largemap-"] {
                 </div>
             </div>
         </fieldset>
-                    <button id="toggleMapBtn" onclick="toggleMap()">Hide Map</button>
-
     </aside>
 
     <main class="output-area">
@@ -751,16 +780,24 @@ div[id^="largemap-"] {
             <h2>Select Samples</h2>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipSampleSelections(true)">Select All</button><button onclick="flipSampleSelections(false)">Select None</button><button onclick="selectHighlighted()">Select Highlighted</button></div>
             <hr>
+
             <p><strong>Filter Samples:</strong></p>
-            <div class="input-group">
-                <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
-                <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
-                <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
-                <br>
-                <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
-                <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
-                <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
-            </div>
+
+<div class="horizontal-group">
+  <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
+  <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
+  <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
+</div>
+
+<div class="horizontal-group">
+  <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
+  <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
+</div>
+
+<div class="input-group">
+  <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
+</div>
+
             <div>Must have measurement of - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label>
                 <input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label>
                 <input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label>

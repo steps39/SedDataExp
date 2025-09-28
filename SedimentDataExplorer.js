@@ -445,10 +445,14 @@ function postLoadSnapShot() {
             const jsonData = JSON.parse(decodedData);
     
             // Now jsonData contains the loaded data
-            sampleInfo = jsonData.sampleInfo;
+/*            sampleInfo = jsonData.sampleInfo;
             sampleMeasurements = jsonData.sampleMeasurements;
             selectedSampleInfo = jsonData.selectedSampleInfo;
-            selectedSampleMeasurements = jsonData.selectedSampleMeasurements;
+            selectedSampleMeasurements = jsonData.selectedSampleMeasurements;*/
+            Object.assign(sampleInfo, jsonData.sampleInfo);
+            Object.assign(sampleMeasurements, jsonData.sampleMeasurements);
+            Object.assign(selectedSampleInfo, jsonData.selectedSampleInfo);
+            Object.assign(selectedSampleMeasurements, jsonData.selectedSampleMeasurements);
             postLoadSnapShot();
             updateChart();
             return jsonData;
@@ -773,12 +777,12 @@ function importData() {
         const statusParam = suppliedParams.get('status');
         if (statusParam) {
             loadStatus(statusParam);
-        } else {
+        }// else {
             const urlParam = suppliedParams.get('urls');
             if (urlParam) {
                 urls = urlParam.split(',').map(url => url.trim()); // Split comma-separated URLs
             }
-        }
+//        }
         checkboxParameters(suppliedParams, 'selcharts', dataSheetNamesCheckboxes);
         checkboxParameters(suppliedParams, 'subcharts', subChartNames);
         const featuresParams = suppliedParams.get('features');
@@ -1131,8 +1135,8 @@ function processExcelData(data, url, fileNumber) {
                                 }
                             }
                         }
-console.log('meas ',meas,sheetName,dateSampled);
-fred = df;
+//console.log('meas ',meas,sheetName,dateSampled);
+//fred = df;
                         if ('total' in meas) {
 
                         allSamples = Object.keys(meas.total);
@@ -1141,13 +1145,13 @@ fred = df;
 //fred = sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]];
 //                        if (!sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)']) {
 //                        if (sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]['Total solids (% total sediment)'] === undefined) {
-console.log('New test: No total solids',dateSampled, sheetName, allSamples[0]);
+//console.log('New test: No total solids',dateSampled, sheetName, allSamples[0]);
 //console.log(sampleMeasurements[dateSampled]['Physical Data'].samples[allSamples[0]]);
 // Code that reads Total Solids column into physical data
                         if (!(sampleMeasurements[dateSampled]?.['Physical Data']?.samples?.[allSamples[0]]?.['Total solids (% total sediment)'])) {
 col = startCol + 3;
 row = startRow - 2;
-console.log('col ',col,' row ',row, df[row][col]);
+//console.log('col ',col,' row ',row, df[row][col]);
 if(!(df[row][col] === undefined)) {
                             if (df[row][col].includes('Total Solids (%)')) {
 //console.log('Total Solids found column found');
@@ -1255,9 +1259,14 @@ let missingTotalSolids = true;
                                         break;
                                     }
                                 }
+//console.log(sample);
+                                        if (!(sample in sampleInfo[dateSampled].position)) {
+                                            break;
+                                        }
                             }
                         }
                         totalOfTotalArea = 0;
+//console.log(meas.samples);
                         for (sample in meas.samples) {
                             currentPsd = meas.samples[sample].psd;
                             retData = psdPostProcess(currentPsd,meas.sizes);
@@ -1272,6 +1281,7 @@ let missingTotalSolids = true;
                             meas.samples[sample].totalArea = retData['totalArea'];
 //                            totalOfTotalArea += retData['totalArea'];
                             totalSum += retData['totalArea'];
+//console.log(totalSum);
                         }
                         meas.sizes = [...standard_phiSizes, 0];
                     }
@@ -1285,25 +1295,16 @@ let missingTotalSolids = true;
         meas['Date analysed'] = dateAnalysed;
         meas['Unit of measurement'] = measurementUnit;
         meas['Laboratory/contractor'] = contractor;
+//if (sheetName === 'Physical Data') {console.log(meas,totalSum);}
 //        if (!(sheetName === 'Physical Data')) {
             if (!totalSum > 0) {
                 disableRadioButtons(sortButtonGroups[sheetName], true);
                 return 'No data for ' + sheetName;
-            } /*else {
-                disableRadioButtons(sortButtonGroups[sheetName], false);
-            }*/
-/*        }
-//        if (sheetName === 'Physical Data' && Object.keys(meas.samples).length === 0) {
-        if (sheetName === 'Physical Data') {
-            if (totalOfTotalArea === 0) {
-                return 'No data for ' + sheetName;
-            } else {
-                disableRadioButtons(sortButtonGroups[sheetName], false);
             }
-        }*/
         //console.log(dateSampled, sheetName, 'meas ', meas);
 //        if (!(meas.samples === undefined || meas.samples === null)) {
         if (sheetName === 'Physical Data') {
+//console.log(meas);
             for (sample in meas.samples) {
                 if (missingVisualAppearance) {
                     delete meas.samples[sample]['Visual Appearance'];
@@ -1316,6 +1317,7 @@ let missingTotalSolids = true;
                 }
             }
         }
+//if (sheetName === 'Physical Data') {console.log(meas);}
             sampleMeasurements[dateSampled][sheetName] = meas;
             const sums = {};
             //console.log(meas);

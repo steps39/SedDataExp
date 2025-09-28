@@ -37,7 +37,7 @@ function updateDatasetLabels() {
     for (dataset in selectedSampleInfo) {
         let altName = formData.get(`dataset-${index}`);
 //console.log(`dataset-${index}`);
-console.log('altName ',altName);
+//console.log('altName ',altName);
         if (!(altName === '')) {
 //            result[dataset] = altName;
             selectedSampleInfo[dataset].label = altName;
@@ -192,6 +192,9 @@ function selectChemicals() {
 }
 
 function getSelectedChemicalSampleMeasurements(selectedChemicals) {
+console.log(selectedChemicals);
+console.log(selectedSampleInfo);
+console.log(selectedSampleMeasurements);
     selectedMeas = {};
     for (dateSampled in selectedSampleMeasurements) {
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
@@ -205,6 +208,7 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
                         if (!(chemicalType in selectedMeas[dateSampled])) {
                             selectedMeas[dateSampled][chemicalType] = {};
                             selectedMeas[dateSampled][chemicalType].chemicals = {};
+                            selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
                             if (chemicalType == 'PAH data') {
                                 // Just copy all common data even if only 1 PAH is selected
                                 selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
@@ -221,7 +225,28 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
                                 selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
                             }
                         }
-                        selectedMeas[dateSampled][chemicalType].chemicals[chemical] = sampleMeasurements[dateSampled][chemicalType].chemicals[chemical];
+                        for (sample in selectedSampleInfo[dateSampled].position) {
+console.log(selectedSampleMeasurements,dateSampled,chemicalType,chemical);
+console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
+                           if (!selectedMeas[dateSampled][chemicalType]?.chemicals[chemical]) {
+                                selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
+                                selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
+                            }
+/*                            if (!selectedMeas[dateSampled][chemicalType].chemicals[chemical]?.samples) {
+                                selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
+                            }*/
+console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
+                            selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
+                           if (!selectedMeas[dateSampled]?.["Physical Data"]) {
+                                selectedMeas[dateSampled]["Physical Data"] = {};
+                                selectedMeas[dateSampled]["Physical Data"]["Date analysed"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Date analysed"]
+                                selectedMeas[dateSampled]["Physical Data"]["Laboratory/contractor"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Laboratory/contractor"];
+                                selectedMeas[dateSampled]["Physical Data"]["Unit of measurement"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Unit of measurement"];
+                                selectedMeas[dateSampled]["Physical Data"].sizes = selectedSampleMeasurements[dateSampled]["Physical Data"].sizes;
+                                selectedMeas[dateSampled]["Physical Data"].samples = {};
+                            }
+                            selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
+                        }
                     }
                 }
             }
@@ -229,14 +254,16 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
     }
     for (dateSampled in selectedMeas) {
         if ('Physical Data' in sampleMeasurements[dateSampled]){
-            selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
+            for (sample in selectedSampleInfo[dateSampled].position) {
+                selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
+            }
         }
     }
     return selectedMeas;
 }
 
 function getSelectedChemicalSampleInfo(selectedChemicals) {
-    selectedSamps = {};
+    let selectedSamps = {};
     for (const dateSampled in selectedSampleMeasurements) {
         selectedSamps[dateSampled] = {};
         selectedSamps[dateSampled]['Date sampled'] = sampleInfo[dateSampled]['Date sampled'];
@@ -255,6 +282,9 @@ console.log('getting positions',chemicalType,chemical);
                 for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
                     if (selectedChemicals.includes(chemical)) {
                         for (const sample in selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
+//if (sample.includes('Scar')) {
+    console.log('Sample',sample);
+//}
                             selectedSamps[dateSampled].position[sample] = selectedSampleInfo[dateSampled].position[sample];
                         }
                     }
@@ -705,6 +735,7 @@ function selectSamples() {
     //console.log(selectedSamples);
     selectedSampleMeasurements = getselectedSampleMeasurements(selectedSamples);
     selectedSampleInfo = getSelectedSamples(selectedSamples);
+console.log(selectedSampleInfo);
     updateChart();
 }
 
@@ -733,18 +764,19 @@ function getselectedSampleMeasurements(selectedSamples) {
                     selectedMeas[dateSampled][chemicalType].samples = {};
                     selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
                     selectedMeas[dateSampled][chemicalType].sizes = sampleMeasurements[dateSampled][chemicalType].sizes;
-console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
+//console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
 //console.log('2 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
                 }
-console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
+//console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
                 selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
             } else {
                         //    						for (const chemicalType in sampleMeasurements[dateSampled]) {
-                let newData = selectedMeas[dateSampled][chemicalType];
-console.log(chemicalType, dataset, newData);
+//                let newData = selectedMeas[dateSampled][chemicalType];
+                let newData = {};
+//console.log(chemicalType, dataset, newData);
                 for (const key in dataset[chemicalType]) {
                     let currentData = dataset[chemicalType][key];
-console.log(chemicalType,key);
+//console.log(chemicalType,key);
                     if (key === 'chemicals') {
                         if (!newData.chemicals) {
                             newData.chemicals = {};
@@ -757,7 +789,7 @@ console.log(chemicalType,key);
                         } else {
                             newData.chemicals = selectedMeas[dateSampled][chemicalType].chemicals;
                             for (const chemical in dataset[chemicalType].chemicals) {
-console.log('Create ', dateSampled, chemicalType, chemical,newData, currentData);
+//console.log('Create ', dateSampled, chemicalType, chemical,newData, currentData);
                                 newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
                             }
                         }
@@ -767,6 +799,9 @@ console.log('Create ', dateSampled, chemicalType, chemical,newData, currentData)
                                 newData[key] = currentData;
                             }
                         } else {
+/*if (key === 'gorhamTest') {
+console.log(dateSampled,sample,key,currentData,newData);
+}*/
                             if (!newData[key]) {
                                 newData[key] = {};
                                 newData[key][sample] = currentData[sample];
@@ -776,7 +811,7 @@ console.log('Create ', dateSampled, chemicalType, chemical,newData, currentData)
                         }
                     }
                 }
-console.log(newData);
+//console.log(newData);
                 selectedMeas[dateSampled][chemicalType] = newData;
             }
         }
@@ -804,15 +839,15 @@ function getSelectedSamples(selectedSamples) {
         if (!selectedSamps[dateSampled]) {
             selectedSamps[dateSampled] = {};
         }
-        for (const key in sampleInfo[dateSampled]) {
-            currentData = sampleInfo[dateSampled][key];
+        for (const key in selectedSampleInfo[dateSampled]) {
+            currentData = selectedSampleInfo[dateSampled][key];
             if (isSingleValue(currentData)) {
                 selectedSamps[dateSampled][key] = currentData;
             } else {
                 if (!selectedSamps[dateSampled][key]) {
                     selectedSamps[dateSampled][key] = {};
                 }
-console.log(dateSampled, sample, currentData, selectedSamps);
+//console.log(dateSampled, sample, currentData, selectedSamps);
                 selectedSamps[dateSampled][key][sample] = currentData[sample];
             }
         }

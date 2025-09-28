@@ -71,7 +71,7 @@ console.log('Creating global layers...');
         console.log("Layers already generated. Skipping regeneration.");
         return;
     }*/
-console.log(selectedSampleMeasurements, selectedSampleInfo);
+//console.log(selectedSampleMeasurements, selectedSampleInfo);
 contaminantLayers = {};
 contaminantHeatmaps = {};
     let allSamples = [];
@@ -94,7 +94,7 @@ contaminantHeatmaps = {};
     let depthStatsGlobal = { min: Infinity, max: -Infinity };
 
     const datesSampled = Object.keys(selectedSampleInfo);
-console.log(datesSampled);
+//console.log(datesSampled);
     datesSampled.forEach(dateSampled => {
         markers[dateSampled] = {};
         dateColors[dateSampled] = markerColors[colorIndex];
@@ -111,14 +111,15 @@ if(datesSampled.length > 1) {
         return labelA.localeCompare(labelB);
     });
 }
-console.log(datesSampled);
-console.log(noSamples, allSamples);
+//console.log(datesSampled);
+//console.log(noSamples, allSamples);
 
     datesSampled.forEach(dateSampled => {
         const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
         dsSamples.forEach(sample => {
+//console.log(sample);
             const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
-console.log(dateSampled, sample, depthInfo);
+//console.log(dateSampled, sample, depthInfo);
             if (depthInfo) {
                 const maxDepth = depthInfo['maxDepth'];
                 if (!isNaN(maxDepth)) {
@@ -134,18 +135,21 @@ console.log(dateSampled, sample, depthInfo);
             }
         });
     });
-console.log(sampleDepths, depthStatsGlobal);
+//console.log(sampleDepths, depthStatsGlobal);
 
 function computeIndividualStats(statsByChem, unit, values, datasetName, chemicalName, lookupName = chemicalName) {
-    if (!statsByChem[chemicalName]) {
+//console.log(statsByChem, unit, values, datasetName, chemicalName);
+    if (!statsByChem?.[chemicalName]) {
+        statsByChem[chemicalName] = {};
         statsByChem[chemicalName] = {
             valueMin: Infinity, valueMax: -Infinity,
             depthMin: Infinity, depthMax: -Infinity,
-            unit
+            unit: unit
         };
     } else if (unit && !statsByChem[chemicalName].unit) {
         statsByChem[chemicalName].unit = unit;
     }
+
     Object.keys(values || {}).forEach(sampleName => {
         const value = values[sampleName];
         if (value != null && !isNaN(value)) {
@@ -160,31 +164,40 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
             if (dMax > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = dMax;
         }
     });
+
+    const { valueMax } = statsByChem[chemicalName];
+    if (valueMax === -Infinity || valueMax === Infinity || valueMax === 0) {
+        return statsByChem;
+    }
+    return statsByChem
 }
 
-
     function computeContaminationStats() {
-        const statsByChem = {};
+        let statsByChem = {};
+//console.log(Object.keys(selectedSampleMeasurements));
         Object.keys(selectedSampleMeasurements).forEach(datasetName => {
             const dataset = selectedSampleMeasurements[datasetName];
+//console.log(datasetName);
             Object.keys(dataset).forEach(sheetName => {
                 const sheet = dataset[sheetName];
                 if (!sheet?.chemicals) return;
                 const unit = extractUnit(sheet['Unit of measurement']);
                 if (sheet?.total) {
                     const total = sheet.total;
-                    computeIndividualStats(statsByChem, unit, total, datasetName, 'Total ' + sheetName);
+                    statsByChem = computeIndividualStats(statsByChem, unit, total, datasetName, 'Total ' + sheetName);
                 }
                 if (sheetName === 'PAH data'){
                     let lmwSum = {};
                     let hmwSum = {};
                     const gorham = sheet.gorhamTest;
+//console.log(gorham);
                     for(const sample in gorham) {
+//console.log(datasetName,sample,gorham);
                         lmwSum[sample] = gorham[sample].lmwSum;
                         hmwSum[sample] = gorham[sample].hmwSum;
                     }
-                    computeIndividualStats(statsByChem, unit, lmwSum, datasetName, 'LMW PAH Sum');
-                    computeIndividualStats(statsByChem, unit, hmwSum, datasetName, 'HMW PAH Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, lmwSum, datasetName, 'LMW PAH Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, hmwSum, datasetName, 'HMW PAH Sum');
                 }
                 if (sheetName === 'PCB data'){
                     let ices7 = {};
@@ -194,47 +207,66 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
                         ices7[sample] = pcbSums[sample].ICES7;
                         all[sample] = pcbSums[sample].All;
                     }
-                    computeIndividualStats(statsByChem, unit, ices7, datasetName, 'ICES7 PCB Sum');
-                    computeIndividualStats(statsByChem, unit, all, datasetName, 'All PCB Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, ices7, datasetName, 'ICES7 PCB Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, all, datasetName, 'All PCB Sum');
                 }
 
 
                 Object.keys(sheet.chemicals).forEach(chemicalName => {
                     const chemical = sheet.chemicals[chemicalName];
-                    computeIndividualStats(statsByChem, unit, chemical.samples, datasetName, chemicalName);
-//                    const unit = chemical.unit ?? null;
-/*                    if (!statsByChem[chemicalName]) {
-                        statsByChem[chemicalName] = {
-                            valueMin: Infinity, valueMax: -Infinity,
-                            depthMin: Infinity, depthMax: -Infinity,
-                            unit
-                        };
-                    } else if (unit && !statsByChem[chemicalName].unit) {
-                        statsByChem[chemicalName].unit = unit;
-                    }
-                    Object.keys(chemical.samples || {}).forEach(sampleName => {
-                        const value = chemical.samples[sampleName];
-                        if (value != null && !isNaN(value)) {
-                            if (value < statsByChem[chemicalName].valueMin) statsByChem[chemicalName].valueMin = value;
-                            if (value > statsByChem[chemicalName].valueMax) statsByChem[chemicalName].valueMax = value;
-                        }
-                        const info = sampleInfo[datasetName]?.position?.[sampleName];
-                        const dObj = info?.['Sampling depth (m)'];
-                        const dMax = dObj?.maxDepth;
-                        if (dMax != null && !isNaN(dMax)) {
-                            if (dMax < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = dMax;
-                            if (dMax > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = dMax;
-                        }
-                    });*/
+                    statsByChem = computeIndividualStats(statsByChem, unit, chemical.samples, datasetName, chemicalName);
                 });
             });
         });
-        Object.keys(statsByChem).forEach(chem => {
-            const s = statsByChem[chem];
+        Object.keys(statsByChem).forEach(chemicalName => {
+            const s = statsByChem[chemicalName];
             if (s.valueMin === Infinity) s.valueMin = 0;
             if (s.valueMax === -Infinity) s.valueMax = 0;
             if (s.depthMin === Infinity) s.depthMin = 0;
             if (s.depthMax === -Infinity) s.depthMax = 0;
+            const valueMax = s.valueMax;
+
+            // Correct unit conversion factors relative to g/kg
+            const unitScales = {
+                'g/kg': 1,
+                'mg/kg': 1e-3,
+                'µg/kg': 1e-6,
+                'ng/kg': 1e-9,
+                'pg/kg': 1e-12,
+                'fg/kg': 1e-15
+            };
+
+            const currentUnit = s.unit;
+            const currentScaleFactor = unitScales[currentUnit];
+
+            // Convert max value to a common base (g/kg) for scaling logic
+            let bestRescale = 1;
+            let bestUnit = currentUnit;
+            let bestFitFound = false;
+            if (!(valueMax > 1.0 && valueMax <= 1001.0)) {
+                const valueMaxInG = valueMax * currentScaleFactor;
+//console.log(currentUnit, valueMax, valueMaxInG);
+                // Find the optimal unit that brings the max value into the 1-999 range
+                for (const [newUnit, scaleFactor] of Object.entries(unitScales)) {
+                    const scaledValue = valueMaxInG / scaleFactor;
+//console.log(chemicalName, newUnit, scaleFactor, scaledValue);
+                    if ((scaledValue) > 1.0 && (scaledValue <= 1001)) {
+                        //            bestRescale = 1 / currentScaleFactor / (1 / scaleFactor); // Simplified: scaleFactor / currentScaleFactor
+                        //                bestRescale = scaleFactor / currentScaleFactor;
+//console.log('Inside loop');
+                        bestRescale = currentScaleFactor / scaleFactor;
+                        bestUnit = newUnit;
+                        bestFitFound = true;
+                        break;
+                    }
+                }
+            }
+
+            statsByChem[chemicalName].rescale = bestRescale;
+            if (bestFitFound) {
+                statsByChem[chemicalName].unit = bestUnit;
+            }
+//console.log(chemicalName, valueMax, currentUnit, bestRescale, bestUnit);    
         });
         return statsByChem;
     }
@@ -242,11 +274,11 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
     function applyDynamicStyling(chemicalName) {
         const stats = contaminantStats[chemicalName];
         if (!stats) return;
-if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+/*if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
     console.log(chemicalName, stats);
-}
+}*/
         const { valueMin, valueMax, depthMin, depthMax } = stats;
-        const { breaks, colors } = getColorScale(valueMin, valueMax);
+        const { breaks, colors } = getColorScale(valueMin*stats.rescale, valueMax*stats.rescale);
         contaminantLayers[chemicalName].eachLayer(marker => {
             const value = marker.options._chemValue;
             const depth = marker.options._depth;
@@ -265,30 +297,13 @@ if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
         return { breaks, colors };
     }
 
-/*        let depthStatsGlobal = { min: Infinity, max: -Infinity };
-    let sampleDepths = {};
-    datesSampled.forEach(dateSampled => {
-        const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
-        dsSamples.forEach(sample => {
-            const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
-            if (depthInfo) {
-                const maxDepth = depthInfo['maxDepth'];
-                if (!isNaN(maxDepth)) {
-                    const key = `${dateSampled}: ${sample}`;
-                    sampleDepths[key] = maxDepth;
-                    if (maxDepth < depthStatsGlobal.min) depthStatsGlobal.min = maxDepth;
-                    if (maxDepth > depthStatsGlobal.max) depthStatsGlobal.max = maxDepth;
-                }
-            }
-        });
-    });*/
     const depthSortedSampleIds = Object.keys(sampleDepths).sort((a, b) => {
         return sampleDepths[b] - sampleDepths[a];
     });
 
     // delete current max lat etc to account if samples have been added or deleted
     minLat = null, maxLat = null, minLon = null, maxLon = null;
-console.log(depthSortedSampleIds);
+//console.log(depthSortedSampleIds);
     depthSortedSampleIds.forEach(fullSample => {
         let parts = fullSample.split(": ");
         if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
@@ -298,7 +313,7 @@ console.log(depthSortedSampleIds);
         if (selectedSampleInfo[dateSampled].position[sample]?.hasOwnProperty('Position latitude')) {
             const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
             const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
-console.log(dateSampled,sample,lat,lon);
+//console.log(dateSampled,sample,lat,lon);
             if (!isNaN(lat) && !isNaN(lon)) {
                 if (maxLat === null) { minLat = lat; maxLat = lat; minLon = lon; maxLon = lon; }
                 else {
@@ -396,7 +411,6 @@ console.log(dateSampled,sample,lat,lon);
         datasetLayers[dateSampled] = L.layerGroup(markerLayers[dateSampled]);
     });
 
-//    contaminantStats = computeContaminationStats(selectedSampleMeasurements, selectedSampleInfo);
     contaminantStats = computeContaminationStats();
     let contaminantMarkerData = {};
 
@@ -405,88 +419,56 @@ console.log(dateSampled,sample,lat,lon);
         Object.keys(dataset).forEach(sheetName => {
             const sheet = dataset[sheetName];
             if (!sheet?.chemicals) return;
-            const unit = extractUnit(sheet['Unit of measurement']);
+//            const unit = extractUnit(sheet['Unit of measurement']);
             if (sheet?.total) {
                 const total = sheet.total;
-                makePointLayer(datasetName, total, 'Total ' + sheetName, unit);
+                makePointLayer(datasetName, total, 'Total ' + sheetName);
             }
             if (sheetName === 'PAH data'){
                 let lmwSum = {};
                 let hmwSum = {};
                 const gorham = sheet.gorhamTest;
-console.log(sheet,sheet.gorhamTest, gorham);
+//console.log(sheet,sheet.gorhamTest, gorham);
                 for(const sample in gorham) {
                     lmwSum[sample] = gorham[sample].lmwSum;
                     hmwSum[sample] = gorham[sample].hmwSum;
                 }
-console.log(lmwSum,hmwSum);
-                makePointLayer(datasetName,lmwSum,'LMW PAH Sum',unit);
-                makePointLayer(datasetName,hmwSum,'HMW PAH Sum',unit);
+//console.log(lmwSum,hmwSum);
+                makePointLayer(datasetName,lmwSum,'LMW PAH Sum');
+                makePointLayer(datasetName,hmwSum,'HMW PAH Sum');
             }
+            const unit = extractUnit(sheet['Unit of measurement']);
             if (sheetName === 'PCB data'){
                 let ices7 = {};
                 let all = {};
                 const pcbSums = sheet.congenerTest;
-console.log(sheet,sheet.congenerTest, pcbSums);
+//console.log(sheet,sheet.congenerTest, pcbSums);
                 for(const sample in pcbSums) {
                     ices7[sample] = pcbSums[sample].ICES7;
                     all[sample] = pcbSums[sample].All;
                 }
-console.log(ices7,all);
-                makePointLayer(datasetName,ices7,'ICES7 PCB Sum',unit);
-                makePointLayer(datasetName,all,'All PCB Sum',unit);
+//console.log(ices7,all);
+                makePointLayer(datasetName,ices7,'ICES7 PCB Sum');
+                makePointLayer(datasetName,all,'All PCB Sum');
             }
             Object.keys(sheet.chemicals).forEach(chemicalName => {
                 const chemical = sheet.chemicals[chemicalName];
-                makePointLayer(datasetName,chemical.samples,chemicalName,unit);
-/*                if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
-                if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
-//                const unit = chemical.unit ?? (contaminantStats[chemicalName]?.unit ?? "");
-//                Object.keys(chemical.samples || {}).forEach(sampleName => {
-                depthSortedSampleIds.forEach(fullSampleName => {
-                    let parts = fullSampleName.split(": ");
-                    if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
-                    sampleName = parts[1];
-
-//                    const fullSampleName = `${datasetName}: ${sampleName}`;
-                    const value = chemical.samples[sampleName];
-                    if (value == null || isNaN(value)) return;
-                    const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
-                    if (!sampleInfo) return;
-                    const lat = parseFloat(sampleInfo["Position latitude"]);
-                    const lon = parseFloat(sampleInfo["Position longitude"]);
-                    if (isNaN(lat) || isNaN(lon)) return;
-                    const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
-                    const unitSuffix = unit ? ` ${unit}` : "";
-                    const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${value}${unitSuffix}<br>Depth: ${sampleDepths[fullSampleName]} m`;
-                    const m = L.circleMarker([lat, lon], {
-                        radius: 6,
-                        fillColor: "#999",
-                        color: "#000",
-                        weight: 1,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                    }).bindTooltip(tooltipHtml);
-                    m.options._chemValue = value;
-                    m.options._chemUnit = unit || "";
-                    m.options._depth = sampleDepths[fullSampleName];
-                    contaminantLayers[chemicalName].addLayer(m);
-                    contaminantMarkerData[chemicalName].push(m);
-                });*/
+                makePointLayer(datasetName,chemical.samples,chemicalName);
             });
         });
     });
 
-    function makePointLayer(datasetName,valueSamples,chemicalName,unit) {
+    function makePointLayer(datasetName,valueSamples,chemicalName) {
         if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
         if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
+        unit = contaminantStats[chemicalName].unit;
         depthSortedSampleIds.forEach(fullSampleName => {
             let parts = fullSampleName.split(": ");
             if (parts[0] === datasetName) {
                 if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
                 sampleName = parts[1];
     //            const value = chemical.samples[sampleName];
-                const value = valueSamples[sampleName];
+                const value = valueSamples[sampleName] * contaminantStats[chemicalName].rescale;
                 if (value == null || isNaN(value)) return;
                 const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
                 if (!sampleInfo) return;
@@ -495,7 +477,7 @@ console.log(ices7,all);
                 if (isNaN(lat) || isNaN(lon)) return;
                 const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
                 const unitSuffix = unit ? ` ${unit}` : "";
-                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${value}${unitSuffix}<br>Depth: ${sampleDepths[fullSampleName]} m`;
+                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${value.toFixed(2)}${unitSuffix}<br>Depth: ${sampleDepths[fullSampleName]} m`;
                 const m = L.circleMarker([lat, lon], {
                     radius: 6,
                     fillColor: "#999",
@@ -504,7 +486,7 @@ console.log(ices7,all);
                     opacity: 1,
                     fillOpacity: 0.8
                 }).bindTooltip(tooltipHtml);
-                m.options._chemValue = value;
+                m.options._chemValue = value.toFixed(2);
                 m.options._chemUnit = unit || "";
                 m.options._depth = sampleDepths[fullSampleName];
                 contaminantLayers[chemicalName].addLayer(m);
@@ -673,87 +655,6 @@ function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visual
     }
 }
 
-/*function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap', retryCount = 0) {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-    
-    // Check if the container already has an active Leaflet map instance
-    if (container._leaflet_id !== undefined) {
-        console.log(`Removing existing map from container with ID: ${containerId}`);
-        container._leaflet_map.remove();
-        delete container._leaflet_map;
-    }
-    
-    // Ensure container has explicit dimensions with retry limit
-    const containerRect = container.getBoundingClientRect();
-    if (containerRect.width === 0 || containerRect.height === 0) {
-        if (retryCount < 10) { // Max 10 retries (500ms total wait)
-            console.warn(`Container ${containerId} has zero dimensions, waiting... (attempt ${retryCount + 1}/10)`);
-            setTimeout(() => createStaticContaminantMap(containerId, contaminantName, visualizationType, mapTile, retryCount + 1), 50);
-            return;
-        } else {
-            console.error(`Container ${containerId} never got proper dimensions after 10 retries. Skipping map creation.`);
-            return;
-        }
-    }
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        
-        if (bounds.isValid()) {
-            // Simple approach: just ensure the map knows its size and fit the bounds
-            staticMap.invalidateSize();
-            staticMap.fitBounds(bounds, { 
-                padding: [20, 20],
-                maxZoom: 16
-            });
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-}*/
-
 //Claude V6
 // APPROACH 2: Use ResizeObserver to detect when container gets proper dimensions
 function createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', showLegend = false , mapTile = 'OpenStreetMap') {
@@ -829,14 +730,13 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
                     }
                     if (showLegend) {
                         if (contaminantStats[contaminantName]) {
-                            const legend = L.control({ position: 'bottomright' });
+                            const legend = L.control({ position: 'leftright' });
                             legend.onAdd = function () {
                                 const div = L.DomUtil.create('div', 'info legend');
                                 const stats = contaminantStats[contaminantName];
                                 const unit = stats.unit ? ` ${stats.unit}` : "";
-                                const min = stats.valueMin, max = stats.valueMax;
+                                const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
                                 const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-
                                 div.innerHTML = `
                 <h4>${contaminantName}</h4>
                 <strong>Value</strong>
@@ -866,713 +766,6 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
 
     resizeObserver.observe(container);
     
-}
-
-
-function ClaudeV3createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap', retryCount = 0 ) {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-    
-    // Check if the container already has an active Leaflet map instance
-    if (container._leaflet_id !== undefined) {
-        console.log(`Removing existing map from container with ID: ${containerId}`);
-        container._leaflet_map.remove();
-        delete container._leaflet_map;
-    }
-    
-    // Ensure container has explicit dimensions
-    const containerRect = container.getBoundingClientRect();
-    if (containerRect.width === 0 || containerRect.height === 0) {
-        console.warn(`Container ${containerId} has zero dimensions, waiting...`);
-        setTimeout(() => createStaticContaminantMap(containerId, contaminantName, visualizationType, mapTile), 50);
-        return;
-    }
-/*   if (containerRect.width === 0 || containerRect.height === 0) {
-        if (retryCount < 100) { // Max 10 retries (500ms total wait)
-            console.warn(`Container ${containerId} has zero dimensions, waiting... (attempt ${retryCount + 1}/10)`);
-            setTimeout(() => createStaticContaminantMap(containerId, contaminantName, visualizationType, mapTile, retryCount + 1), 50);
-            return;
-        } else {
-            console.error(`Container ${containerId} never got proper dimensions after 10 retries. Skipping map creation.`);
-            return;
-        }
-    }*/
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        
-        if (bounds.isValid()) {
-            // Simple approach: just ensure the map knows its size and fit the bounds
-            staticMap.invalidateSize();
-            staticMap.fitBounds(bounds, { 
-                padding: [20, 20],
-                maxZoom: 16
-            });
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-}
-
-function ClaudeV2createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-    
-    // Check if the container already has an active Leaflet map instance
-    if (container._leaflet_id !== undefined) {
-        console.log(`Removing existing map from container with ID: ${containerId}`);
-        container._leaflet_map.remove();
-        delete container._leaflet_map;
-    }
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        
-        // Collect all points to create bounds
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        
-        if (bounds.isValid()) {
-            // Multi-step approach to ensure proper map rendering
-            setTimeout(() => {
-                // Step 1: Force multiple layout recalculations
-                container.offsetWidth;
-                container.offsetHeight;
-                
-                // Step 2: Invalidate size multiple times to ensure Leaflet recalculates
-                staticMap.invalidateSize(true); // Force hard reset
-                
-                // Step 3: Brief pause then invalidate again
-                setTimeout(() => {
-                    staticMap.invalidateSize(true);
-                    
-                    // Step 4: Fit bounds after ensuring size is correct
-                    const containerRect = container.getBoundingClientRect();
-                    const isSmallContainer = containerRect.width < 300 || containerRect.height < 300;
-                    
-                    const padding = isSmallContainer ? [10, 10] : [20, 20];
-                    const maxZoom = isSmallContainer ? 16 : 18;
-                    
-                    staticMap.fitBounds(bounds, { 
-                        padding: padding,
-                        maxZoom: maxZoom
-                    });
-                    
-                    // Step 5: Final invalidateSize after fitBounds
-                    setTimeout(() => {
-                        staticMap.invalidateSize(true);
-                    }, 50);
-                    
-                }, 50);
-            }, 100);
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-}
-
-function ClaudeV1createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-    
-    // Check if the container already has an active Leaflet map instance
-    if (container._leaflet_id !== undefined) {
-        console.log(`Removing existing map from container with ID: ${containerId}`);
-        container._leaflet_map.remove();
-        delete container._leaflet_map;
-    }
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        
-        // Collect all points to create bounds
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        
-        if (bounds.isValid()) {
-            // SOLUTION 1: Use setTimeout to ensure DOM is fully rendered
-            setTimeout(() => {
-                // Force layout recalculation
-                container.offsetWidth;
-                
-                // Invalidate size to account for the container dimensions
-                staticMap.invalidateSize();
-                
-                // Fit bounds with appropriate padding for small containers
-                const containerRect = container.getBoundingClientRect();
-                const isSmallContainer = containerRect.width < 300 || containerRect.height < 300;
-                
-                const padding = isSmallContainer ? [10, 10] : [20, 20];
-                const maxZoom = isSmallContainer ? 16 : 18; // Limit zoom for small containers
-                
-                staticMap.fitBounds(bounds, { 
-                    padding: padding,
-                    maxZoom: maxZoom
-                });
-            }, 100); // Increased timeout to ensure rendering is complete
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-}
-
-function WorkingcreateStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-console.log(containerId, contaminantName, visualizationType, mapTile);
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-    
-    // Check if the container already has an active Leaflet map instance
-    // The `_leaflet_id` is a reliable property set by Leaflet when a map is initialized.
-    if (container._leaflet_id !== undefined) {
-        console.log(`Removing existing map from container with ID: ${containerId}`);
-        // Safely remove the existing map instance to prevent the reuse error.
-        container._leaflet_map.remove();
-        // Clear the internal reference to the map instance.
-        delete container._leaflet_map;
-    }
-
-
-/*    if (container._leaflet_map) {
-console.log("Removing existing map from container");
-        container._leaflet_map.remove();
-//        container.remove();
-    }*/
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    // Corrected logic:
-    // Get the correct base layer object from the global collection.
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-
-    // Retrieve the URL and options from the L.tileLayer instance directly.
-    // L.tileLayer objects store the URL in a private-like property `_url`.
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-/*    if (baseLayers[mapTile]) {
-        baseLayers[mapTile].addTo(staticMap);
-    } else {
-        baseLayers['OpenStreetMap'].addTo(staticMap);
-    }*/
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        if (bounds.isValid()) {
-/*            // Delay the resizing and fitting to allow the DOM to render.
-            setTimeout(() => {
-                staticMap.invalidateSize();
-                staticMap.fitBounds(bounds, { padding: [20, 20] });
-            }, 0);*/
-            // Force browser to recalculate layout now
-            // Reading a layout property like offsetWidth triggers this process.
-            container.offsetWidth;
-
-            staticMap.invalidateSize();
-            staticMap.fitBounds(bounds, { padding: [20, 20] });
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-
-/*    if (contaminantStats[contaminantName]) {
-        const legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function () {
-            const div = L.DomUtil.create('div', 'info legend');
-            const stats = contaminantStats[contaminantName];
-            const unit = stats.unit ? ` ${stats.unit}` : "";
-            const min = stats.valueMin, max = stats.valueMax;
-            const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-            
-            div.innerHTML = `
-                <h4>${contaminantName}</h4>
-                <strong>Value</strong>
-                <div style="
-                    height: 20px;
-                    width: 100%;
-                    background: linear-gradient(to right, ${colors.join(",")});
-                    border: 1px solid #999;
-                    margin-bottom: 5px;
-                "></div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                    <span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
-                    <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
-                </div>
-            `;
-            return div;
-        };
-        legend.addTo(staticMap);
-    }*/
-}
-
-function ORIGINALcreateStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-console.log(containerId, contaminantName, visualizationType, mapTile);
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-    
-    // Check if the container already has an active Leaflet map instance
-    // The `_leaflet_id` is a reliable property set by Leaflet when a map is initialized.
-    if (container._leaflet_id !== undefined) {
-        console.log(`Removing existing map from container with ID: ${containerId}`);
-        // Safely remove the existing map instance to prevent the reuse error.
-        container._leaflet_map.remove();
-        // Clear the internal reference to the map instance.
-        delete container._leaflet_map;
-    }
-
-
-/*    if (container._leaflet_map) {
-console.log("Removing existing map from container");
-        container._leaflet_map.remove();
-//        container.remove();
-    }*/
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    // Corrected logic:
-    // Get the correct base layer object from the global collection.
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-
-    // Retrieve the URL and options from the L.tileLayer instance directly.
-    // L.tileLayer objects store the URL in a private-like property `_url`.
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-/*    if (baseLayers[mapTile]) {
-        baseLayers[mapTile].addTo(staticMap);
-    } else {
-        baseLayers['OpenStreetMap'].addTo(staticMap);
-    }*/
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        if (bounds.isValid()) {
-            staticMap.fitBounds(bounds, { padding: [20, 20] });
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-
-/*    if (contaminantStats[contaminantName]) {
-        const legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function () {
-            const div = L.DomUtil.create('div', 'info legend');
-            const stats = contaminantStats[contaminantName];
-            const unit = stats.unit ? ` ${stats.unit}` : "";
-            const min = stats.valueMin, max = stats.valueMax;
-            const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-            
-            div.innerHTML = `
-                <h4>${contaminantName}</h4>
-                <strong>Value</strong>
-                <div style="
-                    height: 20px;
-                    width: 100%;
-                    background: linear-gradient(to right, ${colors.join(",")});
-                    border: 1px solid #999;
-                    margin-bottom: 5px;
-                "></div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                    <span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
-                    <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
-                </div>
-            `;
-            return div;
-        };
-        legend.addTo(staticMap);
-    }*/
-}
-
-
-function NEXTTRYcreateStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-    console.log(`Creating map for container: ${containerId}, contaminant: ${contaminantName}`);
-    
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-
-    if (container._leaflet_map) {
-        console.log(`Removing existing map from container: ${containerId}`);
-        container._leaflet_map.remove();
-        delete container._leaflet_map;
-    }
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    // Clone base map layer before adding it
-    if (baseLayers[mapTile]) {
-        L.tileLayer(baseLayers[mapTile].options.url, baseLayers[mapTile].options).addTo(staticMap);
-    } else {
-        L.tileLayer(baseLayers['OpenStreetMap'].options.url, baseLayers['OpenStreetMap'].options).addTo(staticMap);
-    }
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        // Clone the layer group to create a unique instance for this map
-        layerToAdd = L.layerGroup();
-        contaminantLayers[contaminantName].eachLayer(layer => {
-            const newLayer = L.circleMarker(layer.getLatLng(), { ...layer.options });
-            // You may need to also clone tooltips if they are complex
-            if (layer.getTooltip()) {
-                newLayer.bindTooltip(layer.getTooltip().getContent());
-            }
-            layerToAdd.addLayer(newLayer);
-        });
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        // Clone the heatmap layer group
-        layerToAdd = L.layerGroup();
-        contaminantHeatmaps[contaminantName].eachLayer(layer => {
-            layerToAdd.addLayer(L.circle(layer.getLatLng(), { ...layer.options }));
-        });
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        if (bounds.isValid()) {
-            staticMap.fitBounds(bounds, { padding: [20, 20] });
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-
-    if (contaminantStats[contaminantName]) {
-        const legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function () {
-            const div = L.DomUtil.create('div', 'info legend');
-            const stats = contaminantStats[contaminantName];
-            const unit = stats.unit ? ` ${stats.unit}` : "";
-            const min = stats.valueMin, max = stats.valueMax;
-            const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-            
-            div.innerHTML = `
-                <h4>${contaminantName}</h4>
-                <strong>Value</strong>
-                <div style="
-                    height: 20px;
-                    width: 100%;
-                    background: linear-gradient(to right, ${colors.join(",")});
-                    border: 1px solid #999;
-                    margin-bottom: 5px;
-                "></div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                    <span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
-                    <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
-                </div>
-            `;
-            return div;
-        };
-        legend.addTo(staticMap);
-    }
-}
-
-function NEXTNEXTTRYcreateStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
-    if (!allMapData.isReady) {
-        console.error("Data not yet processed. Call createGlobalLayers first.");
-        return;
-    }
-    console.log(`Creating map for container: ${containerId}, contaminant: ${contaminantName}`);
-    
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container with ID '${containerId}' not found.`);
-        return;
-    }
-
-    if (container._leaflet_map) {
-        console.log(`Removing existing map from container: ${containerId}`);
-        container._leaflet_map.remove();
-        delete container._leaflet_map;
-    }
-    
-    const staticMap = L.map(containerId, {
-        center: [54.596, -1.177],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false,
-    });
-    container._leaflet_map = staticMap;
-
-    // Corrected logic:
-    // Get the correct base layer object from the global collection.
-    const baseLayerInstance = baseLayers[mapTile] || baseLayers['OpenStreetMap'];
-
-    // Retrieve the URL and options from the L.tileLayer instance directly.
-    // L.tileLayer objects store the URL in a private-like property `_url`.
-    const tileLayerUrl = baseLayerInstance._url;
-    const tileLayerOptions = baseLayerInstance.options;
-
-    L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
-
-    let layerToAdd;
-    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = L.layerGroup();
-        contaminantLayers[contaminantName].eachLayer(layer => {
-            const newLayer = L.circleMarker(layer.getLatLng(), { ...layer.options });
-            if (layer.getTooltip()) {
-                newLayer.bindTooltip(layer.getTooltip().getContent());
-            }
-            layerToAdd.addLayer(newLayer);
-        });
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = L.layerGroup();
-        contaminantHeatmaps[contaminantName].eachLayer(layer => {
-            layerToAdd.addLayer(L.circle(layer.getLatLng(), { ...layer.options }));
-        });
-    }
-
-    if (layerToAdd) {
-        layerToAdd.addTo(staticMap);
-        const bounds = new L.LatLngBounds([]);
-        layerToAdd.eachLayer(layer => {
-            if (layer.getLatLng) {
-                bounds.extend(layer.getLatLng());
-            }
-        });
-        if (bounds.isValid()) {
-            staticMap.fitBounds(bounds, { padding: [20, 20] });
-        }
-    } else {
-        console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
-    }
-
-    if (contaminantStats[contaminantName]) {
-        const legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function () {
-            const div = L.DomUtil.create('div', 'info legend');
-            const stats = contaminantStats[contaminantName];
-            const unit = stats.unit ? ` ${stats.unit}` : "";
-            const min = stats.valueMin, max = stats.valueMax;
-            const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-            
-            div.innerHTML = `
-                <h4>${contaminantName}</h4>
-                <strong>Value</strong>
-                <div style="
-                    height: 20px;
-                    width: 100%;
-                    background: linear-gradient(to right, ${colors.join(",")});
-                    border: 1px solid #999;
-                    margin-bottom: 5px;
-                "></div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                    <span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
-                    <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
-                </div>
-            `;
-            return div;
-        };
-        legend.addTo(staticMap);
-    }
 }
 
 function sampleMap(meas) {
@@ -1700,7 +893,11 @@ function sampleMap(meas) {
     }
     
     if (noLocations > 0) {
-        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+//console.log(minLat,maxLat,minLon,maxLon);
+let seCorner = L.latLng(minLat, minLon);
+let nwCorner = L.latLng(maxLat, maxLon);
+//        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+        const bounds = L.latLngBounds(seCorner, nwCorner);
         map.fitBounds(bounds);
     }
 
@@ -1710,11 +907,11 @@ console.log("Map created", noLocations, noSamples);
     function applyDynamicStyling(chemicalName) {
         const stats = contaminantStats[chemicalName];
         if (!stats) return;
-if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
-    console.log(chemicalName, stats);
-}
+//if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+//    console.log(chemicalName, stats);
+//}
         const { valueMin, valueMax, depthMin, depthMax } = stats;
-        const { breaks, colors } = getColorScale(valueMin, valueMax);
+        const { breaks, colors } = getColorScale(valueMin * stats.rescale, valueMax * stats.rescale);
         contaminantLayers[chemicalName].eachLayer(marker => {
             const value = marker.options._chemValue;
             const depth = marker.options._depth;
@@ -1754,7 +951,7 @@ if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
         }
     }
 
-    let legend = L.control({ position: "bottomright" });
+    let legend = L.control({ position: "bottomleft" });
     legend.onAdd = function () {
         this._div = L.DomUtil.create("div", "info legend");
         this.update();
@@ -1792,10 +989,13 @@ fill="grey" fill-opacity="0.6" />
             return;
         }
         const unit = stats.unit ? ` ${stats.unit}` : "";
-        const min = stats.valueMin, max = stats.valueMax;
+//        const min = 1, max = 2;
+//console.log(chemicalName,stats.valueMin,stats.valueMax,stats.rescale);
+        const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
+//console.log(chemicalName,min,max,stats.rescale);
         const { colors } = getColorScale(min, max);
         const toggleButton = `<button onclick="window.toggleVisualizationMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Switch to ${isHeatmapMode ? 'Points' : 'Heatmap'}</button>`;
-        const legendType = isHeatmapMode ? 'Heat Intensity' : 'Point Colors';
+        const legendType = isHeatmapMode ? 'Heat Intensity' : 'Point Colours';
         const legendContent = isHeatmapMode ? `
 <div style="height: 20px; width: 100%; background: linear-gradient(to right, #1a9850, #fee08b, #fc8d59, #d73027); border: 1px solid #999; margin-bottom: 5px;"></div>
 <div style="display: flex; justify-content: space-between; font-size: 12px;">

@@ -337,82 +337,6 @@ function dataForScatterCharting(sheetName) {
     return {unitTitle, scatterData, chemicalData}
 }
 
-
-/*function dataForTotalScatterCharting(sheetName, chartType) {
-    let datesSampled = Object.keys(selectedSampleMeasurements);
-    let ct = sheetName;
-    let unitTitle = blankSheets[ct]['Unit of measurement'];
-    let scatterData = {};
-    let chemicalData = {};
-    let fitConcentration = {};
-    let fitPredictors = {};
-
-    datesSampled.forEach(ds => {
-        if (ct in selectedSampleMeasurements[ds]) {
-            let allChemicals = Object.keys(selectedSampleMeasurements[ds][ct].chemicals);
-            for (const c in selectedSampleMeasurements[ds][ct].chemicals) {
-                let i = 0;
-
-                if (!(scatterData[c])) scatterData[c] = [];
-                if (chemicalData[c] == undefined || chemicalData[c] == null) chemicalData[c] = [];
-                if (fitConcentration[c] == undefined || fitPredictors[c] == null) {
-                    fitConcentration[c] = {};
-                    fitPredictors[c] = {};
-                }
-
-                let currentChemical = selectedSampleMeasurements[ds][ct].chemicals[c];
-                for (const s in currentChemical.samples) {
-//console.log(ds,c,s);
-                    //let xValue;
-                    switch (chartType) {
-                        case "totalArea":
-//console.log(ds,s);
-                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s].totalArea;
-                            break;
-
-                        case "totalHC":
-                            xValue = sampleMeasurements[ds]['PAH data'].totalHC[s];
-                            break;
-
-                        case "totalSolids":
-                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Total solids (% total sediment)'];
-                            break;
-
-                        case "organicCarbon":
-                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Organic matter (total organic carbon)'];
-                            break;
-    
-                        default:
-                            console.error(`Unknown chart type: ${chartType}`);
-                            return;
-                    }
-                    scatterData[c][i] = {
-                        x: Number(xValue),
-                        y: currentChemical.samples[s],
-                        label: ds + ' : ' + s
-                    };
-                    if (!xValue) {
-console.log('Total scatter charting not possible for ', chartType, ' as no data available');
-                        unitTitle = 'No data';
-                        return { unitTitle };
-                    }
-                    chemicalData[c][i] = currentChemical.samples[s];
-                    fitConcentration[c][ds + ' : ' + s] = currentChemical.samples[s];
-                    fitPredictors[c][ds + ' : ' + s] = [xValue];
-                    i += 1;
-                }
-            }
-        }
-    });
-
-    // Return the result based on the chart type requirements
-//    if (chartType === "totalHC") {
-//        return { unitTitle, scatterData, chemicalData };
-//    } else {
-        return { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors };
-//    }
-}*/
-
 function dataForTotalScatterCharting(sheetName, chartType) {
     let datesSampled = Object.keys(selectedSampleMeasurements);
     let ct = sheetName;
@@ -477,7 +401,7 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                         y: currentChemical.samples[s],
                         label: selectedSampleInfo[ds].label + ': ' + selectedSampleInfo[ds].position[s].label,
                     };
-console.log(xValue);
+//console.log(xValue);
                     ii += 1;
                     if (!xValue) {
 // reverted to 250502 version of test not sure why?                   if (!(typeof xValue === "number")) {
@@ -526,9 +450,6 @@ console.log(xValue);
     return { unitTitle, scatterData, chemicalData, fitConcentration, fitPredictors };
     //    }
 }
-
-
-
 
 function sumsForCongenerCharting() {
     let datesSampled = Object.keys(selectedSampleMeasurements);

@@ -138,6 +138,7 @@ console.log('about to display sample map');
 
 function displayPsdSplits(sortedSamples, sums, sheetName, instanceNo, unitTitle, subTitle) {
 //  console.log(sums);
+//console.log(sortedSamples, sums, sheetName, instanceNo, unitTitle, subTitle);
     createCanvas(instanceNo);
 //Bodge lost data for unitTitle
     if (unitTitle === undefined || unitTitle === null) {
@@ -148,8 +149,12 @@ function displayPsdSplits(sortedSamples, sums, sheetName, instanceNo, unitTitle,
     instanceType[instanceNo] = 'PSD splits by ' + subTitle;
     instanceSheet[instanceNo] = sheetName;
 //  const allSamples = Object.keys(sums);
-    const allSamples = sortedSamples; // Use the sorted samples from the retData
+
+//    const allSamples = sortedSamples; // Use the sorted samples from the retData
+    const allSamples = Object.keys(sums); // Use the sums from the retData
+//console.log('allSamples',allSamples);
     const allParticles = Object.keys(sums[allSamples[0]]); // Assuming all samples have the particles
+//console.log('allParticles',allParticles);
     const datasets = allParticles.map((particle, index) => {
         const data = allSamples.map(sample => sums[sample][particle]);
         return {
@@ -545,8 +550,8 @@ function displayCharts(sheetName, instanceNo) {
                 mapWrapper.style.flexDirection = 'column';
         
                 const stats = contaminantStats[contaminantName];
-                const min = stats ? stats.valueMin.toFixed(2) : 'N/A';
-                const max = stats ? stats.valueMax.toFixed(2) : 'N/A';
+                const min = stats ? (stats.valueMin*stats.rescale).toFixed(2) : 'N/A';
+                const max = stats ? (stats.valueMax*stats.rescale).toFixed(2) : 'N/A';
                 const unit = stats ? stats.unit : '';
                 
                 const titleElement = document.createElement('h4');
@@ -754,7 +759,7 @@ function displayScatterCharts(sheetName, chartType, subsKey, xAxisLabel, yAxisLa
                 { beta: 0, R_squared: 0 };
 
             instanceNo += 1;
-console.log(scatterData[c], chemicalData[c], sampleNames);
+//console.log(scatterData[c], chemicalData[c], sampleNames);
             displayScatterChart(
                 scatterData[c],
                 chemicalData[c],
@@ -1112,7 +1117,7 @@ scatterData[0].backgroundColor.pointStyle = 'cross';
     if (largeInstanceNo > 1) { 
         canvas.addEventListener('click', (e) => {
             const existingAnnoations = chartInstance[instanceNo].options.plugins.annotation.annotations;
-console.log(existingAnnoations);
+//console.log(existingAnnoations);
             displayScatterChart(scatterData, oneChemical, sampleNames, sheetName, largeInstanceNo, unitTitle, xAxisTitle, yAxisTitle, -1);
             chartInstance[largeInstanceNo].options.plugins.annotation.annotations =  existingAnnoations;
             chartInstance[largeInstanceNo].update();
@@ -1444,7 +1449,7 @@ function displayAnySampleChart(meas, fullSampleNames, datasets, instanceNo, titl
 }
 
 function displayAnyChart(meas, fullSampleNames, all, datasets, instanceNo, title, yTitle, showLegend) {
-console.log(meas, fullSampleNames, all, datasets, instanceNo, title, yTitle, showLegend);
+//console.log(meas, fullSampleNames, all, datasets, instanceNo, title, yTitle, showLegend);
 //if (title === "Trace metal data") console.log(measss);
     legends[instanceNo] = showLegend;
     ylinlog[instanceNo] = false;
@@ -1784,13 +1789,17 @@ function displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTit
     const allSamples = sortedSamples; // Use the sorted samples from the retData
     let totalSolids = [];
     let organicC = [];
+    let samplesWithData = [];
     allSamples.forEach((sampleName, i) => {
         const parts = sampleName.split(": ");
         if (parts.length >2) {
             parts[1] = parts[1] + ': ' + parts[2];
         }
-        totalSolids[i] = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Total solids (% total sediment)'];
-        organicC[i] = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)'];
+        if (selectedSampleMeasurements[parts[0]]?.['Physical Data']) {
+            samplesWithData.push(allSamples[i]);
+            totalSolids.push(selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Total solids (% total sediment)']);
+            organicC.push(selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)']);
+        }
     });
 
     datasets = [
@@ -1811,18 +1820,12 @@ function displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTit
             yAxisID: 'y1',
         },
     ];
-
-    console.log(datasets);
-
-    displayAnySampleChart(totalSolids, allSamples, datasets, instanceNo, sheetName + ': Total Solids % and Organic Carbon %', 'Total solids (% total sediment)', true);
+    displayAnySampleChart(totalSolids, samplesWithData, datasets, instanceNo, sheetName + ': Total Solids % and Organic Carbon %', 'Total solids (% total sediment)', true);
     // Update the chart
     chartInstance[instanceNo].options.plugins.legend.display = true;
     legends[instanceNo] = true;
     chartInstance[instanceNo].update();
 }
-
-
-
 
 function displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, instanceNo, unitTitle, subTitle) {
     createCanvas(instanceNo);
@@ -1879,7 +1882,7 @@ function displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, in
         },
     ];
 
-    console.log(datasets);
+//    console.log(datasets);
 
     displayAnySampleChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm and Concentration factor', 'Fraction', true);
 //  displayAnyChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm', unitTitle, true);
