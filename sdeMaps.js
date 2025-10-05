@@ -20,6 +20,73 @@ const highlightStyle = {
     radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
 };
 
+    function applyDynamicStyling(chemicalName) {
+        const stats = contaminantStats[chemicalName];
+        if (!stats) return;
+//if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
+//    console.log(chemicalName, stats);
+//}
+        const { valueMin, valueMax, depthMin, depthMax } = stats;
+        const { breaks, colors } = getColorScale(valueMin * stats.rescale, valueMax * stats.rescale, chemicalName);
+        contaminantLayers[chemicalName].eachLayer(marker => {
+            const value = parseFloat(marker.options._chemValue);
+            const depth = marker.options._depth;
+            let color = colors[0];
+for (let i = breaks.length; i > 0; i--) {
+console.log(i,breaks[i-1],colors[i],value);
+    if (value > breaks[i-1]) { color = colors[i]; break; }
+}
+
+
+
+/*            if (colors.length > 3) {
+                color = colors[0];
+                if (value > breaks[2]) color = colors[3];
+                    else if (value > breaks[1]) color = colors[2];
+                        else if (value > breaks[0]) color = colors[1];
+            } else {
+                    color = colors[0];
+                    if (value > breaks[1]) color = colors[2];
+                        else if (value > breaks[0]) color = colors[1];
+                    }*/
+            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+            marker.setStyle({ fillColor: color, radius });
+        });
+    }
+
+    function getColorScale(min, max, chemicalName) {
+/*        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
+        const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];*/
+//        const breaks = [5.700, 9.600];
+let breaks = [];
+let colors = [];
+let levels = [];
+console.log('getColorScale',chemicalName,min,max);
+        if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
+            if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
+                levels = standards[chosenStandard].chemicals[chemicalName];
+            } else {
+                levels = standards[chosenStandard].chemicals[chemicalName].levels;
+            }
+console.log('Using standard levels',levels);
+                breaks = levels;
+                colors = ["#1a9850", "#fee08b", "#d73027"];
+        } else {
+console.log('Using dynamic levels');
+                breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
+                colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+        }
+        return { breaks, colors };
+    }
+
+    /*        ERL: 552,
+        ERM: 3160
+    };
+    const HMW = {
+        ERL: 1700,
+        ERM: 9600
+*/
+
     function getHeatmapColor(intensity) {
         if (intensity <= 0.2) return '#1a9850';
         if (intensity <= 0.4) return '#fee08b';
@@ -269,32 +336,6 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
 //console.log(chemicalName, valueMax, currentUnit, bestRescale, bestUnit);    
         });
         return statsByChem;
-    }
-
-    function applyDynamicStyling(chemicalName) {
-        const stats = contaminantStats[chemicalName];
-        if (!stats) return;
-/*if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
-    console.log(chemicalName, stats);
-}*/
-        const { valueMin, valueMax, depthMin, depthMax } = stats;
-        const { breaks, colors } = getColorScale(valueMin*stats.rescale, valueMax*stats.rescale);
-        contaminantLayers[chemicalName].eachLayer(marker => {
-            const value = marker.options._chemValue;
-            const depth = marker.options._depth;
-            let color = colors[0];
-            if (value > breaks[2]) color = colors[3];
-            else if (value > breaks[1]) color = colors[2];
-            else if (value > breaks[0]) color = colors[1];
-            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
-            marker.setStyle({ fillColor: color, radius });
-        });
-    }
-
-    function getColorScale(min, max) {
-        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
-        const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-        return { breaks, colors };
     }
 
     const depthSortedSampleIds = Object.keys(sampleDepths).sort((a, b) => {
@@ -736,7 +777,8 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
                                 const stats = contaminantStats[contaminantName];
                                 const unit = stats.unit ? ` ${stats.unit}` : "";
                                 const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
-                                const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+//                                const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+                                const colors = ["#d73027", "#d73027", "#d73027", "#d73027"];
                                 div.innerHTML = `
                 <h4>${contaminantName}</h4>
                 <strong>Value</strong>
@@ -818,46 +860,7 @@ function sampleMap(meas) {
     }
 //    let highlighted = Array(noSamples).fill(false);
     const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
-/*    const highlightStyle = {
-        radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
-    };*/
 
-/*    let depthStatsGlobal = { min: Infinity, max: -Infinity };
-    let sampleDepths = {};
-    datesSampled.forEach(dateSampled => {
-        const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
-        dsSamples.forEach(sample => {
-            const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
-            if (depthInfo) {
-                const maxDepth = depthInfo['maxDepth'];
-                if (!isNaN(maxDepth)) {
-                    const key = `${dateSampled}: ${sample}`;
-                    sampleDepths[key] = maxDepth;
-                    if (maxDepth < depthStatsGlobal.min) depthStatsGlobal.min = maxDepth;
-                    if (maxDepth > depthStatsGlobal.max) depthStatsGlobal.max = maxDepth;
-                }
-            }
-        });
-    });*/
-
-/*    function getDepthRadius(depth, min, max) {
-        const minRadius = 4, maxRadius = 20;
-        if (depth == null || isNaN(depth)) return minRadius;
-        const logMin = Math.log((min ?? 0) + 1);
-        const logMax = Math.log((max ?? 0) + 1);
-        const logVal = Math.log(depth + 1);
-        if (logMax === logMin) return minRadius;
-        const t = (logVal - logMin) / (logMax - logMin);
-        return minRadius + t * (maxRadius - minRadius);
-    }*/
-
-    function getColorScale(min, max) {
-        // returns gradient endpoints & discrete breaks for 4-step color pick
-        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
-        const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
-        return { breaks, colors };
-    }
-    
     map = L.map('map', {
         center: [54.596, -1.177],
         zoom: 13,
@@ -902,27 +905,6 @@ let nwCorner = L.latLng(maxLat, maxLon);
     }
 
 console.log("Map created", noLocations, noSamples);
-
-    //DUPLICATE from sampleMap
-    function applyDynamicStyling(chemicalName) {
-        const stats = contaminantStats[chemicalName];
-        if (!stats) return;
-//if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
-//    console.log(chemicalName, stats);
-//}
-        const { valueMin, valueMax, depthMin, depthMax } = stats;
-        const { breaks, colors } = getColorScale(valueMin * stats.rescale, valueMax * stats.rescale);
-        contaminantLayers[chemicalName].eachLayer(marker => {
-            const value = marker.options._chemValue;
-            const depth = marker.options._depth;
-            let color = colors[0];
-            if (value > breaks[2]) color = colors[3];
-            else if (value > breaks[1]) color = colors[2];
-            else if (value > breaks[0]) color = colors[1];
-            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
-            marker.setStyle({ fillColor: color, radius });
-        });
-    }
 
     function toggleVisualizationMode() {
         if (!activeContaminant) return;
@@ -993,7 +975,7 @@ fill="grey" fill-opacity="0.6" />
 //console.log(chemicalName,stats.valueMin,stats.valueMax,stats.rescale);
         const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
 //console.log(chemicalName,min,max,stats.rescale);
-        const { colors } = getColorScale(min, max);
+        const { colors } = getColorScale(min, max, chemicalName);
         const toggleButton = `<button onclick="window.toggleVisualizationMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Switch to ${isHeatmapMode ? 'Points' : 'Heatmap'}</button>`;
         const legendType = isHeatmapMode ? 'Heat Intensity' : 'Point Colours';
         const legendContent = isHeatmapMode ? `
