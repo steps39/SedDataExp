@@ -32,6 +32,7 @@ const highlightStyle = {
             const value = parseFloat(marker.options._chemValue);
             const depth = marker.options._depth;
             let color = colors[0];
+console.log(chemicalName, valueMin, valueMax, depthMin, depthMax, breaks, colors, value, depth);
 for (let i = breaks.length; i > 0; i--) {
 console.log(i,breaks[i-1],colors[i],value);
     if (value > breaks[i-1]) { color = colors[i]; break; }
@@ -58,34 +59,38 @@ console.log(i,breaks[i-1],colors[i],value);
 /*        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
         const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];*/
 //        const breaks = [5.700, 9.600];
-let breaks = [];
-let colors = [];
-let levels = [];
+        let breaks = [];
+        let colors = [];
+        let levels = null;
 console.log('getColorScale',chemicalName,min,max);
         if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
+console.log('Found standard for',chemicalName,standards[chosenStandard].chemicals[chemicalName]);
             if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
                 levels = standards[chosenStandard].chemicals[chemicalName];
             } else {
-                levels = standards[chosenStandard].chemicals[chemicalName].levels;
+                if(standards[chosenStandard].chemicals[chemicalName]?.levels){
+                    levels = standards[chosenStandard].chemicals[chemicalName].levels;
+                }
             }
-console.log('Using standard levels',levels);
-                breaks = levels;
-                colors = ["#1a9850", "#fee08b", "#d73027"];
-        } else {
+        }
+        if (!levels) {
 console.log('Using dynamic levels');
                 breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
                 colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
+        } else {
+//            if (levels[1] === null) levels.pop();
+            if (levels[1] === null) levels[1] = levels[0] * 10;
+console.log('Using standard levels',levels);
+            const unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
+console.log('Unit alignment factor',contaminantStats[chemicalName].unit,standards[chosenStandard].unit,extractUnit(standards[chosenStandard].unit),unitAlign);
+            if (unitAlign !== 1) {
+                levels = levels.map(l => l / unitAlign);
+            }
+            breaks = levels;
+            colors = ["#1a9850", "#fee08b", "#d73027"];
         }
         return { breaks, colors };
     }
-
-    /*        ERL: 552,
-        ERM: 3160
-    };
-    const HMW = {
-        ERL: 1700,
-        ERM: 9600
-*/
 
     function getHeatmapColor(intensity) {
         if (intensity <= 0.2) return '#1a9850';
@@ -107,9 +112,40 @@ console.log('Using dynamic levels');
         return rLarge;
     }
 
-    function extractUnit(str) {
+    function factorUnit(unit1,unit2) {
+        const unitScales = {
+            'g/kg': 1,
+            'mg/kg': 1e-3,
+            'µg/kg': 1e-6,
+            'ng/kg': 1e-9,
+            'pg/kg': 1e-12,
+            'fg/kg': 1e-15,
+        };
+        return unitScales[unit1] / unitScales[unit2];
+    }
+
+    function extractUnit(string) {
+    // Define the units to search for in order of specificity
+    const units = ['µg/kg', 'mg/kg', 'ng/kg', 'pg/kg', 'fg/kg', 'g/kg'];
+    
+    // Convert string to lowercase for case-insensitive matching
+    const lowerString = string.toLowerCase();
+    
+    // Check each unit
+    for (const unit of units) {
+        if (lowerString.includes(unit.toLowerCase())) {
+        return unit;
+        }
+    }
+    
+    // Return null if no unit found
+    return null;
+    }
+
+    function oneextractUnit(str) {
         //const regex = /\(([^)]+)\)|(mg\/kg)/;
-        const regex = /\((µ?g\/kg)\s*dry weight\)|(mg\/kg)/;
+//        const regex = /\((µg\/kg)\s*dry weight\)|(mg\/kg)/;
+        const regex = /\((µg\/kg)\s*dry weight\)|(mg\/kg)/;
         const match = str.match(regex);
         if (match) {
             // The captured group will be in match[1] or match[2]
@@ -202,10 +238,11 @@ if(datesSampled.length > 1) {
             }
         });
     });
-//console.log(sampleDepths, depthStatsGlobal);
+console.log('sampleDepths:', sampleDepths);
+console.log('depthStatsGlobal:', depthStatsGlobal);
 
-function computeIndividualStats(statsByChem, unit, values, datasetName, chemicalName, lookupName = chemicalName) {
-//console.log(statsByChem, unit, values, datasetName, chemicalName);
+function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupName = chemicalName) {
+console.log('computeIndividualStats called with:', chemicalName, 'sample keys:', Object.keys(values || {}));
     if (!statsByChem?.[chemicalName]) {
         statsByChem[chemicalName] = {};
         statsByChem[chemicalName] = {
@@ -223,12 +260,13 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
             if (value < statsByChem[chemicalName].valueMin) statsByChem[chemicalName].valueMin = value;
             if (value > statsByChem[chemicalName].valueMax) statsByChem[chemicalName].valueMax = value;
         }
-        const info = sampleInfo[datasetName]?.position?.[sampleName];
-        const dObj = info?.['Sampling depth (m)'];
-        const dMax = dObj?.maxDepth;
-        if (dMax != null && !isNaN(dMax)) {
-            if (dMax < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = dMax;
-            if (dMax > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = dMax;
+        
+        // Get depth for this sample
+        const depth = sampleDepths[sampleName];
+console.log('Looking up depth for:', sampleName, 'found:', depth);
+        if (depth != null && !isNaN(depth)) {
+            if (depth < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = depth;
+            if (depth > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = depth;
         }
     });
 
@@ -236,61 +274,78 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
     if (valueMax === -Infinity || valueMax === Infinity || valueMax === 0) {
         return statsByChem;
     }
+console.log('Stats for', chemicalName, ':', statsByChem[chemicalName]);
     return statsByChem
 }
 
     function computeContaminationStats() {
         let statsByChem = {};
-//console.log(Object.keys(selectedSampleMeasurements));
+console.log('selectedSampleMeasurements datasets:', Object.keys(selectedSampleMeasurements));
+        
+        // Process each dataset separately to maintain sample name context
         Object.keys(selectedSampleMeasurements).forEach(datasetName => {
             const dataset = selectedSampleMeasurements[datasetName];
-//console.log(datasetName);
+console.log('Processing dataset:', datasetName);
+            
             Object.keys(dataset).forEach(sheetName => {
                 const sheet = dataset[sheetName];
                 if (!sheet?.chemicals) return;
                 const unit = extractUnit(sheet['Unit of measurement']);
+                
                 if (sheet?.total) {
                     const total = sheet.total;
-                    statsByChem = computeIndividualStats(statsByChem, unit, total, datasetName, 'Total ' + sheetName);
+                    // Prefix sample names with dataset name to match sampleDepths keys
+                    const prefixedTotal = {};
+                    for (const sample in total) {
+                        prefixedTotal[`${datasetName}: ${sample}`] = total[sample];
+                    }
+console.log('Total samples with prefix:', Object.keys(prefixedTotal));
+                    statsByChem = computeIndividualStats(statsByChem, unit, prefixedTotal, 'Total ' + sheetName);
                 }
+                
                 if (sheetName === 'PAH data'){
                     let lmwSum = {};
                     let hmwSum = {};
                     const gorham = sheet.gorhamTest;
-//console.log(gorham);
                     for(const sample in gorham) {
-//console.log(datasetName,sample,gorham);
-                        lmwSum[sample] = gorham[sample].lmwSum;
-                        hmwSum[sample] = gorham[sample].hmwSum;
+                        lmwSum[`${datasetName}: ${sample}`] = gorham[sample].lmwSum;
+                        hmwSum[`${datasetName}: ${sample}`] = gorham[sample].hmwSum;
                     }
-                    statsByChem = computeIndividualStats(statsByChem, unit, lmwSum, datasetName, 'LMW PAH Sum');
-                    statsByChem = computeIndividualStats(statsByChem, unit, hmwSum, datasetName, 'HMW PAH Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, lmwSum, 'LMW PAH Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, hmwSum, 'HMW PAH Sum');
                 }
+                
                 if (sheetName === 'PCB data'){
                     let ices7 = {};
                     let all = {};
                     const pcbSums = sheet.congenerTest;
                     for(const sample in pcbSums) {
-                        ices7[sample] = pcbSums[sample].ICES7;
-                        all[sample] = pcbSums[sample].All;
+                        ices7[`${datasetName}: ${sample}`] = pcbSums[sample].ICES7;
+                        all[`${datasetName}: ${sample}`] = pcbSums[sample].All;
                     }
-                    statsByChem = computeIndividualStats(statsByChem, unit, ices7, datasetName, 'ICES7 PCB Sum');
-                    statsByChem = computeIndividualStats(statsByChem, unit, all, datasetName, 'All PCB Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, ices7, 'ICES7 PCB Sum');
+                    statsByChem = computeIndividualStats(statsByChem, unit, all, 'All PCB Sum');
                 }
-
-
+                
                 Object.keys(sheet.chemicals).forEach(chemicalName => {
                     const chemical = sheet.chemicals[chemicalName];
-                    statsByChem = computeIndividualStats(statsByChem, unit, chemical.samples, datasetName, chemicalName);
+                    // Prefix sample names with dataset name to match sampleDepths keys
+                    const prefixedSamples = {};
+                    for (const sample in chemical.samples) {
+                        prefixedSamples[`${datasetName}: ${sample}`] = chemical.samples[sample];
+                    }
+console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefixedSamples));
+                    statsByChem = computeIndividualStats(statsByChem, unit, prefixedSamples, chemicalName);
                 });
             });
         });
+
         Object.keys(statsByChem).forEach(chemicalName => {
             const s = statsByChem[chemicalName];
             if (s.valueMin === Infinity) s.valueMin = 0;
             if (s.valueMax === -Infinity) s.valueMax = 0;
-            if (s.depthMin === Infinity) s.depthMin = 0;
-            if (s.depthMax === -Infinity) s.depthMax = 0;
+            if (s.depthMin === Infinity) s.depthMin = depthStatsGlobal.min || 0;
+            if (s.depthMax === -Infinity) s.depthMax = depthStatsGlobal.max || 0;
             const valueMax = s.valueMax;
 
             // Correct unit conversion factors relative to g/kg
@@ -451,7 +506,7 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
     datesSampled.forEach(dateSampled => {
         datasetLayers[dateSampled] = L.layerGroup(markerLayers[dateSampled]);
     });
-
+console.log(sampleMeasurements);
     contaminantStats = computeContaminationStats();
     let contaminantMarkerData = {};
 
@@ -499,37 +554,51 @@ function computeIndividualStats(statsByChem, unit, values, datasetName, chemical
         });
     });
 
-    function makePointLayer(datasetName,valueSamples,chemicalName) {
+    function makePointLayer(datasetName, valueSamples, chemicalName) {
         if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
         if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
         unit = contaminantStats[chemicalName].unit;
+        
+        // Get the depth range for this contaminant to calculate initial radius
+        const stats = contaminantStats[chemicalName];
+        const depthMin = stats.depthMin;
+        const depthMax = stats.depthMax;
+console.log(`makePointLayer for ${chemicalName}: depthMin=${depthMin}, depthMax=${depthMax}`);
+        
         depthSortedSampleIds.forEach(fullSampleName => {
             let parts = fullSampleName.split(": ");
             if (parts[0] === datasetName) {
                 if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
                 sampleName = parts[1];
-    //            const value = chemical.samples[sampleName];
-                const value = valueSamples[sampleName] * contaminantStats[chemicalName].rescale;
+                const value = valueSamples[sampleName];
                 if (value == null || isNaN(value)) return;
+                
+                const rescaledValue = value * contaminantStats[chemicalName].rescale;
                 const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
                 if (!sampleInfo) return;
                 const lat = parseFloat(sampleInfo["Position latitude"]);
                 const lon = parseFloat(sampleInfo["Position longitude"]);
                 if (isNaN(lat) || isNaN(lon)) return;
+                
+                const depth = sampleDepths[fullSampleName];
+                // Calculate the correct radius based on depth from the start
+                const initialRadius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+console.log(`${chemicalName} - Sample: ${fullSampleName}, Depth: ${depth}, Radius: ${initialRadius}`);
+                
                 const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
                 const unitSuffix = unit ? ` ${unit}` : "";
-                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${value.toFixed(2)}${unitSuffix}<br>Depth: ${sampleDepths[fullSampleName]} m`;
+                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${rescaledValue.toFixed(2)}${unitSuffix}<br>Depth: ${depth} m`;
                 const m = L.circleMarker([lat, lon], {
-                    radius: 6,
+                    radius: initialRadius,
                     fillColor: "#999",
                     color: "#000",
                     weight: 1,
                     opacity: 1,
                     fillOpacity: 0.8
                 }).bindTooltip(tooltipHtml);
-                m.options._chemValue = value.toFixed(2);
+                m.options._chemValue = rescaledValue.toFixed(2);
                 m.options._chemUnit = unit || "";
-                m.options._depth = sampleDepths[fullSampleName];
+                m.options._depth = depth;
                 contaminantLayers[chemicalName].addLayer(m);
                 contaminantMarkerData[chemicalName].push(m);
             }

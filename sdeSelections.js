@@ -779,10 +779,10 @@ function getSelectedSampleMeasurements(selectedSamples) {
                 } else {
                     newData = {};
                 }
-//console.log(chemicalType, dataset, newData);
+console.log(chemicalType, dataset, newData);
                 for (const key in dataset[chemicalType]) {
                     let currentData = dataset[chemicalType][key];
-//console.log(chemicalType,key);
+console.log(chemicalType,key,currentData);
                     if (key === 'chemicals') {
                         if (!newData.chemicals) {
                             newData.chemicals = {};
@@ -805,9 +805,9 @@ function getSelectedSampleMeasurements(selectedSamples) {
                                 newData[key] = currentData;
                             }
                         } else {
-/*if (key === 'gorhamTest') {
+//if (key === 'gorhamTest') {
 console.log(dateSampled,sample,key,currentData,newData);
-}*/
+//}
                             if (!newData[key]) {
                                 newData[key] = {};
                                 newData[key][sample] = currentData[sample];

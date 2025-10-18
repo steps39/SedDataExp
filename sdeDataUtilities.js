@@ -1,3 +1,98 @@
+function Version1deepMerge(a, b) {
+  // Handle null/undefined cases
+  if (a == null) return b;
+  if (b == null) return a;
+  
+  // If either value is not an object, b takes precedence
+  if (typeof a !== 'object' || typeof b !== 'object') {
+    return b;
+  }
+  
+  // Handle arrays - concatenate them
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return [...a, ...b];
+  }
+  
+  // If one is array and other is object, prefer the object
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return Array.isArray(b) ? b : a;
+  }
+  
+  // Merge objects
+  const result = { ...a };
+  
+  for (const key in b) {
+    if (b.hasOwnProperty(key)) {
+      if (key in result) {
+        // Recursively merge nested objects
+        result[key] = deepMerge(result[key], b[key]);
+      } else {
+        // Add new property from b
+        result[key] = b[key];
+      }
+    }
+  }
+  
+  return result;
+}
+
+function deepMerge(...objects) {
+  // Filter out null/undefined objects
+  const validObjects = objects.filter(obj => obj != null);
+  
+  if (validObjects.length === 0) return {};
+  if (validObjects.length === 1) return validObjects[0];
+  
+  return validObjects.reduce((result, current) => {
+    return mergeTwo(result, current);
+  }, {});
+}
+
+function mergeTwo(a, b) {
+  // Handle null/undefined cases
+  if (a == null) return b;
+  if (b == null) return a;
+  
+  // If either value is not an object, b takes precedence
+  if (typeof a !== 'object' || typeof b !== 'object') {
+    return b;
+  }
+  
+  // Handle arrays - concatenate them
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return [...a, ...b];
+  }
+  
+  // If one is array and other is object, prefer the object
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return Array.isArray(b) ? b : a;
+  }
+  
+  // Merge objects - create new object to avoid mutation
+  const result = {};
+  
+  // Get all keys from both objects
+  const allKeys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  
+  for (const key of allKeys) {
+    const hasA = key in a;
+    const hasB = key in b;
+    
+    if (hasA && hasB) {
+      // Both have the key - recursively merge
+      result[key] = mergeTwo(a[key], b[key]);
+    } else if (hasA) {
+      // Only a has the key
+      result[key] = a[key];
+    } else {
+      // Only b has the key
+      result[key] = b[key];
+    }
+  }
+  
+  return result;
+}
+
 function isSingleValue(item) {
   return (
     item !== null && 

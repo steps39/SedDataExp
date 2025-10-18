@@ -2,9 +2,13 @@ standards =
 {
     "Cefas Action Levels": {
         "unit": "mg/kg dry weight",
-        "levels": {
-            "Names": ["Action Level 1", "Action Level 2"],
-            "abbrev": ["AL1", "AL2"]
+        "levelNames": ["Action Level 1", "Action Level 2"],
+        "levelAbbrev": ["AL1", "AL2"],
+        "multiples": {
+            "PAH data": {
+                "levels": [0.1, null],
+                "definition": "Total PAHs (Sum of 25)",
+            },
         },
         "chemicals": {
             "Arsenic (As)": [30, 100],
@@ -20,7 +24,8 @@ standards =
             "All Organotins": [0.1, 1],
             "ICES7 PCBs": {
                 "levels": [0.01, null],
-                "definition": [
+                "definition": "ICES7: Sum of 7 PCBs",
+                "contains": [
                     "2,2',5,5'-Tetrachlorobiphenyl",
                     "2,4,4'-Trichlorobiphenyl",
                     "2,2',3,4,4',5,5'-Heptachlorobiphenyl",
@@ -31,51 +36,105 @@ standards =
                 ],
             },
             "Total PCB data": {
-                "levels": [0.02, 0],
+                "levels": [0.02, 0.2],
                 "definition": "Total PCBs (Sum of 22)",
             },
-            "Total PAH data": {
-                "levels": [0.1, null],
-                "definition": "Total PAHs (Sum of 25)",
+            "Total Organochlorine data": {
+                "definition": "Total Organochlorine (Sum of 8)",
+            },
+            "Total Organotins data": {
+                "definition": "Total Organotins (Sum of 2)",
+            },
+            "Total Trace metal data": {
+                "definition": "Total Trace Metals (Sum of 8)",
+            },
+            "LMW PAH Sum": {
+                "levels": [0.552, 3.160],
+                "levelNames": ["Effect Range Low", "Effect Range Median"],
+                "levelAbbrev": ["ERL", "ERM"],
+                "definition": "Gorham-Test Protocol: LMW PAHs (Sum of 7)",
+                "contains": ["Acenapthene", "Acenapthylene", "Anthracene", "C1-Napthalenes",  "Fluorene","Napthalene", "Phenanthrene"]
+            },
+            "HMW PAH Sum": {
+                "levels": [1.700, 9.600],
+                "levelNames": ["Effect Range Low", "Effect Range Median"],
+                "levelAbbrev": ["ERL", "ERM"],
+                "definition": "Gorham-Test Protocol: HMW PAHs (Sum of 6)",
+                "contains": ["Benz[a]anthracene", "Benzo[a]pyrene", "Chrysene", "Dibenz[a,h]anthracene", "Fluoranthene", "Pyrene"]
             }
         }
     },
-}
-/*    "Candian Quality Guidelines": {
-        "unit": "mg/kg dry weight",
+    "Candian Quality Guidelines": {
+        "unit": "µg/kg dry weight",
         "noLevels": 2,
         "levels": {
             "names": ["Threshold Effect Level", "Probable Effect Level"],
             "abbrev": ["TEL", "PEL"],
         },
         "chemicals": {
-            "Arsenic": [7.24, 41.6],
-            "Cadmium": [0.68, 4.21],
-            "Chromium": [52.3, 160],
-            "Copper": [18.7, 108],
-            "Lead": [30.2, 112],
-            "Mercury": [0.13, 0.7],
-            "Nickel": [15.9, 42],
-            "Zinc": [124, 271],
-            "Fluoranthene": [0.6, 5.1],
-            "Benzo(a)pyrene": [0.21, 1],
-            "Phenanthrene": [1.73, 8.7],
-            "Pyrene": [1.58, 5.3],
-            "Chrysene": [0.63, 2.5],
-            "Dibenzo(a,h)anthracene": [0.13, 0.64],
-            "Benzo(b)fluoranthene": [0.39, 2.1],
-            "Benzo(k)fluoranthene": [0.25, 1.4],
-            "Indeno(1,2,3-cd)pyrene": [0.25, 1],
-            "Total PCBs (Aroclor 1260)": [0.0227, 0.18]
+            "2-Methylnaphthalene": [20.2,201],
+            "Acenaphthene":	[6.71,88.9],
+            "Acenaphthylene": [5.87,128],
+            "Anthracene": [46.9,245],
+            "Aroclor 1254": [63.3,709],
+            "Arsenic (As)": [7240,41600],
+            "Benz[a]anthracene": [74.8,693],
+            "Benzo[a]pyrene": [88.8,763],
+            "Cadmium (Cd)": [700,4200],
+            "Chlordane": [2.26,4.79],
+            "Chromium (Cr)": [52300,160000],
+            "Chrysene": [108,846],
+            "Copper (Cu)": [18700,108000],
+            "Dibenz[a,h]anthracene": [6.22,135],
+            "1,1-dichloro-2,2-bis(p-chlorophenyl)ethane (PPTDE)": [1.22,7.81],
+            "1,1-Dichloro-2,2-bis(p-chlorophenyl) ethylene (PPDDE)": [2.07,374],
+            "Dichlorodiphenyltrichloroethane (PPDDT)": [1.19,4.77],
+            "Dieldrin": [0.71,4.3],
+            "Endrin": [2.67,62.4],
+            "Fluoranthene": [113,1494],
+            "Fluorene": [21.2,144],
+            "Heptachlor": [0.6,2.74],
+            "Hexachlorocyclohexane": [0.32,0.99],
+            "Lead (Pb)": [30200,112000],
+            "Mercury (Hg)": [130,700],
+            "Naphthalene": [34.6,391],
+            "Nonylphenol and its ethoxylates": [1000,null],
+            "Phenanthrene": [86.7,544],
+            "Total PCBs data": [21.5,189],
+            "Polychlorinated dibenzo-p-dioxins/dibenzo furans":	[0.00085,0.0215],
+            "Pyrene": [153,1398],
+            "Toxaphene": [0.1,null],
+            "Zinc": [124000,271000],
         },
         "sums": {
-            "Total PCBs": {
-                "definition": "Total PCBs (Aroclor 1260)",
-                "levels": [0.0227, 0.18]
+            "Total PCBs data": {
+                "definition": "Total PCBs",
+                "levels": [21.5, 189]
             }
         }
     },
 
+}
+
+function completeStandards() {
+    for (const standardName in standards) {
+        let standard = standards[standardName];
+        if (standard.multiples) {
+            for (sheetName in standard.multiples) {
+              determinands[sheetName].forEach(chemicalName => {
+                    if (!standard.chemicals) {
+                        standard.chemicals = {};
+                    }
+                    standard.chemicals[chemicalName] = standard.multiples[sheetName].levels;
+                });
+            }
+        }
+        standards[standardName] = standard;
+    }
+    return;
+}
+
+/*
     "German North Sea Guiding Values":{
         "unit": "mg/kg dry weight",
         "noLevels": 2,

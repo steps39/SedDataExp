@@ -3,6 +3,7 @@
     let resuspensionSize = 0;
     let kmlLayers = {};
     let chosenStandard = 'Cefas Action Levels';
+//    let chosenStandard = "Candian Quality Guidelines";
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -270,6 +271,8 @@ for (i = 1; i < dataSheetNames.length; i++) {
             const outputElement = document.getElementById('output');
             standards = parsedData;
         });*/
+
+    completeStandards();
 
     importData();
 
