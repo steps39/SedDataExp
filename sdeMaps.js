@@ -17,6 +17,7 @@ let depthStatsGlobal = { min: Infinity, max: -Infinity };
 let depthSortedSampleIds = [];
 let minLat = null, maxLat = null, minLon = null, maxLon = null;
 let noLocations = 0, latSum = 0, lonSum = 0;
+let markerScaling = 2.0;
 const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
 
 const highlightStyle = {
@@ -78,10 +79,9 @@ const highlightStyle = {
 
     function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
         // Define geographic sizes in meters for each depth level
-        const rScalingFactor = 2.0; // You can adjust this factor to scale all sizes
-        const rSmallMeters = 5 * rScalingFactor;    // 5 meters for shallow samples
-        const rMedMeters = 10 * rScalingFactor;     // 10 meters for medium depth samples
-        const rLargeMeters = 15 * rScalingFactor;   // 15 meters for deep samples
+        const rSmallMeters = 5 * markerScaling;    // 5 meters for shallow samples
+        const rMedMeters = 10 * markerScaling;     // 10 meters for medium depth samples
+        const rLargeMeters = 15 * markerScaling;   // 15 meters for deep samples
         
         let radiusInMeters;
         if (depth == null || isNaN(depth) || depthMin === depthMax) {

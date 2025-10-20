@@ -595,7 +595,7 @@ div[id^="largemap-"] {
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v1.20251018</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v1.20251020</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
@@ -701,6 +701,7 @@ div[id^="largemap-"] {
                 <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
                 <button onclick="openSampleLabels()">Enter Sample Labels</button>
                 <button onclick="openChartModifiersModal()">Chart Modifiers</button>
+                <button onclick="openMapModifiersModal()">Map Modifiers</button>
                 <hr>
                 <div class="input-group">
                     <label for="primary-sorting-select">Primary Sort:</label>
@@ -869,6 +870,13 @@ div[id^="largemap-"] {
             </div>
 
             <div class="modal-footer"><button onclick="closeChartModifiersModal()" class="secondary">Close</button></div>
+        </div>
+    </div>
+    <div id="mapModifiersModal" class="modal">
+        <div class="modal-content">
+            <h2>Map Modifiers</h2>
+            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling" placeholder="2">
+            <div class="modal-footer"><button onclick="closeMapModifiersModal()" class="secondary">Close</button></div>
         </div>
     </div>
     <div id="additionalChartsModal" class="modal">
@@ -1175,6 +1183,11 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
         function closeAdditionalInfoModal() { document.getElementById('additionalInfoModal').style.display = 'none'; }
         function openChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'block'; }
         function closeChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'none'; }
+        function openMapModifiersModal() { document.getElementById('mapModifiersModal').style.display = 'block'; }
+        function closeMapModifiersModal() { 
+            document.getElementById('mapModifiersModal').style.display = 'none';
+            markerScaling = parseFloat(document.getElementById('markerScaling').value) || 2;
+         }
         function openAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'block'; }
         function closeAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'none'; }
         function openPcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'block'; }
