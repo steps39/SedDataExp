@@ -12,6 +12,9 @@ let contaminantStats = {};
 let contaminantHeatmaps = {};
 let dateColors = {};
 let markers = {};
+let sampleDepths = {};
+let depthStatsGlobal = { min: Infinity, max: -Infinity };
+let depthSortedSampleIds = [];
 let minLat = null, maxLat = null, minLon = null, maxLon = null;
 let noLocations = 0, latSum = 0, lonSum = 0;
 const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
@@ -20,51 +23,28 @@ const highlightStyle = {
     radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
 };
 
-    function applyDynamicStyling(chemicalName) {
+    function applyDynamicStyling(chemicalName, zoomLevel = null) {
         const stats = contaminantStats[chemicalName];
         if (!stats) return;
-//if ((chemicalName === 'LMW PAH Sum') || (chemicalName === 'Anthracene')) {
-//    console.log(chemicalName, stats);
-//}
         const { valueMin, valueMax, depthMin, depthMax } = stats;
         const { breaks, colors } = getColorScale(valueMin * stats.rescale, valueMax * stats.rescale, chemicalName);
         contaminantLayers[chemicalName].eachLayer(marker => {
             const value = parseFloat(marker.options._chemValue);
             const depth = marker.options._depth;
             let color = colors[0];
-console.log(chemicalName, valueMin, valueMax, depthMin, depthMax, breaks, colors, value, depth);
-for (let i = breaks.length; i > 0; i--) {
-console.log(i,breaks[i-1],colors[i],value);
-    if (value > breaks[i-1]) { color = colors[i]; break; }
-}
-
-
-
-/*            if (colors.length > 3) {
-                color = colors[0];
-                if (value > breaks[2]) color = colors[3];
-                    else if (value > breaks[1]) color = colors[2];
-                        else if (value > breaks[0]) color = colors[1];
-            } else {
-                    color = colors[0];
-                    if (value > breaks[1]) color = colors[2];
-                        else if (value > breaks[0]) color = colors[1];
-                    }*/
-            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+            for (let i = breaks.length; i > 0; i--) {
+                if (value > breaks[i-1]) { color = colors[i]; break; }
+            }
+            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel);
             marker.setStyle({ fillColor: color, radius });
         });
     }
 
     function getColorScale(min, max, chemicalName) {
-/*        const breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
-        const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];*/
-//        const breaks = [5.700, 9.600];
         let breaks = [];
         let colors = [];
         let levels = null;
-console.log('getColorScale',chemicalName,min,max);
         if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
-console.log('Found standard for',chemicalName,standards[chosenStandard].chemicals[chemicalName]);
             if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
                 levels = standards[chosenStandard].chemicals[chemicalName];
             } else {
@@ -74,15 +54,11 @@ console.log('Found standard for',chemicalName,standards[chosenStandard].chemical
             }
         }
         if (!levels) {
-console.log('Using dynamic levels');
                 breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
                 colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
         } else {
-//            if (levels[1] === null) levels.pop();
             if (levels[1] === null) levels[1] = levels[0] * 10;
-console.log('Using standard levels',levels);
             const unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
-console.log('Unit alignment factor',contaminantStats[chemicalName].unit,standards[chosenStandard].unit,extractUnit(standards[chosenStandard].unit),unitAlign);
             if (unitAlign !== 1) {
                 levels = levels.map(l => l / unitAlign);
             }
@@ -100,16 +76,43 @@ console.log('Unit alignment factor',contaminantStats[chemicalName].unit,standard
         return '#d73027';
     }
 
-    function getLogDepthRadius3Levels(depth, depthMin, depthMax) {
-        const rSmall = 6, rMed = 12, rLarge = 18;
-        if (depth == null || isNaN(depth) || depthMin === depthMax) return rSmall;
-        const logMin = Math.log((depthMin ?? 0) + 1);
-        const logMax = Math.log((depthMax ?? 0) + 1);
-        const logVal = Math.log(depth + 1);
-        const t = (logVal - logMin) / (logMax - logMin);
-        if (t <= 1 / 3) return rSmall;
-        if (t <= 2 / 3) return rMed;
-        return rLarge;
+    function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
+        // Define geographic sizes in meters for each depth level
+        const rScalingFactor = 2.0; // You can adjust this factor to scale all sizes
+        const rSmallMeters = 5 * rScalingFactor;    // 5 meters for shallow samples
+        const rMedMeters = 10 * rScalingFactor;     // 10 meters for medium depth samples
+        const rLargeMeters = 15 * rScalingFactor;   // 15 meters for deep samples
+        
+        let radiusInMeters;
+        if (depth == null || isNaN(depth) || depthMin === depthMax) {
+            radiusInMeters = rSmallMeters;
+        } else {
+            const logMin = Math.log((depthMin ?? 0) + 1);
+            const logMax = Math.log((depthMax ?? 0) + 1);
+            const logVal = Math.log(depth + 1);
+            const t = (logVal - logMin) / (logMax - logMin);
+            
+            if (t <= 1 / 3) radiusInMeters = rSmallMeters;
+            else if (t <= 2 / 3) radiusInMeters = rMedMeters;
+            else radiusInMeters = rLargeMeters;
+        }
+        
+        // Convert meters to pixels based on zoom level
+        // If no zoom level provided, use default pixel sizes
+        if (zoomLevel === null) {
+            // Fallback to pixel-based sizing
+            if (radiusInMeters === rSmallMeters) return 6;
+            if (radiusInMeters === rMedMeters) return 12;
+            return 18;
+        }
+        
+        // At equator: 1 degree ≈ 111,320 meters
+        // Meters per pixel = (equator circumference) / (256 * 2^zoom)
+        // = 40075017 / (256 * 2^zoom)
+        const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
+        
+        // Convert radius from meters to pixels
+        return radiusInMeters / metersPerPixel;
     }
 
     function factorUnit(unit1,unit2) {
@@ -143,13 +146,9 @@ console.log('Unit alignment factor',contaminantStats[chemicalName].unit,standard
     }
 
     function oneextractUnit(str) {
-        //const regex = /\(([^)]+)\)|(mg\/kg)/;
-//        const regex = /\((µg\/kg)\s*dry weight\)|(mg\/kg)/;
         const regex = /\((µg\/kg)\s*dry weight\)|(mg\/kg)/;
         const match = str.match(regex);
         if (match) {
-            // The captured group will be in match[1] or match[2]
-            // We check which one is not undefined
             return match[1] || match[2] || 'Unit not found';
         }
         return 'Unit not found';
@@ -167,19 +166,14 @@ const openStreetMapHOTTiles = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot
 const openTopoMapTiles = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)' });
 const openSensorCommunityTiles = L.tileLayer('https://osmc3.maps.sensor.community/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © Sensor Community' });
 
-//function createGlobalLayers(selectedSampleMeasurements, selectedSampleInfo) {
 function createGlobalLayers() {
 console.log('Creating global layers...');
-/*    if (allMapData.isReady) {
-        console.log("Layers already generated. Skipping regeneration.");
-        return;
-    }*/
-//console.log(selectedSampleMeasurements, selectedSampleInfo);
 contaminantLayers = {};
 contaminantHeatmaps = {};
     let allSamples = [];
     let sampleNo = -1;
-//    let minLat = null, maxLat = null, minLon = null, maxLon = null;
+    sampleDepths = {};
+    depthStatsGlobal = { min: null, max: null };
 
     baseLayers = {
         "OpenStreetMap": openStreetMapTiles,
@@ -193,11 +187,8 @@ contaminantHeatmaps = {};
 
     let colorIndex = 0;
     let noSamples = 0;
-    let sampleDepths = {};
-    let depthStatsGlobal = { min: Infinity, max: -Infinity };
 
     const datesSampled = Object.keys(selectedSampleInfo);
-//console.log(datesSampled);
     datesSampled.forEach(dateSampled => {
         markers[dateSampled] = {};
         dateColors[dateSampled] = markerColors[colorIndex];
@@ -214,15 +205,11 @@ if(datesSampled.length > 1) {
         return labelA.localeCompare(labelB);
     });
 }
-//console.log(datesSampled);
-//console.log(noSamples, allSamples);
 
     datesSampled.forEach(dateSampled => {
         const dsSamples = Object.keys(selectedSampleInfo[dateSampled].position);
         dsSamples.forEach(sample => {
-//console.log(sample);
             const depthInfo = selectedSampleInfo[dateSampled].position[sample]['Sampling depth (m)'];
-//console.log(dateSampled, sample, depthInfo);
             if (depthInfo) {
                 const maxDepth = depthInfo['maxDepth'];
                 if (!isNaN(maxDepth)) {
@@ -238,11 +225,11 @@ if(datesSampled.length > 1) {
             }
         });
     });
-console.log('sampleDepths:', sampleDepths);
-console.log('depthStatsGlobal:', depthStatsGlobal);
+//console.log('sampleDepths:', sampleDepths);
+//console.log('depthStatsGlobal:', depthStatsGlobal);
 
 function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupName = chemicalName) {
-console.log('computeIndividualStats called with:', chemicalName, 'sample keys:', Object.keys(values || {}));
+//console.log('computeIndividualStats called with:', chemicalName, 'sample keys:', Object.keys(values || {}));
     if (!statsByChem?.[chemicalName]) {
         statsByChem[chemicalName] = {};
         statsByChem[chemicalName] = {
@@ -263,7 +250,7 @@ console.log('computeIndividualStats called with:', chemicalName, 'sample keys:',
         
         // Get depth for this sample
         const depth = sampleDepths[sampleName];
-console.log('Looking up depth for:', sampleName, 'found:', depth);
+//console.log('Looking up depth for:', sampleName, 'found:', depth);
         if (depth != null && !isNaN(depth)) {
             if (depth < statsByChem[chemicalName].depthMin) statsByChem[chemicalName].depthMin = depth;
             if (depth > statsByChem[chemicalName].depthMax) statsByChem[chemicalName].depthMax = depth;
@@ -274,18 +261,18 @@ console.log('Looking up depth for:', sampleName, 'found:', depth);
     if (valueMax === -Infinity || valueMax === Infinity || valueMax === 0) {
         return statsByChem;
     }
-console.log('Stats for', chemicalName, ':', statsByChem[chemicalName]);
+//console.log('Stats for', chemicalName, ':', statsByChem[chemicalName]);
     return statsByChem
 }
 
     function computeContaminationStats() {
         let statsByChem = {};
-console.log('selectedSampleMeasurements datasets:', Object.keys(selectedSampleMeasurements));
+//console.log('selectedSampleMeasurements datasets:', Object.keys(selectedSampleMeasurements));
         
         // Process each dataset separately to maintain sample name context
         Object.keys(selectedSampleMeasurements).forEach(datasetName => {
             const dataset = selectedSampleMeasurements[datasetName];
-console.log('Processing dataset:', datasetName);
+//console.log('Processing dataset:', datasetName);
             
             Object.keys(dataset).forEach(sheetName => {
                 const sheet = dataset[sheetName];
@@ -299,7 +286,7 @@ console.log('Processing dataset:', datasetName);
                     for (const sample in total) {
                         prefixedTotal[`${datasetName}: ${sample}`] = total[sample];
                     }
-console.log('Total samples with prefix:', Object.keys(prefixedTotal));
+//console.log('Total samples with prefix:', Object.keys(prefixedTotal));
                     statsByChem = computeIndividualStats(statsByChem, unit, prefixedTotal, 'Total ' + sheetName);
                 }
                 
@@ -334,7 +321,7 @@ console.log('Total samples with prefix:', Object.keys(prefixedTotal));
                     for (const sample in chemical.samples) {
                         prefixedSamples[`${datasetName}: ${sample}`] = chemical.samples[sample];
                     }
-console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefixedSamples));
+//console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefixedSamples));
                     statsByChem = computeIndividualStats(statsByChem, unit, prefixedSamples, chemicalName);
                 });
             });
@@ -348,7 +335,6 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
             if (s.depthMax === -Infinity) s.depthMax = depthStatsGlobal.max || 0;
             const valueMax = s.valueMax;
 
-            // Correct unit conversion factors relative to g/kg
             const unitScales = {
                 'g/kg': 1,
                 'mg/kg': 1e-3,
@@ -361,21 +347,14 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
             const currentUnit = s.unit;
             const currentScaleFactor = unitScales[currentUnit];
 
-            // Convert max value to a common base (g/kg) for scaling logic
             let bestRescale = 1;
             let bestUnit = currentUnit;
             let bestFitFound = false;
             if (!(valueMax > 1.0 && valueMax <= 1001.0)) {
                 const valueMaxInG = valueMax * currentScaleFactor;
-//console.log(currentUnit, valueMax, valueMaxInG);
-                // Find the optimal unit that brings the max value into the 1-999 range
                 for (const [newUnit, scaleFactor] of Object.entries(unitScales)) {
                     const scaledValue = valueMaxInG / scaleFactor;
-//console.log(chemicalName, newUnit, scaleFactor, scaledValue);
                     if ((scaledValue) > 1.0 && (scaledValue <= 1001)) {
-                        //            bestRescale = 1 / currentScaleFactor / (1 / scaleFactor); // Simplified: scaleFactor / currentScaleFactor
-                        //                bestRescale = scaleFactor / currentScaleFactor;
-//console.log('Inside loop');
                         bestRescale = currentScaleFactor / scaleFactor;
                         bestUnit = newUnit;
                         bestFitFound = true;
@@ -388,18 +367,16 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
             if (bestFitFound) {
                 statsByChem[chemicalName].unit = bestUnit;
             }
-//console.log(chemicalName, valueMax, currentUnit, bestRescale, bestUnit);    
         });
         return statsByChem;
     }
 
-    const depthSortedSampleIds = Object.keys(sampleDepths).sort((a, b) => {
+    depthSortedSampleIds = Object.keys(sampleDepths).sort((a, b) => {
         return sampleDepths[b] - sampleDepths[a];
     });
 
     // delete current max lat etc to account if samples have been added or deleted
     minLat = null, maxLat = null, minLon = null, maxLon = null;
-//console.log(depthSortedSampleIds);
     depthSortedSampleIds.forEach(fullSample => {
         let parts = fullSample.split(": ");
         if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
@@ -409,7 +386,6 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
         if (selectedSampleInfo[dateSampled].position[sample]?.hasOwnProperty('Position latitude')) {
             const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
             const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
-//console.log(dateSampled,sample,lat,lon);
             if (!isNaN(lat) && !isNaN(lon)) {
                 if (maxLat === null) { minLat = lat; maxLat = lat; minLon = lon; maxLon = lon; }
                 else {
@@ -429,40 +405,8 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
                     .bindTooltip(alternateName);
                 marker.options.customId = fullSample;
                 marker.options.originalStyle = originalCircleOptions;
-                // Add a property to track the highlight state
                 marker.options.isHighlighted = false;
 
-/*                marker.on({
-                    mouseover: (e) => {
-                        const layer = e.target;
-                        // Don't change style if already highlighted
-                        if (!layer.options.isHighlighted) {
-                            layer.setStyle(hoverStyle);
-                        }
-                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                            layer.bringToFront();
-                        }
-                    },
-                    mouseout: (e) => {
-                        const layer = e.target;
-                        // Only reset the style if the marker is NOT highlighted
-                        if (!layer.options.isHighlighted) {
-                            layer.setStyle(layer.options.originalStyle);
-                        }
-                    },
-                    click: (e) => {
-                        const layer = e.target;
-                        if (layer.options.isHighlighted) {
-                            // If highlighted, reset to original style
-                            layer.setStyle(layer.options.originalStyle);
-                            layer.options.isHighlighted = false;
-                        } else {
-                            // If not highlighted, apply the highlight style
-                            layer.setStyle(highlightStyle);
-                            layer.options.isHighlighted = true;
-                        }
-                    }
-                });*/
                 marker.on('click', (e) => createHighlights(e.target.options.customId));
                 highlightMarkers[fullSample] = L.circleMarker(new L.LatLng(lat, lon), highlightStyle).bindTooltip(alternateName);
                 highlightMarkers[fullSample].options.customId = fullSample;
@@ -470,15 +414,6 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
                 noLocations += 1;
                 latSum += lat;
                 lonSum += lon;
-/*                marker.on({
-                    mouseover: (e) => { const layer = e.target; layer.setStyle(hoverStyle); if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) layer.bringToFront(); },
-                    mouseout: (e) => { e.target.setStyle(e.target.options.originalStyle); }
-                });
-                marker.on('click', (e) => createHighlights(e.target.options.customId));
-                highlightMarkers[fullSample] = L.circleMarker(new L.LatLng(lat, lon), highlightStyle).bindTooltip(alternateName);
-                highlightMarkers[fullSample].options.customId = fullSample;
-                highlightMarkers[fullSample].on('click', (e) => createHighlights(e.target.options.customId));
-                noLocations += 1; latSum += lat; lonSum += lon;*/
             }
         } else {
             sampleNo += 1;
@@ -506,102 +441,121 @@ console.log('Chemical', chemicalName, 'samples with prefix:', Object.keys(prefix
     datesSampled.forEach(dateSampled => {
         datasetLayers[dateSampled] = L.layerGroup(markerLayers[dateSampled]);
     });
-console.log(sampleMeasurements);
+//console.log(sampleMeasurements);
     contaminantStats = computeContaminationStats();
     let contaminantMarkerData = {};
 
+    // Build a lookup of all chemical values by sample (with full sample names)
+    let allChemicalValues = {};
+    
     Object.keys(selectedSampleMeasurements).forEach(datasetName => {
         const dataset = selectedSampleMeasurements[datasetName];
         Object.keys(dataset).forEach(sheetName => {
             const sheet = dataset[sheetName];
             if (!sheet?.chemicals) return;
-//            const unit = extractUnit(sheet['Unit of measurement']);
+            
             if (sheet?.total) {
-                const total = sheet.total;
-                makePointLayer(datasetName, total, 'Total ' + sheetName);
+                const chemicalName = 'Total ' + sheetName;
+                if (!allChemicalValues[chemicalName]) allChemicalValues[chemicalName] = {};
+                for (const sample in sheet.total) {
+                    const fullSampleName = `${datasetName}: ${sample}`;
+                    allChemicalValues[chemicalName][fullSampleName] = sheet.total[sample];
+                }
             }
+            
             if (sheetName === 'PAH data'){
-                let lmwSum = {};
-                let hmwSum = {};
                 const gorham = sheet.gorhamTest;
-//console.log(sheet,sheet.gorhamTest, gorham);
+                if (!allChemicalValues['LMW PAH Sum']) allChemicalValues['LMW PAH Sum'] = {};
+                if (!allChemicalValues['HMW PAH Sum']) allChemicalValues['HMW PAH Sum'] = {};
                 for(const sample in gorham) {
-                    lmwSum[sample] = gorham[sample].lmwSum;
-                    hmwSum[sample] = gorham[sample].hmwSum;
+                    const fullSampleName = `${datasetName}: ${sample}`;
+                    allChemicalValues['LMW PAH Sum'][fullSampleName] = gorham[sample].lmwSum;
+                    allChemicalValues['HMW PAH Sum'][fullSampleName] = gorham[sample].hmwSum;
                 }
-//console.log(lmwSum,hmwSum);
-                makePointLayer(datasetName,lmwSum,'LMW PAH Sum');
-                makePointLayer(datasetName,hmwSum,'HMW PAH Sum');
             }
-            const unit = extractUnit(sheet['Unit of measurement']);
+            
             if (sheetName === 'PCB data'){
-                let ices7 = {};
-                let all = {};
                 const pcbSums = sheet.congenerTest;
-//console.log(sheet,sheet.congenerTest, pcbSums);
+                if (!allChemicalValues['ICES7 PCB Sum']) allChemicalValues['ICES7 PCB Sum'] = {};
+                if (!allChemicalValues['All PCB Sum']) allChemicalValues['All PCB Sum'] = {};
                 for(const sample in pcbSums) {
-                    ices7[sample] = pcbSums[sample].ICES7;
-                    all[sample] = pcbSums[sample].All;
+                    const fullSampleName = `${datasetName}: ${sample}`;
+                    allChemicalValues['ICES7 PCB Sum'][fullSampleName] = pcbSums[sample].ICES7;
+                    allChemicalValues['All PCB Sum'][fullSampleName] = pcbSums[sample].All;
                 }
-//console.log(ices7,all);
-                makePointLayer(datasetName,ices7,'ICES7 PCB Sum');
-                makePointLayer(datasetName,all,'All PCB Sum');
             }
+            
             Object.keys(sheet.chemicals).forEach(chemicalName => {
                 const chemical = sheet.chemicals[chemicalName];
-                makePointLayer(datasetName,chemical.samples,chemicalName);
+                if (!allChemicalValues[chemicalName]) allChemicalValues[chemicalName] = {};
+                for (const sample in chemical.samples) {
+                    const fullSampleName = `${datasetName}: ${sample}`;
+                    allChemicalValues[chemicalName][fullSampleName] = chemical.samples[sample];
+                }
             });
         });
     });
 
-    function makePointLayer(datasetName, valueSamples, chemicalName) {
+    // Now create layers for each chemical, processing all samples in depth order
+    Object.keys(allChemicalValues).forEach(chemicalName => {
+        createContaminantLayer(chemicalName, allChemicalValues[chemicalName]);
+    });
+
+    function createContaminantLayer(chemicalName, sampleValues) {
         if (!contaminantLayers[chemicalName]) contaminantLayers[chemicalName] = L.layerGroup();
         if (!contaminantMarkerData[chemicalName]) contaminantMarkerData[chemicalName] = [];
-        unit = contaminantStats[chemicalName].unit;
         
-        // Get the depth range for this contaminant to calculate initial radius
         const stats = contaminantStats[chemicalName];
+        if (!stats) return;
+        
+        const unit = stats.unit;
         const depthMin = stats.depthMin;
         const depthMax = stats.depthMax;
-console.log(`makePointLayer for ${chemicalName}: depthMin=${depthMin}, depthMax=${depthMax}`);
         
+//console.log(`createContaminantLayer for ${chemicalName}: depthMin=${depthMin}, depthMax=${depthMax}`);
+        
+        // Process samples in depth order (deepest first) - THIS IS THE KEY FIX
         depthSortedSampleIds.forEach(fullSampleName => {
+            const value = sampleValues[fullSampleName];
+            if (value == null || isNaN(value)) return;
+            
+            const rescaledValue = value * stats.rescale;
+            
+            // Parse the fullSampleName to get dataset and sample
             let parts = fullSampleName.split(": ");
-            if (parts[0] === datasetName) {
-                if (parts.length > 2) parts[1] = parts[1] + ': ' + parts[2];
-                sampleName = parts[1];
-                const value = valueSamples[sampleName];
-                if (value == null || isNaN(value)) return;
-                
-                const rescaledValue = value * contaminantStats[chemicalName].rescale;
-                const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
-                if (!sampleInfo) return;
-                const lat = parseFloat(sampleInfo["Position latitude"]);
-                const lon = parseFloat(sampleInfo["Position longitude"]);
-                if (isNaN(lat) || isNaN(lon)) return;
-                
-                const depth = sampleDepths[fullSampleName];
-                // Calculate the correct radius based on depth from the start
-                const initialRadius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
-console.log(`${chemicalName} - Sample: ${fullSampleName}, Depth: ${depth}, Radius: ${initialRadius}`);
-                
-                const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
-                const unitSuffix = unit ? ` ${unit}` : "";
-                const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${rescaledValue.toFixed(2)}${unitSuffix}<br>Depth: ${depth} m`;
-                const m = L.circleMarker([lat, lon], {
-                    radius: initialRadius,
-                    fillColor: "#999",
-                    color: "#000",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).bindTooltip(tooltipHtml);
-                m.options._chemValue = rescaledValue.toFixed(2);
-                m.options._chemUnit = unit || "";
-                m.options._depth = depth;
-                contaminantLayers[chemicalName].addLayer(m);
-                contaminantMarkerData[chemicalName].push(m);
-            }
+            if (parts.length > 2) parts = [parts[0], parts.slice(1).join(": ")];
+            const datasetName = parts[0];
+            const sampleName = parts[1];
+            
+            const sampleInfo = selectedSampleInfo[datasetName]?.position?.[sampleName];
+            if (!sampleInfo) return;
+            
+            const lat = parseFloat(sampleInfo["Position latitude"]);
+            const lon = parseFloat(sampleInfo["Position longitude"]);
+            if (isNaN(lat) || isNaN(lon)) return;
+            
+            const depth = sampleDepths[fullSampleName];
+            const initialRadius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+            
+//console.log(`${chemicalName} - Sample: ${fullSampleName}, Depth: ${depth}, Radius: ${initialRadius}`);
+            
+            const sampleLabel = selectedSampleInfo[datasetName]?.label + ' : ' + sampleInfo.label;
+            const unitSuffix = unit ? ` ${unit}` : "";
+            const tooltipHtml = `${sampleLabel}<br>${chemicalName}: ${rescaledValue.toFixed(2)}${unitSuffix}<br>Depth: ${depth} m`;
+            
+            const m = L.circleMarker([lat, lon], {
+                radius: initialRadius,
+                fillColor: "#999",
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).bindTooltip(tooltipHtml);
+            m.options._chemValue = rescaledValue.toFixed(2);
+            m.options._chemUnit = unit || "";
+            m.options._depth = depth;
+            contaminantLayers[chemicalName].addLayer(m);
+            contaminantMarkerData[chemicalName].push(m);
         });
     }
 
@@ -936,6 +890,29 @@ function sampleMap(meas) {
         layers: [baseLayers.OpenStreetMap]
     });
 
+    // Add zoom event listener to update marker sizes
+    map.on('zoomend', function() {
+        const currentZoom = map.getZoom();
+        
+        // Update sample location markers
+        Object.keys(datasetLayers).forEach(datasetName => {
+            datasetLayers[datasetName].eachLayer(marker => {
+                if (marker.options.originalStyle && marker.options.originalStyle.radius) {
+                    const depth = sampleDepths[marker.options.customId];
+                    const newRadius = getDepthRadius(depth, depthStatsGlobal.min, depthStatsGlobal.max, currentZoom);
+                    marker.setRadius(newRadius);
+                    // Update the original style so it persists on mouseout
+                    marker.options.originalStyle.radius = newRadius;
+                }
+            });
+        });
+        
+        // Update contaminant markers if a contaminant layer is active
+        if (activeContaminant && contaminantLayers[activeContaminant]) {
+            applyDynamicStyling(activeContaminant, currentZoom);
+        }
+    });
+
     Object.keys(datasetLayers).forEach(datasetName => {
         datasetLayers[datasetName].addTo(map);
     });
@@ -1173,15 +1150,39 @@ ${depthLegend}
 }
 
 
-    function getDepthRadius(depth, min, max) {
-        const minRadius = 4, maxRadius = 20;
-        if (depth == null || isNaN(depth)) return minRadius;
-        const logMin = Math.log((min ?? 0) + 1);
-        const logMax = Math.log((max ?? 0) + 1);
-        const logVal = Math.log(depth + 1);
-        if (logMax === logMin) return minRadius;
-        const t = (logVal - logMin) / (logMax - logMin);
-        return minRadius + t * (maxRadius - minRadius);
+    function getDepthRadius(depth, min, max, zoomLevel = null) {
+        // Define geographic sizes in meters for min and max depths
+        const minRadiusMeters = 3;   // 3 meters for shallowest samples
+        const maxRadiusMeters = 20;  // 20 meters for deepest samples
+        
+        let radiusInMeters;
+        if (depth == null || isNaN(depth)) {
+            radiusInMeters = minRadiusMeters;
+        } else {
+            const logMin = Math.log((min ?? 0) + 1);
+            const logMax = Math.log((max ?? 0) + 1);
+            const logVal = Math.log(depth + 1);
+            
+            if (logMax === logMin) {
+                radiusInMeters = minRadiusMeters;
+            } else {
+                const t = (logVal - logMin) / (logMax - logMin);
+                radiusInMeters = minRadiusMeters + t * (maxRadiusMeters - minRadiusMeters);
+            }
+        }
+        
+        // Convert meters to pixels based on zoom level
+        if (zoomLevel === null) {
+            // Fallback to pixel-based sizing for backward compatibility
+            return radiusInMeters / maxRadiusMeters * 20; // Scale to 4-20 pixel range
+        }
+        
+        // Calculate meters per pixel at this zoom level
+        // Using Web Mercator projection at latitude 54.596
+        const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
+        
+        // Convert radius from meters to pixels
+        return radiusInMeters / metersPerPixel;
     }
 
 let tooltipsAreVisible = false;
