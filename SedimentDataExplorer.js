@@ -2,6 +2,8 @@
     let radarPlot = "None";
     let resuspensionSize = 0;
     let kmlLayers = {};
+    let chosenStandard = 'Cefas Action Levels';
+//    let chosenStandard = "Candian Quality Guidelines";
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
     Chart.register(autocolors);
@@ -260,6 +262,17 @@ for (i = 1; i < dataSheetNames.length; i++) {
         ccontainer.appendChild(radio);
         ccontainer.appendChild(label);
     });
+
+/*standards = {};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const dataUrl = 'https://northeastfc.uk/Supporting/quality_standards.sdes';
+            const parsedData = await readQualityStandards(dataUrl);
+            const outputElement = document.getElementById('output');
+            standards = parsedData;
+        });*/
+
+    completeStandards();
 
     importData();
 
@@ -1360,10 +1373,10 @@ let missingTotalSolids = true;
                      const applicant = df[14][4];
                     const applicationNumber = df[15][4];
                     const applicationTitle = df[16][4];*/
-        for (i = 16; 19; i++) {
+        for (i = 16; i<19; i++) {
             dateRow = i;
-            //console.log('df[dateRow][2]',dateRow,df[dateRow][2]);                
-            if (df[dateRow][2].includes('Date sampled:')) {
+//console.log('df[dateRow][2]',sheetName,i,dateRow,df[dateRow][2],df);                
+            if (df[dateRow][2]?.includes('Date sampled:')) {
                 break;
             }
             dateRow = 0;

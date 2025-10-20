@@ -733,14 +733,15 @@ function selectSamples() {
         .filter(checkbox => checkbox.checked)
         .map(checkbox => checkbox.value);
     //console.log(selectedSamples);
-    selectedSampleMeasurements = getselectedSampleMeasurements(selectedSamples);
+    selectedSampleMeasurements = getSelectedSampleMeasurements(selectedSamples);
     selectedSampleInfo = getSelectedSamples(selectedSamples);
 console.log(selectedSampleInfo);
     updateChart();
 }
 
 
-function getselectedSampleMeasurements(selectedSamples) {
+function getSelectedSampleMeasurements(selectedSamples) {
+//console.log('getSelectedSampleMeasurements',selectedSamples,selectedSamples.length);
     selectedMeas = {};
     for (let i=0; i < selectedSamples.length; i++) {
         let parts = selectedSamples[i].split(": ");
@@ -759,6 +760,7 @@ function getselectedSampleMeasurements(selectedSamples) {
                 //console.log('Create ', dateSampled);
                 selectedMeas[dateSampled][chemicalType] = {};
             }
+//console.log(dateSampled,sample,chemicalType);
             if (chemicalType === 'Physical Data') {
                 if (!selectedMeas[dateSampled][chemicalType].samples) {
                     selectedMeas[dateSampled][chemicalType].samples = {};
@@ -771,12 +773,16 @@ function getselectedSampleMeasurements(selectedSamples) {
                 selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
             } else {
                         //    						for (const chemicalType in sampleMeasurements[dateSampled]) {
-//                let newData = selectedMeas[dateSampled][chemicalType];
                 let newData = {};
-//console.log(chemicalType, dataset, newData);
+                if (selectedMeas[dateSampled]?.[chemicalType]) {
+                    newData = selectedMeas[dateSampled][chemicalType];
+                } else {
+                    newData = {};
+                }
+console.log(chemicalType, dataset, newData);
                 for (const key in dataset[chemicalType]) {
                     let currentData = dataset[chemicalType][key];
-//console.log(chemicalType,key);
+console.log(chemicalType,key,currentData);
                     if (key === 'chemicals') {
                         if (!newData.chemicals) {
                             newData.chemicals = {};
@@ -799,9 +805,9 @@ function getselectedSampleMeasurements(selectedSamples) {
                                 newData[key] = currentData;
                             }
                         } else {
-/*if (key === 'gorhamTest') {
+//if (key === 'gorhamTest') {
 console.log(dateSampled,sample,key,currentData,newData);
-}*/
+//}
                             if (!newData[key]) {
                                 newData[key] = {};
                                 newData[key][sample] = currentData[sample];
