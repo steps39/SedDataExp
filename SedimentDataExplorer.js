@@ -353,6 +353,10 @@ function postLoadSnapShot() {
 //console.log('sampleInfo',dateSampled, 'adding label');
             sampleInfo[dateSampled].label = dateSampled;
         }
+        if ((sampleInfo[dateSampled].hasOwnProperty('Date Sampled'))) {
+//console.log('sampleInfo',dateSampled, 'corrected missing Date sampled');
+            sampleInfo[dateSampled]['Date sampled'] = sampleInfo[dateSampled]['Date Sampled'];
+        }
         for (sample in sampleInfo[dateSampled].position) {
             if (!(sampleInfo[dateSampled].position[sample].hasOwnProperty('label'))) {
                 sampleInfo[dateSampled].position[sample].label = sample;
@@ -380,6 +384,9 @@ function postLoadSnapShot() {
     for (dateSampled in selectedSampleMeasurements) {
         if (!(selectedSampleInfo[dateSampled].hasOwnProperty('label'))) {
             selectedSampleInfo[dateSampled].label = dateSampled;
+        }
+        if ((selectedSampleInfo[dateSampled].hasOwnProperty('Date Sampled'))) {
+            selectedSampleInfo[dateSampled]['Date sampled'] = sampleInfo[dateSampled]['Date sampled'];
         }
         for (sample in selectedSampleInfo[dateSampled].position) {
             if (!(selectedSampleInfo[dateSampled].position[sample].hasOwnProperty('label'))) {
@@ -731,8 +738,8 @@ console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
             cleanSample = sample.replace(/\s+/g, '').toLowerCase();
             namedLocations[cleanSample] = {};
             namedLocations[cleanSample].label = sample;
-            namedLocations[cleanSample].latitude = parseFlost(df[r][1]);
-            namedLocations[cleanSample].longitude = parseFlost(df[r][2]);
+            namedLocations[cleanSample].latitude = parseFloat(df[r][1]);
+            namedLocations[cleanSample].longitude = parseFloat(df[r][2]);
 //console.log(sample,namedLocations[sample]);
         }
 //console.log('End of processExcelLocations');
@@ -1191,7 +1198,12 @@ let missingTotalSolids = true;
 //                                                }
                                             }
                                         }
-                                        if (!missingTotalSolids) {
+
+// Total solids are now dealt with as part of physical data, so if no other physical data then total solids won't be added!!!!!!!!!
+// Possibly need to rethink this?????
+
+
+                                        if (!missingTotalSolids && sampleMeasurements[dateSampled]?.['Physical Data']) {
                                         for (let sample in ts) {
 //                                            if (!(sampleMeasurements[dateSampled]['Physical Data'].samples[sample] === undefined)) {
                                             if (!sampleMeasurements[dateSampled]?.['Physical Data']) {
@@ -1305,15 +1317,31 @@ let missingTotalSolids = true;
                 break;
             }
         }
+//console.log(meas,sheetName,dateSampled);
+        if (sheetName === 'Physical Data') {
+//console.log('Physical Data',Object.keys(meas.samples).length);
+            if ((Object.keys(meas.samples).length === 0)) {
+                disableRadioButtons(sortButtonGroups[sheetName], true);
+//console.log('No data for ',sheetName,dateSampled);
+                return 'No data for ' + sheetName;
+            }
+        } else {
+            if (!(totalSum > 0)) {
+                disableRadioButtons(sortButtonGroups[sheetName], true);
+//console.log('No data for ',sheetName,dateSampled);
+                return 'No data for ' + sheetName;
+            }
+        }
+//console.log('Saving meas for ',sheetName,dateSampled);
         meas['Date analysed'] = dateAnalysed;
         meas['Unit of measurement'] = measurementUnit;
         meas['Laboratory/contractor'] = contractor;
 //if (sheetName === 'Physical Data') {console.log(meas,totalSum);}
 //        if (!(sheetName === 'Physical Data')) {
-            if (!totalSum > 0) {
+/*            if (!totalSum > 0) {
                 disableRadioButtons(sortButtonGroups[sheetName], true);
                 return 'No data for ' + sheetName;
-            }
+            }*/
         //console.log(dateSampled, sheetName, 'meas ', meas);
 //        if (!(meas.samples === undefined || meas.samples === null)) {
         if (sheetName === 'Physical Data') {
@@ -1341,13 +1369,14 @@ let missingTotalSolids = true;
             if (sheetName === 'PCB data') {
                 pcbPostProcess(meas, dateSampled);
             }
+        //}
 //        }
         //}
         return dateAnalysed;
     }
 
     function extractApplicationDataFromSheet(sheetName, sheetData, url, fileNumber) {
-        //console.log('extractappdata',url);
+//console.log('extractappdata',url);
         //            dateSampled = 'SD Missing';
         const df = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
         //                const df = XLSX.utils.sheet_to_json(sheetData, { header: 1, cellText: true });
@@ -1526,10 +1555,10 @@ let missingTotalSolids = true;
 //console.log(dateSampled,dateAnalysed);
         if (dateSampled.includes('Missing')) {
             // Date sampled is missing so include an M for missing and the analysis date
-            newDateSampled = dateAnalysed + 'M'+fileNumber;
+            newDateSampled = dateAnalysed + ' M'+fileNumber;
         } else if (dateSampled > dateAnalysed) {
             // Date sampled is later than date analysed so include an L for late and the analysis date
-            newDateSampled = dateAnalysed + 'L'+fileNumber;
+            newDateSampled = dateAnalysed + ' L'+fileNumber;
         }
         //Add in application number
 //console.log(dateSampled,sampleInfo[dateSampled]);
@@ -1551,7 +1580,7 @@ let missingTotalSolids = true;
 }
             newDateSampled = newDateSampled + ' f ' + sampleInfo[dateSampled]['Application number'];
             sampleInfo[newDateSampled] = sampleInfo[dateSampled];
-            sampleInfo[newDateSampled]['Date Sampled'] = newDateSampled;
+            sampleInfo[newDateSampled]['Date sampled'] = newDateSampled;
             sampleInfo[newDateSampled].label = newDateSampled;
             delete sampleInfo[dateSampled];
             sampleMeasurements[newDateSampled] = sampleMeasurements[dateSampled];

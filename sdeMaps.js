@@ -17,7 +17,6 @@ let depthStatsGlobal = { min: Infinity, max: -Infinity };
 let depthSortedSampleIds = [];
 let minLat = null, maxLat = null, minLon = null, maxLon = null;
 let noLocations = 0, latSum = 0, lonSum = 0;
-let markerScaling = 2.0;
 const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
 
 const highlightStyle = {
@@ -79,9 +78,44 @@ const highlightStyle = {
 
     function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
         // Define geographic sizes in meters for each depth level
-        const rSmallMeters = 5 * markerScaling;    // 5 meters for shallow samples
-        const rMedMeters = 10 * markerScaling;     // 10 meters for medium depth samples
-        const rLargeMeters = 15 * markerScaling;   // 15 meters for deep samples
+        const rSmallMeters = 5;    // 5 meters for shallow samples
+        const rMedMeters = 10;     // 10 meters for medium depth samples
+        const rLargeMeters = 15;   // 15 meters for deep samples
+        
+        let radiusInMeters;
+        if (depth == null || isNaN(depth) || depthMin === depthMax) {
+            radiusInMeters = rSmallMeters;
+        } else {
+            const logMin = Math.log((depthMin ?? 0) + 1);
+            const logMax = Math.log((depthMax ?? 0) + 1);
+            const logVal = Math.log(depth + 1);
+            const t = (logVal - logMin) / (logMax - logMin);
+            
+            if (t <= 1 / 3) radiusInMeters = rSmallMeters;
+            else if (t <= 2 / 3) radiusInMeters = rMedMeters;
+            else radiusInMeters = rLargeMeters;
+        }
+        
+        // Convert meters to pixels based on zoom level
+        if (zoomLevel === null) {
+            // Fallback to pixel-based sizing
+            if (radiusInMeters === rSmallMeters) return 6;
+            if (radiusInMeters === rMedMeters) return 12;
+            return 18;
+        }
+        
+        // Meters per pixel calculation
+        const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
+        
+        // FIX: Scale the result by 20 so the physical meter size translates to visible pixels
+        return (radiusInMeters / metersPerPixel) * 20;
+    }
+
+/*srg251130    function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
+        // Define geographic sizes in meters for each depth level
+        const rSmallMeters = 5;    // 5 meters for shallow samples
+        const rMedMeters = 10;     // 10 meters for medium depth samples
+        const rLargeMeters = 15;   // 15 meters for deep samples
         
         let radiusInMeters;
         if (depth == null || isNaN(depth) || depthMin === depthMax) {
@@ -112,8 +146,9 @@ const highlightStyle = {
         const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
         
         // Convert radius from meters to pixels
-        return radiusInMeters / metersPerPixel;
+        return radiusInMeters / metersPerPixel; // Scale factor for visibility
     }
+        */
 
     function factorUnit(unit1,unit2) {
         const unitScales = {
@@ -172,8 +207,6 @@ contaminantLayers = {};
 contaminantHeatmaps = {};
     let allSamples = [];
     let sampleNo = -1;
-    sampleDepths = {};
-    depthStatsGlobal = { min: null, max: null };
 
     baseLayers = {
         "OpenStreetMap": openStreetMapTiles,
@@ -383,7 +416,8 @@ function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupN
         const dateSampled = parts[0];
         const sample = parts[1];
         const currentColor = dateColors[dateSampled];
-        if (selectedSampleInfo[dateSampled].position[sample]?.hasOwnProperty('Position latitude')) {
+//console.log(`Processing sample: ${fullSample} (Date: ${dateSampled}, Sample: ${sample})`);
+        if (selectedSampleInfo[dateSampled]?.position[sample]?.hasOwnProperty('Position latitude')) {
             const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
             const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
             if (!isNaN(lat) && !isNaN(lon)) {
@@ -601,22 +635,19 @@ function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupN
     allMapData.contaminantStats = contaminantStats;
 }
 
-// Helper function to force a complete map refresh
 function forceMapRefresh(containerId) {
     const container = document.getElementById(containerId);
     if (container && container._leaflet_map) {
         const map = container._leaflet_map;
         
-        // Force multiple invalidateSize calls with different parameters
         setTimeout(() => {
             map.invalidateSize(true);
             setTimeout(() => {
                 map.invalidateSize({ pan: false });
                 setTimeout(() => {
                     map.invalidateSize(true);
-                    // Force tiles to reload
                     map.eachLayer(layer => {
-                        if (layer._url) { // It's a tile layer
+                        if (layer._url) {
                             layer.redraw();
                         }
                     });
@@ -625,14 +656,6 @@ function forceMapRefresh(containerId) {
         }, 50);
     }
 }
-
-// You can call this function after creating your maps if they still don't render properly:
-// Example usage:
-// forceMapRefresh('large-contaminant-map');
-// allContaminants.forEach((_, index) => {
-//     forceMapRefresh(`smallmap-${index}`);
-// });
-
 
 function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', mapTile = 'OpenStreetMap') {
     if (!allMapData.isReady) {
@@ -646,7 +669,6 @@ function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visual
         return;
     }
     
-    // Check if the container already has an active Leaflet map instance
     if (container._leaflet_id !== undefined) {
         console.log(`Removing existing map from container with ID: ${containerId}`);
         container._leaflet_map.remove();
@@ -673,16 +695,8 @@ function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visual
     L.tileLayer(tileLayerUrl, tileLayerOptions).addTo(staticMap);
 
     let layerToAdd;
-/*    if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-        layerToAdd = contaminantLayers[contaminantName];
-    } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
-        layerToAdd = contaminantHeatmaps[contaminantName];
-    }*/
-    // Clone the relevant layer to avoid layer being removed when expanded in larger map
     if (visualizationType === 'points' && allMapData.contaminantLayers[contaminantName]) {
-        // Create a new LayerGroup for this specific map
         layerToAdd = L.layerGroup();
-        // Iterate over the master layer's components and clone them
         allMapData.contaminantLayers[contaminantName].eachLayer(layer => {
             const clonedLayer = L.circleMarker(layer.getLatLng(), { ...layer.options });
             if (layer.getTooltip()) {
@@ -691,7 +705,6 @@ function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visual
             layerToAdd.addLayer(clonedLayer);
         });
     } else if (visualizationType === 'heatmap' && allMapData.contaminantHeatmaps[contaminantName]) {
-        // Do the same for heatmap layers
         layerToAdd = L.layerGroup();
         allMapData.contaminantHeatmaps[contaminantName].eachLayer(layer => {
             layerToAdd.addLayer(L.circle(layer.getLatLng(), { ...layer.options }));
@@ -700,6 +713,15 @@ function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visual
 
     if (layerToAdd) {
         layerToAdd.addTo(staticMap);
+                    //srg251130 --- CHANGE START ---
+                    // 1. Add listeners to this static map to update marker sizes on zoom/resize
+                    staticMap.on('zoomend resize', function() {
+                         // Only apply styling if we are in 'points' mode (not heatmap)
+                        if (visualizationType === 'points') {
+                            applyDynamicStyling(contaminantName, staticMap.getZoom());
+                        }
+                    });
+                    // --- CHANGE END ---        
         const bounds = new L.LatLngBounds([]);
         layerToAdd.eachLayer(layer => {
             if (layer.getLatLng) {
@@ -707,20 +729,27 @@ function ClaudeV4createStaticContaminantMap(containerId, contaminantName, visual
             }
         });
         if (bounds.isValid()) {
-            // Simple timeout approach - just like your original working code but with a small delay
             setTimeout(() => {
-                container.offsetWidth; // Force layout recalculation
+                container.offsetWidth;
                 staticMap.invalidateSize();
                 staticMap.fitBounds(bounds, { padding: [20, 20] });
-            }, 150); // Slightly longer timeout
+                   
+                            //srg251130 --- CHANGE START ---
+                            // 2. Force an immediate style update after the bounds are fitted
+                            if (visualizationType === 'points') {
+                                // We calculate the target zoom manually or grab it after a short delay
+                                // The most reliable way here is to run it in the same timeout stack
+                                applyDynamicStyling(contaminantName, staticMap.getBoundsZoom(bounds));
+                            }
+                            // --- CHANGE END ---
+
+            }, 150);
         }
     } else {
         console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
     }
 }
 
-//Claude V6
-// APPROACH 2: Use ResizeObserver to detect when container gets proper dimensions
 function createStaticContaminantMap(containerId, contaminantName, visualizationType = 'points', showLegend = false , mapTile = 'OpenStreetMap') {
     if (!allMapData.isReady) {
         console.error("Data not yet processed. Call createGlobalLayers first.");
@@ -733,7 +762,6 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
         return;
     }
     
-    // Check if the container already has an active Leaflet map instance
     if (container._leaflet_id !== undefined) {
         console.log(`Removing existing map from container with ID: ${containerId}`);
         container._leaflet_map.remove();
@@ -746,7 +774,7 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
             const { width, height } = entry.contentRect;
             console.log(`Container ${containerId} resized to: ${width}x${height}`);
             
-            if (!mapCreated && width > 100 && height > 100) { // Reasonable minimum sizes
+            if (!mapCreated && width > 100 && height > 100) {
                 mapCreated = true;
                 resizeObserver.disconnect();
                 
@@ -800,7 +828,6 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
                                 const stats = contaminantStats[contaminantName];
                                 const unit = stats.unit ? ` ${stats.unit}` : "";
                                 const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
-//                                const colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
                                 const colors = ["#d73027", "#d73027", "#d73027", "#d73027"];
                                 div.innerHTML = `
                 <h4>${contaminantName}</h4>
@@ -835,16 +862,9 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
 
 function sampleMap(meas) {
     if (map) map.remove();
-//    allMapMarkers = [];
     isHeatmapMode = false;
     activeContaminant = null;
 
-/*    if (!allMapData.isReady) {
-        createGlobalLayers(meas, selectedSampleInfo);
-    }*/
-    
-//    let latSum = 0, lonSum = 0, noLocations = 0;
-//    minLat = null, maxLat = null, minLon = null, maxLon = null;
     const markerColors = ['#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF', '#FFC300', '#33FFA1', '#C70039', '#900C3F'];
     const datesSampled = Object.keys(selectedSampleInfo);
     let colorIndex = 0;
@@ -881,8 +901,16 @@ function sampleMap(meas) {
     if (!(xAxisSort === 'normal')) {
         allSamples.sortComplexSamples();
     }
-//    let highlighted = Array(noSamples).fill(false);
     const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
+
+/*    map = L.map('map', {
+        center: [54.596, -1.177],
+        zoom: 13,
+        layers: [baseLayers.OpenStreetMap]
+    });*/
+
+
+    // ... inside sampleMap(meas) in sdeMaps.js ...
 
     map = L.map('map', {
         center: [54.596, -1.177],
@@ -890,8 +918,62 @@ function sampleMap(meas) {
         layers: [baseLayers.OpenStreetMap]
     });
 
+    // --- ADD START: Measurement Tools ---
+    
+    // 1. Create a FeatureGroup to store the things you draw
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    // 2. Configure the tools (turn on metric measurements and area display)
+    var drawControl = new L.Control.Draw({
+        edit: {
+            featureGroup: drawnItems
+        },
+        draw: {
+            polyline: {
+                metric: true,    // Shows distance
+                feet: false      // Disable feet to enforce metric system
+            },
+            polygon: {
+                allowIntersection: false,
+                showArea: true,  // Shows area in m² / km²
+                metric: true,
+                feet: false
+            },
+            rectangle: {
+                showArea: true,
+                metric: true,
+                feet: false
+            },
+            circle: false,       // Disable tools you might not need
+            marker: false,
+            circlemarker: false
+        }
+    });
+
+    // 3. Add the control to the map
+    map.addControl(drawControl);
+
+    // 4. Listen for the 'created' event to add the shape to the map so it persists
+    map.on(L.Draw.Event.CREATED, function (e) {
+        var layer = e.layer;
+        drawnItems.addLayer(layer);
+        
+        // Optional: Add a popup showing the measurement immediately upon completion
+        if (e.layerType === 'polyline') {
+             // Calculate distance for polyline if needed explicitly
+             // (Leaflet.draw shows it in the tooltip while drawing)
+        } 
+    });
+
+    // --- ADD END ---
+
+    // ... existing code continues (map.on('zoomend'...) ...
+
     // Add zoom event listener to update marker sizes
-    map.on('zoomend', function() {
+//srg251130 --- CHANGE START ---
+    // Combine zoomend and resize events to ensure markers always scale correctly
+    map.on('zoomend resize', function() {
         const currentZoom = map.getZoom();
         
         // Update sample location markers
@@ -901,7 +983,6 @@ function sampleMap(meas) {
                     const depth = sampleDepths[marker.options.customId];
                     const newRadius = getDepthRadius(depth, depthStatsGlobal.min, depthStatsGlobal.max, currentZoom);
                     marker.setRadius(newRadius);
-                    // Update the original style so it persists on mouseout
                     marker.options.originalStyle.radius = newRadius;
                 }
             });
@@ -912,6 +993,28 @@ function sampleMap(meas) {
             applyDynamicStyling(activeContaminant, currentZoom);
         }
     });
+    // --- CHANGE END ---
+
+/* srg251130    map.on('zoomend', function() {
+        const currentZoom = map.getZoom();
+        
+        // Update sample location markers
+        Object.keys(datasetLayers).forEach(datasetName => {
+            datasetLayers[datasetName].eachLayer(marker => {
+                if (marker.options.originalStyle && marker.options.originalStyle.radius) {
+                    const depth = sampleDepths[marker.options.customId];
+                    const newRadius = getDepthRadius(depth, depthStatsGlobal.min, depthStatsGlobal.max, currentZoom);
+                    marker.setRadius(newRadius);
+                    marker.options.originalStyle.radius = newRadius;
+                }
+            });
+        });
+        
+        // Update contaminant markers if a contaminant layer is active
+        if (activeContaminant && contaminantLayers[activeContaminant]) {
+            applyDynamicStyling(activeContaminant, currentZoom);
+        }
+    });*/
 
     Object.keys(datasetLayers).forEach(datasetName => {
         datasetLayers[datasetName].addTo(map);
@@ -942,10 +1045,8 @@ function sampleMap(meas) {
     }
     
     if (noLocations > 0) {
-//console.log(minLat,maxLat,minLon,maxLon);
-let seCorner = L.latLng(minLat, minLon);
-let nwCorner = L.latLng(maxLat, maxLon);
-//        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+        let seCorner = L.latLng(minLat, minLon);
+        let nwCorner = L.latLng(maxLat, maxLon);
         const bounds = L.latLngBounds(seCorner, nwCorner);
         map.fitBounds(bounds);
     }
@@ -1017,10 +1118,7 @@ fill="grey" fill-opacity="0.6" />
             return;
         }
         const unit = stats.unit ? ` ${stats.unit}` : "";
-//        const min = 1, max = 2;
-//console.log(chemicalName,stats.valueMin,stats.valueMax,stats.rescale);
         const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
-//console.log(chemicalName,min,max,stats.rescale);
         const { colors } = getColorScale(min, max, chemicalName);
         const toggleButton = `<button onclick="window.toggleVisualizationMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Switch to ${isHeatmapMode ? 'Points' : 'Heatmap'}</button>`;
         const legendType = isHeatmapMode ? 'Heat Intensity' : 'Point Colours';
@@ -1149,41 +1247,74 @@ ${depthLegend}
     let contaminantControl = createScrollableContaminantControl().addTo(map);
 }
 
-
-    function getDepthRadius(depth, min, max, zoomLevel = null) {
-        // Define geographic sizes in meters for min and max depths
-        const minRadiusMeters = 3;   // 3 meters for shallowest samples
-        const maxRadiusMeters = 20;  // 20 meters for deepest samples
+function getDepthRadius(depth, min, max, zoomLevel = null) {
+    // Define geographic sizes in meters for min and max depths
+    const minRadiusMeters = 3;   // 3 meters for shallowest samples
+    const maxRadiusMeters = 20;  // 20 meters for deepest samples
+    
+    let radiusInMeters;
+    if (depth == null || isNaN(depth)) {
+        radiusInMeters = minRadiusMeters;
+    } else {
+        const logMin = Math.log((min ?? 0) + 1);
+        const logMax = Math.log((max ?? 0) + 1);
+        const logVal = Math.log(depth + 1);
         
-        let radiusInMeters;
-        if (depth == null || isNaN(depth)) {
+        if (logMax === logMin) {
             radiusInMeters = minRadiusMeters;
         } else {
-            const logMin = Math.log((min ?? 0) + 1);
-            const logMax = Math.log((max ?? 0) + 1);
-            const logVal = Math.log(depth + 1);
-            
-            if (logMax === logMin) {
-                radiusInMeters = minRadiusMeters;
-            } else {
-                const t = (logVal - logMin) / (logMax - logMin);
-                radiusInMeters = minRadiusMeters + t * (maxRadiusMeters - minRadiusMeters);
-            }
+            const t = (logVal - logMin) / (logMax - logMin);
+            radiusInMeters = minRadiusMeters + t * (maxRadiusMeters - minRadiusMeters);
         }
-        
-        // Convert meters to pixels based on zoom level
-        if (zoomLevel === null) {
-            // Fallback to pixel-based sizing for backward compatibility
-            return radiusInMeters / maxRadiusMeters * 20; // Scale to 4-20 pixel range
-        }
-        
-        // Calculate meters per pixel at this zoom level
-        // Using Web Mercator projection at latitude 54.596
-        const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
-        
-        // Convert radius from meters to pixels
-        return radiusInMeters / metersPerPixel;
     }
+    
+    // Convert meters to pixels based on zoom level
+    if (zoomLevel === null) {
+        // Fallback to pixel-based sizing for backward compatibility
+        return radiusInMeters / maxRadiusMeters * 20; // Scale to 4-20 pixel range
+    }
+    
+    // Calculate meters per pixel at this zoom level
+    const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
+    
+    // FIX: Scale the result by 20 so the physical meter size translates to visible pixels
+    return (radiusInMeters / metersPerPixel) * 20;
+}
+
+/*srg251130 function getDepthRadius(depth, min, max, zoomLevel = null) {
+    // Define geographic sizes in meters for min and max depths
+    const minRadiusMeters = 3;   // 3 meters for shallowest samples
+    const maxRadiusMeters = 20;  // 20 meters for deepest samples
+    
+    let radiusInMeters;
+    if (depth == null || isNaN(depth)) {
+        radiusInMeters = minRadiusMeters;
+    } else {
+        const logMin = Math.log((min ?? 0) + 1);
+        const logMax = Math.log((max ?? 0) + 1);
+        const logVal = Math.log(depth + 1);
+        
+        if (logMax === logMin) {
+            radiusInMeters = minRadiusMeters;
+        } else {
+            const t = (logVal - logMin) / (logMax - logMin);
+            radiusInMeters = minRadiusMeters + t * (maxRadiusMeters - minRadiusMeters);
+        }
+    }
+    
+    // Convert meters to pixels based on zoom level
+    if (zoomLevel === null) {
+        // Fallback to pixel-based sizing for backward compatibility
+        return radiusInMeters / maxRadiusMeters * 20; // Scale to 4-20 pixel range
+    }
+    
+    // Calculate meters per pixel at this zoom level
+    // Using Web Mercator projection at latitude 54.596
+    const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
+    
+    // Convert radius from meters to pixels
+    return radiusInMeters / metersPerPixel;
+}*/
 
 let tooltipsAreVisible = false;
 

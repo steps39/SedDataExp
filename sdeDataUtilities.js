@@ -148,13 +148,13 @@ function getSortValue(fullSampleName, sortKey) {
         switch (sortKey) {
             // --- PRIMARY SORT KEYS (Strings) ---
             case 'dateofsampling':
-                return selectedSampleInfo[datePart]['Date Sampled'].toLowerCase();
+                return Date.parse(selectedSampleInfo[datePart]['Date sampled'].split(" ")[0]);
             case 'samplename':
                 return selectedSampleInfo[datePart].position[samplePart]['label'].toLowerCase();
             case 'datesamplename':
-                return (selectedSampleInfo[datePart]['Date Sampled'] + selectedSampleInfo[datePart].position[samplePart]['label']).toLowerCase();
+                return (Date.parse(selectedSampleInfo[datePart]['Date sampled'].split(" ")[0]) + selectedSampleInfo[datePart].position[samplePart]['label']).toLowerCase();
             case 'samplenamedate':
-                return (selectedSampleInfo[datePart].position[samplePart]['label'] + selectedSampleInfo[datePart]['Date Sampled']).toLowerCase();
+                return (selectedSampleInfo[datePart].position[samplePart]['label'] + Date.parse(selectedSampleInfo[datePart]['Date sampled'].split(" ")[0])).toLowerCase();
             case 'datasetname':
                 return selectedSampleInfo[datePart]['label'].toLowerCase();
             case 'datasetnamesamplename':
