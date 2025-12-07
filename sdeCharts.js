@@ -1614,7 +1614,7 @@ function displayAnyChart(meas, fullSampleNames, all, datasets, instanceNo, title
                         const dateSampled = matchResult[1];
                         const sample = matchResult[2];
                         console.log(all[i]);
-                        console.log("Date Sampled: ", dateSampled);
+                        console.log("Date sampled: ", dateSampled);
                         console.log("Sample:", sample);
                         console.log("Full Sample Name:", fullSampleNames[i]);
                         // Corrected call with only two arguments
