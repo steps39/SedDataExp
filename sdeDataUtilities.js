@@ -559,7 +559,8 @@ function pcbPostProcess(newMeas,dateSampled) {
         "2,3',4,4',5-Pentachlorobiphenyl", "2,2',4,5,5'-Pentachlorobiphenyl"];
 //console.log(mmeas);
     for (const chemical in mmeas.chemicals) {
-        for (const sample in mmeas.chemicals[chemical].samples) {
+//        for (const sample in mmeas.chemicals[chemical].samples) {
+        for (const sample in sampleInfo[dateSampled].position) {
             //console.log(chemical,sample);
             if (!sums[sample]) {
                 sums[sample] = {

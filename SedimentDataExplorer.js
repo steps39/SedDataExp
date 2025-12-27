@@ -652,10 +652,8 @@ function postLoadSnapShot() {
     }
     
     function importShapes() {
-        urls = {};
+        let urls = [];
         if (firstTime) {
-            firstTime = false;
-            files = {};
             // Get the current URL
             const currentURL = window.location.href;
             
@@ -664,16 +662,17 @@ function postLoadSnapShot() {
 
             // Get the value of the 'locations' parameter
             const shapesParam = suppliedParams.get('shapes');
-            if (!shapesParam) {
-                return;
-            } else {
+            if (shapesParam) {
                     urls = shapesParam.split(',').map(url => url.trim()); // Split comma-separated URLs
             }
         } else {
             const fileInput = document.getElementById('fileShapes');
             const urlInput = document.getElementById('urlShapes');
             const files = fileInput.files; // Files is now a FileList object containing multiple files
-            urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+            const urlVal = urlInput.value.trim();
+            if (urlVal) {
+                urls = urlVal.split(',').map(url => url.trim()); // Split comma-separated URLs
+            }
 
             if (files.length === 0 && urls.length === 0) {
                 alert('Please select files or enter URLs.');
@@ -681,14 +680,19 @@ function postLoadSnapShot() {
             }
             // Process files
             for (let i = 0; i < files.length; i++) {
-                filename = files[i].name;
+                const filename = files[i].name;
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    const data = new Uint8Array(e.target.result);
-                    processExcelLocations(data,filename);
+                    const content = e.target.result;
+                    const blob = new Blob([content], {type: 'application/vnd.google-earth.kml+xml'});
+                    const url = URL.createObjectURL(blob);
+                    kmlLayers[filename] = url;
                 };
-                reader.readAsArrayBuffer(files[i]);
+                reader.readAsText(files[i]);
             }
+            // Clear the input field after reading locations
+            fileInput.value = '';
+            urlInput.value = '';
         }
         // Process URLs only if URLs are supplied
         if (urls.length > 0) {
@@ -714,9 +718,6 @@ console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
                     });*/
                 });
         }
-        // Clear the input field after reading locations
-        fileInput.value = '';
-        urlInput.value = '';
     }
    
     function processExcelLocations(data,url) {
@@ -786,6 +787,7 @@ function toggleSidebar() {
 function importData() {
     var urls = {};
     if (firstTime) {
+        importShapes();
         importLocations();
         firstTime = false;
         files = {};
@@ -956,7 +958,7 @@ function importData() {
 //console.log('processexceldata again');
                         })
                         .catch(error => {
-                            console.error('Error fetching the file:', error);
+                            console.error('Error fetching the file ',url,':', error);
                         })
                 );
             });

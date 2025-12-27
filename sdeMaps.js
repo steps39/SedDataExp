@@ -339,7 +339,9 @@ function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupN
                     let ices7 = {};
                     let all = {};
                     const pcbSums = sheet.congenerTest;
+console.log('PCB samples with prefix:',datasetName, pcbSums);
                     for(const sample in pcbSums) {
+console.log('datasetName:', datasetName, 'sample:', sample, 'ICES7:', pcbSums[sample].ICES7, 'All:', pcbSums[sample].All);
                         ices7[`${datasetName}: ${sample}`] = pcbSums[sample].ICES7;
                         all[`${datasetName}: ${sample}`] = pcbSums[sample].All;
                     }
