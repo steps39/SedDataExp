@@ -7,11 +7,15 @@ standards =
         "multiples": {
             "PAH data": {
                 "levels": [0.1, null],
-                "definition": "Total PAHs (Sum of 25)",
+//                "definition": "Total PAHs (Sum of 25)",
+            },
+            "Organotins data": {
+                "levels": [0.1, 1.0],
+//                "definition": "Total PAHs (Sum of 25)",
             },
         },
         "chemicals": {
-            "Arsenic (As)": [30, 100],
+            "Arsenic (As)": [20, 100],
             "Cadmium (Cd)": [0.4, 5],
             "Chromium (Cr)": [40, 400],
             "Copper (Cu)": [40, 400],
@@ -22,6 +26,7 @@ standards =
             "Fluoranthene": [0.6, 5.1],
             "All PAHs": [0.1, null],
             "All Organotins": [0.1, 1],
+            "All PCBs": [0.02, 0.2],
             "ICES7 PCBs": {
                 "levels": [0.01, null],
                 "definition": "ICES7: Sum of 7 PCBs",
@@ -48,20 +53,6 @@ standards =
             "Total Trace metal data": {
                 "definition": "Total Trace Metals (Sum of 8)",
             },
-            "LMW PAH Sum": {
-                "levels": [0.552, 3.160],
-                "levelNames": ["Effect Range Low", "Effect Range Median"],
-                "levelAbbrev": ["ERL", "ERM"],
-                "definition": "Gorham-Test Protocol: LMW PAHs (Sum of 7)",
-                "contains": ["Acenapthene", "Acenapthylene", "Anthracene", "C1-Napthalenes",  "Fluorene","Napthalene", "Phenanthrene"]
-            },
-            "HMW PAH Sum": {
-                "levels": [1.700, 9.600],
-                "levelNames": ["Effect Range Low", "Effect Range Median"],
-                "levelAbbrev": ["ERL", "ERM"],
-                "definition": "Gorham-Test Protocol: HMW PAHs (Sum of 6)",
-                "contains": ["Benz[a]anthracene", "Benzo[a]pyrene", "Chrysene", "Dibenz[a,h]anthracene", "Fluoranthene", "Pyrene"]
-            }
         }
     },
     "Candian Quality Guidelines": {
@@ -113,8 +104,24 @@ standards =
             }
         }
     },
-
 }
+
+
+standards["Enhanced Cefas Action Levels"] = structuredClone(standards["Cefas Action Levels"]);
+standards["Enhanced Cefas Action Levels"].chemicals["LMW PAH Sum"] = {
+                "levels": [0.552, 3.160],
+                "levelNames": ["Effect Range Low", "Effect Range Median"],
+                "levelAbbrev": ["ERL", "ERM"],
+                "definition": "Gorham-Test Protocol: LMW PAHs (Sum of 7)",
+                "contains": ["Acenapthene", "Acenapthylene", "Anthracene", "C1-Napthalenes",  "Fluorene","Napthalene", "Phenanthrene"]
+            };
+standards["Enhanced Cefas Action Levels"].chemicals["HMW PAH Sum"] = {
+                "levels": [1.700, 9.600],
+                "levelNames": ["Effect Range Low", "Effect Range Median"],
+                "levelAbbrev": ["ERL", "ERM"],
+                "definition": "Gorham-Test Protocol: HMW PAHs (Sum of 6)",
+                "contains": ["Benz[a]anthracene", "Benzo[a]pyrene", "Chrysene", "Dibenz[a,h]anthracene", "Fluoranthene", "Pyrene"]
+            };
 
 function completeStandards() {
     for (const standardName in standards) {

@@ -427,6 +427,7 @@ function openSampleSelection(sampleMeasurements) {
 
         sampleCheckboxes.appendChild(checkboxContainer);
     });
+    populateAreaFilter();
 }
 
 function flipSampleSelections(selection) {
@@ -871,3 +872,174 @@ function clearSelections() {
     updateChart();
 }
 
+function populateAreaFilter() {
+    const areaSelect = document.getElementById('areaSelect');
+
+    if (!areaSelect) return;
+
+    // Clear existing options except the first "Select an Area"
+    areaSelect.innerHTML = '<option value="">-- Select an Area --</option>';    
+
+    // Check if we have shapes loaded (allShapeLayers is global from sdeMaps.js)
+    if (typeof allShapeLayers === 'undefined' || allShapeLayers.length === 0) {
+        const option = document.createElement('option');
+        option.text = "No shapes loaded";
+        option.disabled = true;
+        areaSelect.appendChild(option);
+        return;
+    }
+
+    allShapeLayers.forEach((layer, index) => {
+        // 1. Extract Name
+        // We try standard properties, then the tooltip if properties are missing
+        let name = layer.options?.name || layer.name || layer.feature?.properties?.name || "Unnamed Area";
+        
+        // If name is still generic, try to parse it from the binded Tooltip content
+        if ((name === "Unnamed Area" || name === "") && layer.getTooltip()) {
+            const tooltipContent = layer.getTooltip().getContent();
+            // Regex to strip HTML tags like <b>Name</b>
+            const div = document.createElement("div");
+            div.innerHTML = tooltipContent;
+            name = div.innerText.split('\n')[0] || "Unnamed Area";
+        }
+
+        // 2. Extract Area
+        // We recalculate it here to be safe, ensuring consistency with sdeMaps.js
+        let areaHa = 0;
+        const latLngs = layer.getLatLngs();
+        if (Array.isArray(latLngs) && latLngs.length > 0) {
+             // Handle simple polygons vs polygons with holes/multipolygons
+             if (Array.isArray(latLngs[0]) && !Array.isArray(latLngs[0][0]) && typeof latLngs[0][0] !== 'number') {
+                // Polygon with holes or simple nested array
+                let areaM2 = L.GeometryUtil.geodesicArea(latLngs[0]);
+                for (let i = 1; i < latLngs.length; i++) {
+                    areaM2 -= L.GeometryUtil.geodesicArea(latLngs[i]);
+                }
+                areaHa = areaM2 / 10000;
+            } else {
+                // Simple Polygon
+                areaHa = L.GeometryUtil.geodesicArea(latLngs) / 10000;
+            }
+        }
+
+        // 3. Create Option
+        const option = document.createElement('option');
+        option.value = index; // We use the index in allShapeLayers array as the value
+        option.text = `${name} (${areaHa.toFixed(2)} ha)`;
+        areaSelect.appendChild(option);
+    });
+}
+
+/**
+ * Triggered when the user selects an area from the dropdown.
+ * Unchecks all samples, then checks only those falling inside the selected polygon.
+ */
+function applyAreaFilter() {
+    const areaSelect = document.getElementById('areaSelect');
+    const selectedIndex = areaSelect.value;
+
+    // If no area selected, do nothing (or reset? usually better to do nothing so other filters work)
+    if (selectedIndex === "") return;
+
+    const selectedLayer = allShapeLayers[parseInt(selectedIndex)];
+    if (!selectedLayer) return;
+
+    // 1. Deselect all checkboxes first
+    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+
+    // 2. Iterate all samples and check if inside polygon
+    // Note: selectedSampleInfo is global from the main app
+    for (const dateSampled in selectedSampleInfo) {
+        for (const sample in selectedSampleInfo[dateSampled].position) {
+            
+            // Get Sample Coordinates
+            const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
+            const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
+
+            if (isNaN(lat) || isNaN(lon)) continue;
+
+            // Check if point is inside the selected layer
+            if (isPointInLayer(lat, lon, selectedLayer)) {
+                // Check the specific checkbox
+                // ID format from openSampleSelection: `sample_${dateSampled + ': ' + sample}`
+                const checkBoxId = `sample_${dateSampled}: ${sample}`;
+                const checkbox = document.getElementById(checkBoxId);
+                if (checkbox) checkbox.checked = true;
+            }
+        }
+    }
+}
+
+/**
+ * Helper: Checks if a Lat/Lon is inside a Leaflet Polygon Layer.
+ * Handles Polygons, Polygons with holes, and MultiPolygons.
+ */
+function isPointInLayer(lat, lon, layer) {
+    const point = [lat, lon];
+    const latlngs = layer.getLatLngs();
+
+    // Leaflet stores LatLngs differently depending on shape complexity:
+    // 1. Simple Polygon: [ [Lat,Lon], [Lat,Lon] ... ]  (Wait, Leaflet uses objects usually, but we need points)
+    //    Actually Leaflet .getLatLngs() returns [ L.LatLng, L.LatLng... ] for simple,
+    //    or [ [L.LatLng...], [L.LatLng...] ] for holes/multipolygons.
+    
+    // Helper to run Ray Casting on a ring of L.LatLng objects
+    function isInsideRing(pt, ring) {
+        let x = pt[0], y = pt[1];
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            let xi = ring[i].lat, yi = ring[i].lng;
+            let xj = ring[j].lat, yj = ring[j].lng;
+            
+            let intersect = ((yi > y) != (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // Determine structure depth
+    // Case A: Simple Polygon (Level 1 array of objects) - Leaflet often wraps this in an array too [[...]]
+    // Case B: Polygon with holes (Level 2 array: [OuterRing, Hole1, Hole2])
+    // Case C: MultiPolygon (Level 3 array)
+
+    // We normalize to handle the specific Leaflet structure
+    let rings = latlngs;
+    
+    // If it's a flat array of LatLng objects (rare in imported KMLs, usually wrapped), wrap it
+    if (latlngs[0] && ('lat' in latlngs[0])) {
+        rings = [latlngs];
+    }
+
+    // Check Outer Ring (Index 0)
+    // For MultiPolygons, we might need deeper iteration, but usually KML import results in
+    // distinct Polygon layers. Assuming Simple Polygon or Polygon w/ Holes here.
+    
+    // If MultiPolygon (array of arrays of arrays), we need to check if it's in ANY of them
+    if (Array.isArray(rings[0]) && Array.isArray(rings[0][0])) {
+         // It is likely a MultiPolygon or just deeply nested. 
+         // We iterate all top-level shapes.
+         for (let i = 0; i < rings.length; i++) {
+             // For each polygon in the multipolygon, check inside outer ring (index 0)
+             // ignoring holes for simplicity or recurse if strictness needed
+             if (isInsideRing(point, rings[i][0] || rings[i])) return true;
+         }
+         return false;
+    }
+    
+    // Standard Polygon (Index 0 is outer boundary, 1+ are holes)
+    const insideOuter = isInsideRing(point, rings[0]);
+    if (!insideOuter) return false;
+
+    // If inside outer, check holes (if any exist)
+    if (rings.length > 1) {
+        for (let i = 1; i < rings.length; i++) {
+            if (isInsideRing(point, rings[i])) {
+                return false; // It's in a hole, so it's outside
+            }
+        }
+    }
+
+    return true;
+}

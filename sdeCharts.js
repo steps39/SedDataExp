@@ -5,6 +5,9 @@
 chartNameSep = '   '// Three spaces to separate dataset name from sample name for point labels
 
 // Mapping of sorting options to required data sheets
+window.areaStats = [];
+let summaryChartInstanceNoTotal = -1;
+let summaryChartInstanceNoUnique = -1;
 
 function updateSortingOptionsState() {
     const primarySelect = document.getElementById('primary-sorting-select');
@@ -130,6 +133,7 @@ function updateChart(){
         createRadarPlot(selectedMeas, radarPlot);
     }
 //console.log('lastInstanceNo ',lastInstanceNo);			
+    lastInstanceNo = displaySummaryChart(lastInstanceNo);
 //console.log(selectedMeas);
 console.log('about to display sample map');
     sampleMap(selectedMeas);
@@ -554,13 +558,38 @@ function displayCharts(sheetName, instanceNo) {
                 const max = stats ? (stats.valueMax*stats.rescale).toFixed(2) : 'N/A';
                 const unit = stats ? stats.unit : '';
                 
+                let standardsText = '';
+                if (typeof colorMode !== 'undefined' && colorMode === 'standards' && typeof standards !== 'undefined' && typeof chosenStandard !== 'undefined') {
+                    let levels = null;
+                    if (standards[chosenStandard]?.chemicals?.[contaminantName]) {
+                        if(!standards[chosenStandard].chemicals[contaminantName]?.definition) {
+                            levels = standards[chosenStandard].chemicals[contaminantName];
+                        } else {
+                            if(standards[chosenStandard].chemicals[contaminantName]?.levels){
+                                levels = standards[chosenStandard].chemicals[contaminantName].levels;
+                            }
+                        }
+                    }
+                    if (levels) {
+                        let displayLevels = [...levels];
+                        if (typeof factorUnit === 'function' && typeof extractUnit === 'function' && stats) {
+                             const unitAlign = factorUnit(stats.unit, extractUnit(standards[chosenStandard].unit));
+                             if (unitAlign !== 1) {
+                                displayLevels = displayLevels.map(l => l !== null ? l / unitAlign : null);
+                             }
+                        }
+                        if (displayLevels[0] !== null && displayLevels[0] !== undefined) standardsText += ` AL1: ${displayLevels[0].toFixed(2)}`;
+                        if (displayLevels[1] !== null && displayLevels[1] !== undefined) standardsText += ` AL2: ${displayLevels[1].toFixed(2)}`;
+                    }
+                }
+                
                 const titleElement = document.createElement('h4');
                 titleElement.style.margin = '0';
                 titleElement.style.padding = '5px';
                 titleElement.style.backgroundColor = '#f0f0f0';
                 titleElement.style.cursor = 'pointer';
                 titleElement.style.fontSize = '14px';
-                titleElement.innerHTML = `${contaminantName}<br>(${min} - ${max} ${unit})`;
+                titleElement.innerHTML = `${contaminantName}<br><span style="font-size: smaller;">(${min} - ${max} ${unit})${standardsText}</span>`;
                 mapWrapper.appendChild(titleElement);
                 
                 const mapElement = document.createElement('div');
@@ -2837,3 +2866,218 @@ console.log('clickedSampleIdentifier', clickedSampleIdentifier);
 
     console.log(`PCA chart for ${sheetName} (Instance ${instanceNo}) rendered successfully with color coding.`);
 }
+
+function displaySummaryChart(instanceNo) {
+    instanceNo += 1;
+    summaryChartInstanceNoTotal = instanceNo;
+    
+    const useTabs = document.getElementById('useTabs').checked;
+    const mainChartContainer = document.getElementById('chartContainer');
+    let targetContainer;
+
+    if (useTabs) {
+        let tabButtonsContainer = document.getElementById('chart-tab-buttons');
+        if (!tabButtonsContainer) {
+            tabButtonsContainer = document.createElement('div');
+            tabButtonsContainer.id = 'chart-tab-buttons';
+            tabButtonsContainer.className = 'tab-buttons';
+            mainChartContainer.appendChild(tabButtonsContainer);
+        }
+
+        const tabContentId = 'tab-summary';
+        
+        const tabButton = document.createElement('button');
+        tabButton.className = 'tab-button';
+        tabButton.textContent = 'Summary';
+        tabButton.onclick = (event) => openTab(event, tabContentId);
+        tabButtonsContainer.appendChild(tabButton);
+
+        const tabContentPanel = document.createElement('div');
+        tabContentPanel.id = tabContentId;
+        tabContentPanel.className = 'tab-content';
+        mainChartContainer.appendChild(tabContentPanel);
+        
+        targetContainer = tabContentPanel;
+    } else {
+        targetContainer = document.createElement('div');
+        targetContainer.className = 'chart-sheet-container';
+        targetContainer.innerHTML = `<h2 style="padding-top: 2rem; border-bottom: 1px solid #ccc;">Summary</h2>`;
+        mainChartContainer.appendChild(targetContainer);
+    }
+
+    // Chart 1: Total Exceedances
+    const canvasTotal = document.createElement('canvas');
+    canvasTotal.id = 'chart' + instanceNo;
+    canvasTotal.style.marginBottom = '30px';
+    canvasTotal.style.borderBottom = '1px solid #eee';
+    canvasTotal.style.paddingBottom = '20px';
+    targetContainer.appendChild(canvasTotal);
+
+    // Chart 2: Unique Exceedances
+    instanceNo += 1;
+    summaryChartInstanceNoUnique = instanceNo;
+    const canvasUnique = document.createElement('canvas');
+    canvasUnique.id = 'chart' + instanceNo;
+    targetContainer.appendChild(canvasUnique);
+    
+    updateSummaryChart();
+    return instanceNo;
+}
+
+function updateSummaryChart() {
+    if (!window.areaStats || window.areaStats.length === 0) return;
+
+    // --- Chart 1: Total Exceedances ---
+    if (summaryChartInstanceNoTotal !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoTotal);
+        if (ctx) {
+            if (chartInstance[summaryChartInstanceNoTotal]) {
+                chartInstance[summaryChartInstanceNoTotal].destroy();
+            }
+
+    const labels = window.areaStats.map(item => item.name);
+    const betweenData = window.areaStats.map(item => item.stats.between);
+    const aboveData = window.areaStats.map(item => item.stats.above);
+    
+    const betweenChemicals = window.areaStats.map(item => 
+        item.stats.betweenChemicals ? Array.from(item.stats.betweenChemicals).sort().join(', ') : ''
+    );
+    const aboveChemicals = window.areaStats.map(item => 
+        item.stats.aboveChemicals ? Array.from(item.stats.aboveChemicals).sort().join(', ') : ''
+    );
+    
+    const abbrevs = standards[chosenStandard].levelAbbrev || standards[chosenStandard].levels?.abbrev || ["Level 1", "Level 2"];
+    const al1 = abbrevs[0];
+    const al2 = abbrevs[1] || "Max";
+
+    let datasets = [];
+    
+    // Red: Between AL1 and AL2 (or > AL1 if no AL2)
+    datasets.push({
+        label: `${al1} > = < ${al2}`,
+        data: betweenData,
+        backgroundColor: '#FF0000', // Red
+        chemicalList: betweenChemicals
+    });
+
+    // Black: Above AL2
+    if (aboveData.some(val => val > 0)) {
+        datasets.push({
+            label: `> ${al2}`,
+            data: aboveData,
+            backgroundColor: '#000000', // Black
+            chemicalList: aboveChemicals
+        });
+    }
+
+            chartInstance[summaryChartInstanceNoTotal] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Total Chemical Exceedances by Area'
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const chemicals = context.dataset.chemicalList[context.dataIndex];
+                            return chemicals ? 'Chemicals: ' + chemicals : '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, title: { display: true, text: 'Count of Exceedances' } }
+            }
+        }
+    });
+        }
+    }
+
+    // --- Chart 2: Unique Exceedances ---
+    if (summaryChartInstanceNoUnique !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoUnique);
+        if (ctx) {
+            if (chartInstance[summaryChartInstanceNoUnique]) {
+                chartInstance[summaryChartInstanceNoUnique].destroy();
+            }
+
+            const labels = window.areaStats.map(item => item.name);
+            const uniqueBetweenData = [];
+            const uniqueAboveData = [];
+            const uniqueBetweenChemicals = [];
+            const uniqueAboveChemicals = [];
+
+            window.areaStats.forEach(item => {
+                const aboveSet = item.stats.aboveChemicals || new Set();
+                const betweenSet = item.stats.betweenChemicals || new Set();
+                
+                // Unique Above: Just the set of chemicals that exceeded AL2
+                uniqueAboveData.push(aboveSet.size);
+                uniqueAboveChemicals.push(Array.from(aboveSet).sort().join(', '));
+                
+                // Unique Between: Chemicals in Between set MINUS those in Above set
+                // (If a chemical exceeded AL2, it's counted in Above, so don't count it in Between even if it exceeded AL1 elsewhere in the area)
+                const strictBetween = Array.from(betweenSet).filter(x => !aboveSet.has(x));
+                uniqueBetweenData.push(strictBetween.length);
+                uniqueBetweenChemicals.push(strictBetween.sort().join(', '));
+            });
+
+            const abbrevs = standards[chosenStandard].levelAbbrev || standards[chosenStandard].levels?.abbrev || ["Level 1", "Level 2"];
+            const al1 = abbrevs[0];
+            const al2 = abbrevs[1] || "Max";
+
+            let datasets = [];
+            datasets.push({
+                label: `${al1} > = < ${al2}`,
+                data: uniqueBetweenData,
+                backgroundColor: '#FF0000',
+                chemicalList: uniqueBetweenChemicals
+            });
+
+            if (uniqueAboveData.some(val => val > 0)) {
+                datasets.push({
+                    label: `> ${al2}`,
+                    data: uniqueAboveData,
+                    backgroundColor: '#000000',
+                    chemicalList: uniqueAboveChemicals
+                });
+            }
+
+            chartInstance[summaryChartInstanceNoUnique] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Unique Chemical Exceedances by Area'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const chemicals = context.dataset.chemicalList[context.dataIndex];
+                                    return chemicals ? 'Chemicals: ' + chemicals : '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Count of Unique Chemicals' } }
+                    }
+                }
+            });
+        }
+    }
+}
+window.updateSummaryChart = updateSummaryChart;

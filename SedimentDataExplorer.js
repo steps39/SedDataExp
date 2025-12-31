@@ -784,9 +784,170 @@ function toggleSidebar() {
     toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
 }
 
+function generateURL() {
+    const params = new URLSearchParams();
+
+    // 1. Data URLs
+    const dataUrls = new Set();
+    if (typeof sampleInfo !== 'undefined') {
+        Object.values(sampleInfo).forEach(info => {
+            if (info.fileURL && /^https?:\/\//i.test(info.fileURL)) {
+                dataUrls.add(info.fileURL);
+            }
+        });
+    }
+    if (dataUrls.size > 0) {
+        params.set('urls', Array.from(dataUrls).join(','));
+    }
+
+    // 2. Shapes
+    const shapeUrls = new Set();
+    if (typeof kmlLayers !== 'undefined') {
+        Object.values(kmlLayers).forEach(url => {
+            if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+                shapeUrls.add(url);
+            }
+        });
+    }
+    if (shapeUrls.size > 0) {
+        params.set('shapes', Array.from(shapeUrls).join(','));
+    }
+
+    // 3. Selected Charts
+    const selCharts = [];
+    if (typeof dataSheetNamesCheckboxes !== 'undefined') {
+        dataSheetNamesCheckboxes.forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox && checkbox.checked) {
+                selCharts.push(id);
+            }
+        });
+    }
+    if (selCharts.length > 0) {
+        params.set('selcharts', selCharts.join(','));
+    }
+
+    // 4. Sub Charts
+    const subCharts = [];
+    if (typeof subChartNames !== 'undefined') {
+        subChartNames.forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox && checkbox.checked) {
+                subCharts.push(id);
+            }
+        });
+    }
+    if (subCharts.length > 0) {
+        params.set('subcharts', subCharts.join(','));
+    }
+
+    // 5. Sort
+    if (typeof xAxisSort !== 'undefined' && xAxisSort !== 'normal') {
+        params.set('sort', xAxisSort);
+    }
+
+    // 6. Look
+    if (typeof lookSetting !== 'undefined' && lookSetting !== 'colour') {
+        params.set('look', lookSetting);
+    }
+
+    // 7. Dredge Data
+    if (typeof CEFASfilename !== 'undefined' && CEFASfilename && /^https?:\/\//i.test(CEFASfilename)) {
+        params.set('durl', CEFASfilename);
+        
+        const lat = document.getElementById('centreLatitude')?.value;
+        if (lat) params.set('dlat', lat);
+        
+        const lon = document.getElementById('centreLongitude')?.value;
+        if (lon) params.set('dlon', lon);
+        
+        const rad = document.getElementById('radius')?.value;
+        if (rad) params.set('drad', rad);
+        
+        const start = document.getElementById('startDate')?.value;
+        if (start) params.set('dstart', start);
+        
+        const finish = document.getElementById('finishDate')?.value;
+        if (finish) params.set('dfinish', finish);
+        
+        const lics = document.getElementById('mlApplications')?.value;
+        if (lics) params.set('dlics', lics);
+    }
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    const newUrl = baseUrl + '?' + params.toString();
+
+    navigator.clipboard.writeText(newUrl).then(() => {
+        alert('URL copied to clipboard:\n' + newUrl);
+    }, (err) => {
+        console.error('Could not copy text: ', err);
+        prompt("Copy this URL:", newUrl);
+    });
+}
+
+function createControlButtons() {
+    const sidebar = document.getElementById('controls-sidebar');
+    if (sidebar) {
+        const button = document.createElement('button');
+        button.textContent = 'Copy Settings URL';
+        button.style.marginTop = '10px';
+        button.style.marginBottom = '10px';
+        button.style.width = '95%';
+        button.style.padding = '5px';
+        button.style.cursor = 'pointer';
+        button.onclick = generateURL;
+        sidebar.insertBefore(button, sidebar.firstChild);
+
+        const buttonFD = document.createElement('button');
+        buttonFD.textContent = 'Toggle File Display';
+        buttonFD.style.marginTop = '10px';
+        buttonFD.style.marginBottom = '10px';
+        buttonFD.style.width = '95%';
+        buttonFD.style.padding = '5px';
+        buttonFD.style.cursor = 'pointer';
+        buttonFD.onclick = toggleFileDisplay;
+        sidebar.insertBefore(buttonFD, sidebar.firstChild);
+
+        const buttonSS = document.createElement('button');
+        buttonSS.id = 'toggleStaticShapesBtn';
+        buttonSS.textContent = 'Static Maps Shapes: Off';
+        buttonSS.style.marginTop = '10px';
+        buttonSS.style.marginBottom = '10px';
+        buttonSS.style.width = '95%';
+        buttonSS.style.padding = '5px';
+        buttonSS.style.cursor = 'pointer';
+        buttonSS.onclick = function() {
+            if (window.toggleStaticShapes) window.toggleStaticShapes();
+        };
+        sidebar.insertBefore(buttonSS, sidebar.firstChild);
+
+/*        // Create the Area Tooltips button
+        const buttonArea = document.createElement('button');
+        buttonArea.id = 'toggleAreaTooltipsBtn';
+        buttonArea.textContent = 'Show All Area Names';
+        buttonArea.style.marginTop = '10px';
+        buttonArea.style.marginBottom = '10px';
+        buttonArea.style.width = '95%';
+        buttonArea.style.padding = '5px';
+        buttonArea.style.cursor = 'pointer';
+//        buttonArea.onclick = toggleAllAreaTooltips;
+
+        // Try to place it next to the "Show All Sample Names" button if it exists
+        const sampleBtn = document.getElementById('toggleTooltipsBtn');
+        if (sampleBtn && sampleBtn.parentNode) {
+            // Insert after the sample button
+            sampleBtn.parentNode.insertBefore(buttonArea, sampleBtn.nextSibling);
+        } else {
+            // Fallback to inserting at the top of the sidebar
+            sidebar.insertBefore(buttonArea, sidebar.firstChild);
+        }*/
+    }
+}
+
 function importData() {
     var urls = {};
     if (firstTime) {
+        createControlButtons();
         importShapes();
         importLocations();
         firstTime = false;
@@ -858,7 +1019,9 @@ function importData() {
 //            xAxisSortRadio = document.querySelector('input[name="sorting"][xAxisSort]');
 //            xAxisSortRadio = document.querySelector('input[name="sorting"]');
             xAxisSortRadio = document.getElementById(xAxisSort);
-            xAxisSortRadio.checked = true;
+            if (xAxisSortRadio) {
+                xAxisSortRadio.checked = true;
+            }
 /*            switch (sortParam) {
                 case 'normal': xAxisSort = 'normal'; break
                 case 'latitude': xAxisSort = 'latitude'; break
@@ -870,7 +1033,7 @@ function importData() {
         }
         const lookParam = suppliedParams.get('look');
 //console.log(durlParam);
-        if (sortParam) {
+        if (lookParam) {
             lookSetting = lookParam;
             lookRadio = document.getElementById(look);
             lookRadio.checked = true;

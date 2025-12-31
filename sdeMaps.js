@@ -18,6 +18,12 @@ let depthSortedSampleIds = [];
 let minLat = null, maxLat = null, minLon = null, maxLon = null;
 let noLocations = 0, latSum = 0, lonSum = 0;
 const hoverStyle = { radius: 10, weight: 3, opacity: 1, fillOpacity: 1 };
+let allShapeLayers = [];
+let areaTooltipsVisible = false;
+let colorMode = 'scale';
+let upperLevelMode = '10x';
+let shapesColoredByData = false;
+let includeShapesOnStaticMaps = false;
 
 const highlightStyle = {
     radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
@@ -33,7 +39,10 @@ const highlightStyle = {
             const depth = marker.options._depth;
             let color = colors[0];
             for (let i = breaks.length; i > 0; i--) {
-                if (value > breaks[i-1]) { color = colors[i]; break; }
+                if (value > breaks[i-1]) { 
+                    color = colors[i] || colors[colors.length - 1]; 
+                    break; 
+                }
             }
             const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel);
             marker.setStyle({ fillColor: color, radius });
@@ -44,7 +53,7 @@ const highlightStyle = {
         let breaks = [];
         let colors = [];
         let levels = null;
-        if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
+        if (colorMode === 'standards' && standards[chosenStandard]?.chemicals?.[chemicalName]) {
             if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
                 levels = standards[chosenStandard].chemicals[chemicalName];
             } else {
@@ -54,16 +63,30 @@ const highlightStyle = {
             }
         }
         if (!levels) {
-                breaks = [min, min + (max - min) * 0.33, min + (max - min) * 0.66, max];
+                breaks = [
+                    min + (max - min) * 0.25,
+                    min + (max - min) * 0.50,
+                    min + (max - min) * 0.75
+                ];
                 colors = ["#1a9850", "#fee08b", "#fc8d59", "#d73027"];
         } else {
-            if (levels[1] === null) levels[1] = levels[0] * 10;
+            levels = [...levels];
+            if (levels[1] === null) {
+                if (upperLevelMode === '10x') {
+                    levels[1] = levels[0] * 10;
+                    colors = ["#00FF00", "#FF0000", "#000000"];
+                } else {
+                    levels = [levels[0]];
+                    colors = ["#00FF00", "#FF0000"];
+                }
+            } else {
+                colors = ["#00FF00", "#FF0000", "#000000"];
+            }
             const unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
             if (unitAlign !== 1) {
                 levels = levels.map(l => l / unitAlign);
             }
             breaks = levels;
-            colors = ["#1a9850", "#fee08b", "#d73027"];
         }
         return { breaks, colors };
     }
@@ -590,6 +613,7 @@ console.log('datasetName:', datasetName, 'sample:', sample, 'ICES7:', pcbSums[sa
             m.options._chemValue = rescaledValue.toFixed(2);
             m.options._chemUnit = unit || "";
             m.options._depth = depth;
+            m.options.customId = fullSampleName;
             contaminantLayers[chemicalName].addLayer(m);
             contaminantMarkerData[chemicalName].push(m);
         });
@@ -803,7 +827,17 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
 
                 let layerToAdd;
                 if (visualizationType === 'points' && contaminantLayers[contaminantName]) {
-                    layerToAdd = contaminantLayers[contaminantName];
+                    layerToAdd = L.layerGroup();
+                    contaminantLayers[contaminantName].eachLayer(layer => {
+                        if (layer instanceof L.CircleMarker) {
+                            const options = { ...layer.options };
+                            if (options.radius) {
+                                options.radius = options.radius * 0.3;
+                            }
+                            const clonedLayer = L.circleMarker(layer.getLatLng(), options);
+                            layerToAdd.addLayer(clonedLayer);
+                        }
+                    });
                 } else if (visualizationType === 'heatmap' && contaminantHeatmaps[contaminantName]) {
                     layerToAdd = contaminantHeatmaps[contaminantName];
                 }
@@ -854,6 +888,23 @@ function createStaticContaminantMap(containerId, contaminantName, visualizationT
                 } else {
                     console.warn(`Contaminant layer '${contaminantName}' of type '${visualizationType}' not found.`);
                 }
+
+                // Add shapes if enabled
+                if (includeShapesOnStaticMaps && allShapeLayers.length > 0) {
+                    allShapeLayers.forEach((originalLayer, index) => {
+                        let clonedLayer;
+                        if (originalLayer instanceof L.Polygon) {
+                            clonedLayer = L.polygon(originalLayer.getLatLngs());
+                        } else if (originalLayer instanceof L.Polyline) {
+                            clonedLayer = L.polyline(originalLayer.getLatLngs());
+                        }
+                        if (clonedLayer) {
+                            const style = getShapeStyleForContaminant(originalLayer, contaminantName, index);
+                            clonedLayer.setStyle(style);
+                            clonedLayer.addTo(staticMap);
+                        }
+                    });
+                }
             }
         });
     });
@@ -866,6 +917,7 @@ function sampleMap(meas) {
     if (map) map.remove();
     isHeatmapMode = false;
     activeContaminant = null;
+    allShapeLayers = [];
 
     const markerColors = ['#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF', '#FFC300', '#33FFA1', '#C70039', '#900C3F'];
     const datesSampled = Object.keys(selectedSampleInfo);
@@ -919,6 +971,16 @@ function sampleMap(meas) {
         zoom: 13,
         layers: [baseLayers.OpenStreetMap]
     });
+
+    // Define a global variable for the control if you haven't already
+    let layerControl;
+
+    // Initialize the control only once
+    if (!layerControl) {
+        // (null represents base layers, which we aren't changing here)
+        layerControl = L.control.layers(null, {}, { collapsed: true }).addTo(map);
+    }
+
 
     // --- ADD START: Measurement Tools ---
     
@@ -1025,14 +1087,152 @@ function sampleMap(meas) {
     let shapeOverlay = {};
     const kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
     let colorNo = 0;
-    for (const filename in kmlLayers) {
+
+for (const filename in kmlLayers) {
+        const url = kmlLayers[filename];
+        const kmlLayer = new L.KML(url, { async: true });
+
+        // Add the layer to the "Legend" Control
+        // 'filename' will be the text shown in the list (e.g., "MLA_2025_00263-LOCATIONS.kml")
+        layerControl.addOverlay(kmlLayer, filename);
+
+        kmlLayer.on("loaded", function (e) {
+            
+            // Helper: Extract ONLY the name from the popup HTML structure
+            function extractNameFromPopup(layer) {
+                if (layer.getPopup && layer.getPopup()) {
+                    const content = layer.getPopup().getContent();
+                    
+                    if (typeof content === 'string') {
+                        const tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = content;
+                        
+                        // Strategy 1: Look for a Header tag
+                        const header = tempDiv.querySelector('h2, h3, h4, h5, h6');
+                        if (header) return header.innerText.trim();
+                        
+                        // Strategy 2: Look for a Bold tag
+                        const bold = tempDiv.querySelector('b, strong');
+                        if (bold) return bold.innerText.trim();
+
+                        // Strategy 3: Fallback (Text before new line)
+                        const cleanText = tempDiv.innerText || tempDiv.textContent;
+                        return cleanText.split(/[\n\r]/)[0].trim();
+                    }
+                }
+                return "";
+            }
+
+            function processLayerRecursive(layer, parentName) {
+                // 1. Try to find the name in standard locations
+                let currentName = layer.options?.name || layer.name || layer.feature?.properties?.name;
+                
+                // 2. If not found, extract from Popup
+                if (!currentName) {
+                    currentName = extractNameFromPopup(layer);
+                }
+
+                // 3. Inherit from Parent
+                if (!currentName) {
+                    currentName = parentName;
+                }
+                
+                // 4. Recursion
+                if (layer.eachLayer) {
+                    layer.eachLayer(child => processLayerRecursive(child, currentName));
+                }
+
+                // 5. Apply to Polygon
+                if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
+                    
+                    // --- Calculate Area ---
+                    let areaLabel = "";
+                    if (layer instanceof L.Polygon) {
+                        let area = 0;
+                        const latLngs = layer.getLatLngs();
+                        if (Array.isArray(latLngs) && latLngs.length > 0) {
+                             if (Array.isArray(latLngs[0]) && !Array.isArray(latLngs[0][0]) && typeof latLngs[0][0] !== 'number') {
+                                area = L.GeometryUtil.geodesicArea(latLngs[0]);
+                                for (let i = 1; i < latLngs.length; i++) {
+                                    area -= L.GeometryUtil.geodesicArea(latLngs[i]);
+                                }
+                            } else {
+                                area = L.GeometryUtil.geodesicArea(latLngs);
+                            }
+                        }
+                        const areaHa = area / 10000; 
+                        areaLabel = `Area: ${areaHa.toFixed(2)} ha`;
+                    }
+
+                    // --- Tooltip Construction ---
+                    let tooltipContent = "";
+                    if (currentName) {
+                        tooltipContent += `<b>${currentName}</b><br>`;
+                        layer.options.name = currentName;
+                    }
+                    tooltipContent += areaLabel;
+
+                    layer.bindTooltip(tooltipContent, { sticky: true });
+                    layer.options.baseTooltip = tooltipContent;
+                    allShapeLayers.push(layer);
+
+                    // --- Style Override ---
+                    layer.setStyle({
+                        color: kmlColors[colorNo], 
+                        weight: 2, 
+                        opacity: 0.5,
+                        fillColor: kmlColors[colorNo], 
+                        fillOpacity: 0.2
+                    });
+                }
+            }
+
+            processLayerRecursive(e.target, "");
+            colorNo = (colorNo + 1) % kmlColors.length;
+        });
+
+        shapeOverlay[filename] = kmlLayer;
+        kmlLayer.addTo(map);
+    }
+    
+/*    for (const filename in kmlLayers) {
         const url = kmlLayers[filename];
         const kmlLayer = new L.KML(url, { async: true });
         kmlLayer.on("loaded", function (e) {
             const mainLayer = Object.values(e.target._layers)[0];
+console.log('KML Layer', mainLayer);
             if (mainLayer && mainLayer._layers) {
                 Object.values(mainLayer._layers).forEach(layer => {
-                    if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
+                    if (layer instanceof L.Polygon) {
+                        let area = 0;
+                        const latLngs = layer.getLatLngs();
+                        if (Array.isArray(latLngs) && latLngs.length > 0) {
+                            if (Array.isArray(latLngs[0])) {
+                                area = L.GeometryUtil.geodesicArea(latLngs[0]);
+                                for (let i = 1; i < latLngs.length; i++) {
+                                    area -= L.GeometryUtil.geodesicArea(latLngs[i]);
+                                }
+                            } else {
+                                area = L.GeometryUtil.geodesicArea(latLngs);
+                            }
+                        }
+                        const areaHa = area / 10000;
+console.log('KML Layer',layer);
+                        const name = layer.options.name || layer.name || "";
+                        let tooltipContent = "";
+                        if (name !== "") {
+                            tooltipContent = `${name}<br>Area: ${areaHa.toFixed(2)} ha`;
+                        } else {
+                            tooltipContent = `Area: ${areaHa.toFixed(2)} ha`;
+                        }
+                        layer.bindTooltip(tooltipContent);
+                        allShapeLayers.push(layer);
+
+                        layer.setStyle({
+                            color: kmlColors[colorNo], weight: 2, opacity: 0.5,
+                            fillColor: kmlColors[colorNo], fillOpacity: 0.2
+                        });
+                    } else if (layer instanceof L.Polyline) {
                         layer.setStyle({
                             color: kmlColors[colorNo], weight: 2, opacity: 0.5,
                             fillColor: kmlColors[colorNo], fillOpacity: 0.2
@@ -1044,7 +1244,7 @@ function sampleMap(meas) {
         });
         shapeOverlay[filename] = kmlLayer;
         kmlLayer.addTo(map);
-    }
+    }*/
     
     if (noLocations > 0) {
         let seCorner = L.latLng(minLat, minLon);
@@ -1121,22 +1321,67 @@ fill="grey" fill-opacity="0.6" />
         }
         const unit = stats.unit ? ` ${stats.unit}` : "";
         const min = stats.valueMin*stats.rescale, max = stats.valueMax*stats.rescale;
-        const { colors } = getColorScale(min, max, chemicalName);
+        const { breaks, colors } = getColorScale(min, max, chemicalName);
         const toggleButton = `<button onclick="window.toggleVisualizationMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Switch to ${isHeatmapMode ? 'Points' : 'Heatmap'}</button>`;
+        const toggleColorButton = `<button onclick="window.toggleColorMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Color: ${colorMode === 'scale' ? 'Scale' : 'Standards'}</button>`;
+        let toggleUpperLevelButton = '';
+        if (colorMode === 'standards') {
+             toggleUpperLevelButton = `<button onclick="window.toggleUpperLevelMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Upper Limit: ${upperLevelMode === '10x' ? '10x Level 1' : 'None'}</button>`;
+        }
+        let toggleShapeColorButton = '';
+        if (allShapeLayers.length > 0) {
+             toggleShapeColorButton = `<button onclick="window.toggleShapeColorMode()" style="background: #007cba; color: white; border: none;padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 10px; width: 100%; font-size: 12px;">Shape Color: ${shapesColoredByData ? 'Data' : 'Default'}</button>`;
+        }
         const legendType = isHeatmapMode ? 'Heat Intensity' : 'Point Colours';
-        const legendContent = isHeatmapMode ? `
+        let legendContent = '';
+        if (isHeatmapMode) {
+            legendContent = `
 <div style="height: 20px; width: 100%; background: linear-gradient(to right, #1a9850, #fee08b, #fc8d59, #d73027); border: 1px solid #999; margin-bottom: 5px;"></div>
 <div style="display: flex; justify-content: space-between; font-size: 12px;">
 <span>Low</span>
 <span>High</span>
 </div>
-` : `
+`;
+        } else if (colorMode === 'standards') {
+            if (colors.length === 3) {
+            const al1 = breaks[0];
+            const al2 = breaks[1];
+            legendContent = `
+<div style="display: flex; align-items: center; margin-bottom: 4px;">
+<span style="background:${colors[0]}; width: 15px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #999;"></span>
+<span>Below ${al1.toFixed(2)} ${unit}</span>
+</div>
+<div style="display: flex; align-items: center; margin-bottom: 4px;">
+<span style="background:${colors[1]}; width: 15px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #999;"></span>
+<span>${al1.toFixed(2)} - ${al2.toFixed(2)} ${unit}</span>
+</div>
+<div style="display: flex; align-items: center;">
+<span style="background:${colors[2]}; width: 15px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #999;"></span>
+<span>Above ${al2.toFixed(2)} ${unit}</span>
+</div>
+`;
+            } else if (colors.length === 2) {
+                const al1 = breaks[0];
+                legendContent = `
+<div style="display: flex; align-items: center; margin-bottom: 4px;">
+<span style="background:${colors[0]}; width: 15px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #999;"></span>
+<span>Below ${al1.toFixed(2)} ${unit}</span>
+</div>
+<div style="display: flex; align-items: center;">
+<span style="background:${colors[1]}; width: 15px; height: 15px; display: inline-block; margin-right: 5px; border: 1px solid #999;"></span>
+<span>Above ${al1.toFixed(2)} ${unit}</span>
+</div>
+`;
+            }
+        } else {
+            legendContent = `
 <div style="height: 20px; width: 100%; background: linear-gradient(to right, ${colors.join(",")}); border: 1px solid #999; margin-bottom: 5px;"></div>
 <div style="display: flex; justify-content: space-between; font-size: 12px;">
 <span>${isFinite(min) ? min.toFixed(2) : '—'}${unit}</span>
 <span>${isFinite(max) ? max.toFixed(2) : '—'}${unit}</span>
 </div>
 `;
+        }
         const depthLegend = (!isHeatmapMode & !(stats.depthMin === stats.depthMax)) ? `
 <br>
 <div><strong>Sample depth → radius</strong><br>
@@ -1145,6 +1390,9 @@ ${makeDepthLegend(stats.depthMin, stats.depthMax)}</div>
         this._div.innerHTML = `
 <h4>${chemicalName}</h4>
 ${toggleButton}
+${toggleColorButton}
+${toggleUpperLevelButton}
+${toggleShapeColorButton}
 <strong>${legendType}</strong>
 ${legendContent}
 ${depthLegend}
@@ -1153,7 +1401,172 @@ ${depthLegend}
     legend.addTo(map);
     window.toggleVisualizationMode = toggleVisualizationMode;
 
-    function createScrollableContaminantControl() {
+    function toggleColorMode() {
+        colorMode = (colorMode === 'scale') ? 'standards' : 'scale';
+        if (activeContaminant) {
+            applyDynamicStyling(activeContaminant, map.getZoom());
+            updateLegendForMode();
+        }
+    }
+    window.toggleColorMode = toggleColorMode;
+
+    function toggleUpperLevelMode() {
+        upperLevelMode = (upperLevelMode === '10x') ? 'flat' : '10x';
+        if (activeContaminant) {
+            applyDynamicStyling(activeContaminant, map.getZoom());
+            updateLegendForMode();
+        }
+    }
+    window.toggleUpperLevelMode = toggleUpperLevelMode;
+
+    function toggleShapeColorMode() {
+        shapesColoredByData = !shapesColoredByData;
+        if (activeContaminant) {
+            updateShapeColors(activeContaminant);
+        }
+        updateLegendForMode();
+    }
+    window.toggleShapeColorMode = toggleShapeColorMode;
+
+    window.toggleStaticShapes = toggleStaticShapes;
+
+function createScrollableContaminantControl() {
+        const contaminantControl = L.control({ position: 'topright' });
+        contaminantControl.onAdd = function(map) {
+            // 1. Create the main container WITHOUT the 'expanded' class initially
+            const container = L.DomUtil.create('div', 'leaflet-control-layers contaminant-control');
+            
+            // 2. Add the standard Leaflet toggle icon (the stack of layers image)
+            const link = L.DomUtil.create('a', 'leaflet-control-layers-toggle', container);
+            link.href = '#';
+            link.title = 'Contaminants';
+            
+            // 3. Create the container for the content (hidden by default via CSS)
+            const section = L.DomUtil.create('section', 'leaflet-control-layers-list', container);
+
+            const style = document.createElement('style');
+            style.textContent = `
+                /* Apply size/style ONLY when expanded */
+                .contaminant-control.leaflet-control-layers-expanded { 
+                    width: 250px; 
+                    max-height: 400px; 
+                    background: white; 
+                    padding: 10px;
+                    border-radius: 5px;
+                }
+                .contaminant-search { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; }
+                .contaminant-list { max-height: 300px; overflow-y: auto; padding: 0 4px; }
+                .contaminant-item { margin: 4px 0; display: flex; align-items: center; }
+                .contaminant-item input { margin-right: 8px; }
+                .contaminant-item label { cursor: pointer; display: flex; align-items: center; width: 100%; padding: 2px 0; font-size: 13px; }
+                .contaminant-item label:hover { background-color: #f0f0f0; }
+                .contaminant-header { font-weight: bold; padding-bottom: 8px; border-bottom: 1px solid #eee; margin-bottom: 8px; }
+            `;
+            document.head.appendChild(style);
+            
+            const contaminantNames = Object.keys(contaminantLayers).sort();
+            
+            // 4. Inject the HTML into the 'section' (list) instead of the main div
+            section.innerHTML = `
+                <div class="contaminant-header">Contaminant Layers</div>
+                <input type="text" class="contaminant-search" placeholder="Search contaminants..." />
+                <div class="contaminant-list">
+                    <div class="contaminant-item">
+                        <label>
+                            <input type="radio" name="contaminant" value="none" checked />
+                            <strong>None (show all datasets)</strong>
+                        </label>
+                    </div>
+                    <div style="border-bottom: 1px solid #eee; margin: 8px 0;"></div>
+                    ${contaminantNames.map(chem => `
+                        <div class="contaminant-item" data-name="${chem.toLowerCase()}">
+                            <label>
+                                <input type="radio" name="contaminant" value="${chem}" />
+                                <span title="${chem}">${chem}</span>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            const searchInput = section.querySelector('.contaminant-search');
+            const contaminantItems = section.querySelectorAll('.contaminant-item[data-name]');
+            
+            searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                contaminantItems.forEach(item => {
+                    const name = item.getAttribute('data-name');
+                    if (name.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            container.addEventListener('change', function(e) {
+                if (e.target.type === 'radio') {
+                    const selectedContaminant = e.target.value;
+                    Object.keys(contaminantLayers).forEach(chem => {
+                        if (map.hasLayer(contaminantLayers[chem])) map.removeLayer(contaminantLayers[chem]);
+                        if (contaminantHeatmaps[chem] && map.hasLayer(contaminantHeatmaps[chem])) map.removeLayer(contaminantHeatmaps[chem]);
+                    });
+                    
+                    if (selectedContaminant === 'none') {
+                        Object.keys(datasetLayers).forEach(datasetName => {
+                            if (!map.hasLayer(datasetLayers[datasetName])) map.addLayer(datasetLayers[datasetName]);
+                        });
+                        activeContaminant = null;
+                        isHeatmapMode = false;
+                        legend.update();
+                    } else {
+                        Object.keys(datasetLayers).forEach(datasetName => {
+                            if (map.hasLayer(datasetLayers[datasetName])) map.removeLayer(datasetLayers[datasetName]);
+                        });
+                        activeContaminant = selectedContaminant;
+                        if (isHeatmapMode) {
+                            if (contaminantHeatmaps[activeContaminant]) map.addLayer(contaminantHeatmaps[activeContaminant]);
+                        } else {
+                            applyDynamicStyling(activeContaminant, map.getZoom());
+                            if (contaminantLayers[selectedContaminant]) map.addLayer(contaminantLayers[selectedContaminant]);
+                        }
+                        updateShapeColors(activeContaminant);
+                        legend.update({ chemicalName: selectedContaminant });
+                    }
+                }
+            });
+
+            // 5. Add Hover Events to Expand/Collapse
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
+            
+            // Expand on mouse enter
+            L.DomEvent.on(container, 'mouseenter', function() {
+                L.DomUtil.addClass(container, 'leaflet-control-layers-expanded');
+            });
+
+            // Collapse on mouse leave
+            L.DomEvent.on(container, 'mouseleave', function() {
+                L.DomUtil.removeClass(container, 'leaflet-control-layers-expanded');
+            });
+            
+            // Allow touch devices to toggle on tap
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (L.DomUtil.hasClass(container, 'leaflet-control-layers-expanded')) {
+                    L.DomUtil.removeClass(container, 'leaflet-control-layers-expanded');
+                } else {
+                    L.DomUtil.addClass(container, 'leaflet-control-layers-expanded');
+                }
+            });
+
+            return container;
+        };
+        return contaminantControl;
+    }
+
+
+/*    function createScrollableContaminantControl() {
         const contaminantControl = L.control({ position: 'topright' });
         contaminantControl.onAdd = function(map) {
             const div = L.DomUtil.create('div', 'leaflet-control-layers leaflet-control-layers-expanded contaminant-control');
@@ -1243,7 +1656,7 @@ ${depthLegend}
             return div;
         };
         return contaminantControl;
-    }
+    }*/
 
     let baseLayerControl = L.control.layers(baseLayers, {}).addTo(map);
     let contaminantControl = createScrollableContaminantControl().addTo(map);
@@ -1365,3 +1778,325 @@ function toggleAllTooltips() {
         allMapMarkers.forEach(marker => marker.closeTooltip());
     }
 }
+
+function toggleAllAreaTooltips() {
+    areaTooltipsVisible = !areaTooltipsVisible;
+    const button = document.getElementById('toggleAreaTooltipsBtn');
+
+    if (areaTooltipsVisible) {
+        if (button) button.textContent = 'Hide All Area Names';
+        allShapeLayers.forEach(layer => layer.openTooltip());
+    } else {
+        if (button) button.textContent = 'Show All Area Names';
+        allShapeLayers.forEach(layer => layer.closeTooltip());
+    }
+}
+
+function updateShapeColors(chemicalName) {
+    window.areaStats = [];
+    const kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
+    let colorNo = 0;
+
+    if (!chemicalName) {
+        // Revert to default colors and reset tooltips
+        allShapeLayers.forEach(layer => {
+             layer.setStyle({
+                color: kmlColors[colorNo], 
+                weight: 2, 
+                opacity: 0.5,
+                fillColor: kmlColors[colorNo], 
+                fillOpacity: 0.2
+            });
+            colorNo = (colorNo + 1) % kmlColors.length;
+            // Reset tooltips
+            if (layer.options.baseTooltip) {
+                layer.setTooltipContent(layer.options.baseTooltip);
+            }
+        });
+        if (window.updateSummaryChart) window.updateSummaryChart();
+        return;
+    }
+
+    // Calculate colors based on data standards
+    let levels = null;
+    if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
+         if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
+            levels = standards[chosenStandard].chemicals[chemicalName];
+        } else {
+            if(standards[chosenStandard].chemicals[chemicalName]?.levels){
+                levels = standards[chosenStandard].chemicals[chemicalName].levels;
+            }
+        }
+    }
+    
+    if (!levels) {
+        console.log("No standards found for shape coloring");
+        return; 
+    }
+    
+    let breaks = [...levels];
+    if (breaks[1] === null) {
+         if (upperLevelMode === '10x') {
+            breaks[1] = breaks[0] * 10;
+        } else {
+            breaks = [breaks[0]];
+        }
+    }
+    
+    const unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
+    if (unitAlign !== 1) {
+        breaks = breaks.map(l => l / unitAlign);
+    }
+
+    allShapeLayers.forEach(layer => {
+        const stats = getAggregateStatsInShape(layer);
+        const maxVal = getMaxValueInShape(layer, chemicalName);
+        
+        let color = '#808080'; // Default grey if no data
+        let fillOpacity = 0.2;
+
+        if (maxVal !== null) {
+            fillOpacity = 0.5;
+            if (breaks.length >= 2 && breaks[1] !== null) {
+                if (maxVal < breaks[0]) color = '#00FF00'; // Green
+                else if (maxVal < breaks[1]) color = '#FF0000'; // Red
+                else color = '#000000'; // Black
+            } else if (breaks.length >= 1) {
+                 if (maxVal < breaks[0]) color = '#00FF00';
+                 else color = '#FF0000';
+            }
+        } else {
+             color = '#808080';
+             fillOpacity = 0.1;
+        }
+
+        layer.setStyle({
+            color: color,
+            fillColor: color,
+            fillOpacity: fillOpacity,
+            weight: 2
+        });
+
+        // Update Tooltip
+        if (layer.options.baseTooltip) {
+            let content = layer.options.baseTooltip;
+            if (stats.totalExceedances > 0) {
+                const abbrevs = standards[chosenStandard].levelAbbrev || standards[chosenStandard].levels?.abbrev || ["Level 1", "Level 2"];
+                const al1 = abbrevs[0];
+                const al2 = abbrevs[1] || "Max";
+                
+                content += `<br><b>Total Exceedances:</b>`;
+                if (stats.between > 0) content += `<br>${al1} &gt; = &lt; ${al2}: ${stats.between}`;
+                if (stats.above > 0) content += `<br>&gt; ${al2}: ${stats.above}`;
+            }
+            layer.setTooltipContent(content);
+        }
+
+        window.areaStats.push({
+            name: layer.options.name || layer.name || "Unnamed Area",
+            stats: stats,
+        });
+    });
+    if (window.updateSummaryChart) window.updateSummaryChart();
+}
+
+function getAggregateStatsInShape(layer) {
+    let counts = { between: 0, above: 0, totalExceedances: 0, betweenChemicals: new Set(), aboveChemicals: new Set() };
+    
+    // 1. Identify all samples within the shape
+    const samplesInShape = new Set();
+    allMapMarkers.forEach(marker => {
+        const latLng = marker.getLatLng();
+        if (isPointInLayerLocal(latLng.lat, latLng.lng, layer)) {
+            samplesInShape.add(marker.options.customId);
+        }
+    });
+
+    if (samplesInShape.size === 0) return counts;
+
+    // 2. Iterate over all chemicals in the standard
+    const standardChemicals = standards[chosenStandard]?.chemicals || {};
+    
+    Object.keys(standardChemicals).forEach(chemName => {
+        if (!contaminantLayers[chemName]) return;
+
+        // Get levels
+        let levels = standardChemicals[chemName];
+        if (levels && levels.levels) levels = levels.levels; // Handle object definition
+        if (!levels || !Array.isArray(levels)) return;
+
+        let breaks = [...levels];
+        
+        // Handle missing upper level
+        if (breaks[1] === null) {
+             if (upperLevelMode === '10x') {
+                breaks[1] = breaks[0] * 10;
+            } else {
+                // If no AL2 and not 10x mode, we only have AL1.
+                // Anything > AL1 is "Red" (Between).
+                breaks = [breaks[0]]; 
+            }
+        }
+
+        // Unit conversion
+        const unitAlign = factorUnit(contaminantStats[chemName].unit, extractUnit(standards[chosenStandard].unit));
+        if (unitAlign !== 1) {
+            breaks = breaks.map(l => l / unitAlign);
+        }
+
+        // Check samples
+        contaminantLayers[chemName].eachLayer(marker => {
+            if (samplesInShape.has(marker.options.customId)) {
+                const val = parseFloat(marker.options._chemValue);
+                if (!isNaN(val)) {
+                    if (breaks.length >= 2 && breaks[1] !== null && val > breaks[1]) {
+                        counts.above++;
+                        counts.totalExceedances++;
+                        counts.aboveChemicals.add(chemName);
+                    } else if (val > breaks[0]) {
+                        counts.between++;
+                        counts.totalExceedances++;
+                        counts.betweenChemicals.add(chemName);
+                    }
+                }
+            }
+        });
+    });
+
+    return counts;
+}
+
+function getMaxValueInShape(layer, chemicalName) {
+    let maxVal = -Infinity;
+    let found = false;
+    
+    if (contaminantLayers[chemicalName]) {
+        contaminantLayers[chemicalName].eachLayer(marker => {
+            const latLng = marker.getLatLng();
+            if (isPointInLayerLocal(latLng.lat, latLng.lng, layer)) {
+                const val = parseFloat(marker.options._chemValue);
+                if (!isNaN(val)) {
+                    if (val > maxVal) maxVal = val;
+                    found = true;
+                }
+            }
+        });
+    }
+    return found ? maxVal : null;
+}
+
+function isPointInLayerLocal(lat, lon, layer) {
+    // Simple ray casting for point in polygon
+    const point = [lat, lon];
+    const latlngs = layer.getLatLngs();
+    
+    // Normalize structure: Leaflet polygons can be simple arrays or arrays of arrays (holes/multipolygons)
+    let rings = latlngs;
+    if (latlngs[0] && ('lat' in latlngs[0])) {
+        rings = [latlngs];
+    }
+
+    // Helper for ray casting
+    function isInsideRing(pt, ring) {
+        let x = pt[0], y = pt[1];
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            let xi = ring[i].lat, yi = ring[i].lng;
+            let xj = ring[j].lat, yj = ring[j].lng;
+            let intersect = ((yi > y) != (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // Handle MultiPolygons (array of arrays of arrays)
+    if (Array.isArray(rings[0]) && Array.isArray(rings[0][0])) {
+         for (let i = 0; i < rings.length; i++) {
+             if (isInsideRing(point, rings[i][0] || rings[i])) return true;
+         }
+         return false;
+    }
+    
+    // Standard Polygon (Index 0 is outer boundary, 1+ are holes)
+    const insideOuter = isInsideRing(point, rings[0]);
+    if (!insideOuter) return false;
+
+    // Check holes
+    if (rings.length > 1) {
+        for (let i = 1; i < rings.length; i++) {
+            if (isInsideRing(point, rings[i])) {
+                return false; // In a hole
+            }
+        }
+    }
+    return true;
+}
+
+function getShapeStyleForContaminant(layer, chemicalName, index) {
+    const kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
+    
+    if (!shapesColoredByData || !chemicalName) {
+         const color = kmlColors[index % kmlColors.length];
+         return {
+            color: color,
+            weight: 2,
+            opacity: 0.5,
+            fillColor: color,
+            fillOpacity: 0.2
+         };
+    }
+
+    // Calculate colors based on data standards
+    let levels = null;
+    if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
+         if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
+            levels = standards[chosenStandard].chemicals[chemicalName];
+        } else {
+            if(standards[chosenStandard].chemicals[chemicalName]?.levels){
+                levels = standards[chosenStandard].chemicals[chemicalName].levels;
+            }
+        }
+    }
+    
+    if (!levels) {
+        return { color: '#808080', fillColor: '#808080', fillOpacity: 0.1, weight: 2 }; 
+    }
+    
+    let breaks = [...levels];
+    if (breaks[1] === null) {
+         if (upperLevelMode === '10x') {
+            breaks[1] = breaks[0] * 10;
+        } else {
+            breaks = [breaks[0]];
+        }
+    }
+    
+    const unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
+    if (unitAlign !== 1) {
+        breaks = breaks.map(l => l / unitAlign);
+    }
+
+    const maxVal = getMaxValueInShape(layer, chemicalName);
+    let color = '#808080';
+    let fillOpacity = 0.2;
+
+    if (maxVal !== null) {
+        fillOpacity = 0.5;
+        if (breaks.length >= 2 && breaks[1] !== null && maxVal >= breaks[1]) color = '#000000';
+        else if (maxVal >= breaks[0]) color = '#FF0000';
+        else color = '#00FF00';
+    }
+    return { color: color, fillColor: color, fillOpacity: fillOpacity, weight: 2 };
+}
+
+    function toggleStaticShapes() {
+        includeShapesOnStaticMaps = !includeShapesOnStaticMaps;
+        const btn = document.getElementById('toggleStaticShapesBtn');
+        if (btn) btn.textContent = `Static Maps Shapes: ${includeShapesOnStaticMaps ? 'On' : 'Off'}`;
+    }
+
+    // Fallback for potential lingering calls to the old function name
+    function getStatsInShape(layer) {
+        return getAggregateStatsInShape(layer);
+    }
