@@ -10,6 +10,7 @@
     const annotationPlugin = window['chartjs-plugin-annotation'];
     Chart.register(annotationPlugin);
     // Importing the necessary library for coordinate conversion
+    window.dredgeVolumeData = null;
 //    const osGridConverter = require('os-transform.js');
     const osGridConverter = window['os-transform.js'];
 
@@ -874,8 +875,21 @@ function generateURL() {
         if (lics) params.set('dlics', lics);
     }
 
+    // 8. Dredge Volume Data URL
+    if (window.dredgeVolumeData && window.dredgeVolumeData.sourceUrl) {
+        params.set('dredgevol', window.dredgeVolumeData.sourceUrl);
+    }
+
+    // 9. Dredge Volume Year Range
+    const dStart = document.getElementById('dredgeStartYear')?.value;
+    if (dStart) params.set('dvolstart', dStart);
+    
+    const dEnd = document.getElementById('dredgeEndYear')?.value;
+    if (dEnd) params.set('dvolend', dEnd);
+
     const baseUrl = window.location.origin + window.location.pathname;
-    const newUrl = baseUrl + '?' + params.toString();
+    // Decode URI component to show spaces instead of %20 or +
+    const newUrl = decodeURIComponent(baseUrl + '?' + params.toString().replace(/\+/g, ' '));
 
     navigator.clipboard.writeText(newUrl).then(() => {
         alert('URL copied to clipboard:\n' + newUrl);
@@ -921,6 +935,89 @@ function createControlButtons() {
         };
         sidebar.insertBefore(buttonSS, sidebar.firstChild);
 
+        // --- Dredge Data Input Section ---
+        const dredgeContainer = document.createElement('div');
+        dredgeContainer.style.marginTop = '10px';
+        dredgeContainer.style.padding = '5px';
+        dredgeContainer.style.borderTop = '1px solid #ccc';
+        dredgeContainer.style.borderBottom = '1px solid #ccc';
+        
+        const dredgeLabel = document.createElement('div');
+        dredgeLabel.innerHTML = '<b>Dredge Volumes (xlsx/ods)</b>';
+        dredgeContainer.appendChild(dredgeLabel);
+        
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.xlsx, .ods';
+        fileInput.style.width = '95%';
+        fileInput.style.marginTop = '5px';
+        fileInput.addEventListener('change', handleDredgeVolumeUpload);
+        dredgeContainer.appendChild(fileInput);
+        
+        // URL Input
+        const urlContainer = document.createElement('div');
+        urlContainer.style.marginTop = '5px';
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.id = 'dredgeVolUrl';
+        urlInput.placeholder = 'URL to Dredge Data';
+        urlInput.style.width = '70%';
+        urlContainer.appendChild(urlInput);
+
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = 'Load';
+        loadBtn.style.width = '25%';
+        loadBtn.onclick = function() {
+            const url = document.getElementById('dredgeVolUrl').value;
+            if (url) loadDredgeVolumeFromUrl(url);
+        };
+        urlContainer.appendChild(loadBtn);
+        dredgeContainer.appendChild(urlContainer);
+
+        const densityContainer = document.createElement('div');
+        densityContainer.style.marginTop = '5px';
+        densityContainer.innerHTML = 'Density (T/m³): ';
+        
+        const densityInput = document.createElement('input');
+        densityInput.type = 'number';
+        densityInput.id = 'dredgeDensity';
+        densityInput.value = '1.5';
+        densityInput.step = '0.1';
+        densityInput.style.width = '60px';
+        densityInput.addEventListener('change', function() {
+            if (window.updateSummaryChart) window.updateSummaryChart();
+        });
+        densityContainer.appendChild(densityInput);
+        dredgeContainer.appendChild(densityContainer);
+
+        const yearContainer = document.createElement('div');
+        yearContainer.style.marginTop = '5px';
+        yearContainer.innerHTML = 'Years: ';
+        
+        const startYearInput = document.createElement('input');
+        startYearInput.type = 'number';
+        startYearInput.id = 'dredgeStartYear';
+        startYearInput.placeholder = 'Start';
+        startYearInput.style.width = '60px';
+        startYearInput.style.marginRight = '5px';
+        startYearInput.addEventListener('change', function() {
+            if (window.updateSummaryChart) window.updateSummaryChart();
+        });
+        yearContainer.appendChild(startYearInput);
+
+        const endYearInput = document.createElement('input');
+        endYearInput.type = 'number';
+        endYearInput.id = 'dredgeEndYear';
+        endYearInput.placeholder = 'End';
+        endYearInput.style.width = '60px';
+        endYearInput.addEventListener('change', function() {
+            if (window.updateSummaryChart) window.updateSummaryChart();
+        });
+        yearContainer.appendChild(endYearInput);
+        dredgeContainer.appendChild(yearContainer);
+        
+        sidebar.insertBefore(dredgeContainer, sidebar.firstChild);
+
 /*        // Create the Area Tooltips button
         const buttonArea = document.createElement('button');
         buttonArea.id = 'toggleAreaTooltipsBtn';
@@ -942,6 +1039,77 @@ function createControlButtons() {
             sidebar.insertBefore(buttonArea, sidebar.firstChild);
         }*/
     }
+}
+
+function handleDredgeVolumeUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        processDredgeVolumeData(data);
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function loadDredgeVolumeFromUrl(url) {
+    fetch(url)
+        .then(response => response.arrayBuffer())
+        .then(data => {
+            processDredgeVolumeData(new Uint8Array(data), url);
+        })
+        .catch(err => console.error("Error loading dredge volume data:", err));
+}
+
+function processDredgeVolumeData(data, sourceUrl = null) {
+    const workbook = XLSX.read(data, {type: 'array'});
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+    
+    if (json.length < 2) return;
+    
+    const years = [];
+    const yearIndices = [];
+    const processedYears = new Set();
+    // Assume row 0 is headers. Start from column 1 (Reach is col 0)
+    for (let i = 1; i < json[0].length; i++) {
+        const val = parseInt(json[0][i]);
+        if (!isNaN(val) && val >= 2001 && val <= 2024) {
+            if (!processedYears.has(val)) {
+                years.push(val);
+                yearIndices.push(i);
+                processedYears.add(val);
+            }
+        }
+    }
+    
+    const areas = {};
+    for (let i = 1; i < json.length; i++) {
+        const row = json[i];
+        let areaName = row[0];
+        if (areaName !== undefined && areaName !== null) {
+            // Check if areaName is just a number
+            if (!isNaN(areaName) && !isNaN(parseFloat(areaName))) {
+                areaName = "Chart " + areaName;
+            } else {
+                areaName = String(areaName);
+            }
+
+            areas[areaName] = {};
+            for (let k = 0; k < yearIndices.length; k++) {
+                const colIdx = yearIndices[k];
+                const year = years[k];
+                let vol = parseFloat(row[colIdx]);
+                if (isNaN(vol)) vol = 0;
+                areas[areaName][year] = vol;
+            }
+        }
+    }
+    
+    window.dredgeVolumeData = { years, areas, sourceUrl };
+    if (window.updateSummaryChart) window.updateSummaryChart();
 }
 
 function importData() {
@@ -1012,6 +1180,25 @@ function importData() {
             }*/
             importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish,dlicences);
         }
+        const dredgeVolParam = suppliedParams.get('dredgevol');
+        if (dredgeVolParam) {
+            loadDredgeVolumeFromUrl(dredgeVolParam);
+            const urlInput = document.getElementById('dredgeVolUrl');
+            if (urlInput) urlInput.value = dredgeVolParam;
+        }
+
+        const dVolStartParam = suppliedParams.get('dvolstart');
+        if (dVolStartParam) {
+            const startInput = document.getElementById('dredgeStartYear');
+            if (startInput) startInput.value = dVolStartParam;
+        }
+
+        const dVolEndParam = suppliedParams.get('dvolend');
+        if (dVolEndParam) {
+            const endInput = document.getElementById('dredgeEndYear');
+            if (endInput) endInput.value = dVolEndParam;
+        }
+
         const sortParam = suppliedParams.get('sort');
 //console.log(durlParam);
         if (sortParam) {
@@ -1829,9 +2016,11 @@ console.log(row);
 }
 
 // Function to create a button for resetting zoom
-function createExportButton(chart, instanceNo) {
+function createExportButton(chart, instanceNo, container) {
     //console.log('creating zoom buttom',instanceNo);
-    const container = document.getElementById('chartContainer');
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttone' + instanceNo
     button.textContent = 'Export';
@@ -1842,9 +2031,11 @@ function createExportButton(chart, instanceNo) {
 }
         
     // Function to create a button for resetting zoom
-function createResetZoomButton(chart,instanceNo) {
+function createResetZoomButton(chart,instanceNo, container) {
 //console.log('creating zoom buttom',instanceNo);
-    const container = document.getElementById('chartContainer');
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttonz'+instanceNo
     button.textContent = 'Reset Zoom';
@@ -1855,8 +2046,10 @@ function createResetZoomButton(chart,instanceNo) {
 }
     
 // Function to create a button for toggling legend
-function createToggleLegendButton(chart,instanceNo) {
-    const container = document.getElementById('chartContainer');
+function createToggleLegendButton(chart,instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttonl'+instanceNo
     if (!legends[instanceNo]) {
@@ -1930,8 +2123,10 @@ function createToggleCanvasSize(canvas, chart,instanceNo,chemical) {
 }
     
 // Function to create a button for toggling log scale
-function createToggleLinLogButton(chart,instanceNo) {
-    const container = document.getElementById('chartContainer');
+function createToggleLinLogButton(chart,instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttono'+instanceNo
     if (!ylinlog[instanceNo]) {
@@ -1956,8 +2151,10 @@ function createToggleLinLogButton(chart,instanceNo) {
 }
     
 // Function to create a button for toggling legend
-function createStackedButton(chart,instanceNo) {
-    const container = document.getElementById('chartContainer');
+function createStackedButton(chart,instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttons'+instanceNo
     if (!stacked[instanceNo]) {

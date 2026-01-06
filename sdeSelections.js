@@ -211,18 +211,18 @@ console.log(selectedSampleMeasurements);
                             selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
                             if (chemicalType == 'PAH data') {
                                 // Just copy all common data even if only 1 PAH is selected
-                                selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
-                                selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
-                                selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
-                                selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+                                if (sampleMeasurements[dateSampled][chemicalType].gorhamTest !== undefined) selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
+                                if (sampleMeasurements[dateSampled][chemicalType].total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                if (sampleMeasurements[dateSampled][chemicalType].totalHC !== undefined) selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
+                                if (sampleMeasurements[dateSampled][chemicalType].totalHCUnit !== undefined) selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
                             }
                             if (chemicalType == 'PCB data') {
                                 //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
 /*                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
                                 selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];*/
 //                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
-                                selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                if (sampleMeasurements[dateSampled][chemicalType].congenerTest !== undefined) selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
+                                if (sampleMeasurements[dateSampled][chemicalType].total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
                             }
                         }
                         for (sample in selectedSampleInfo[dateSampled].position) {
@@ -245,7 +245,9 @@ console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
                                 selectedMeas[dateSampled]["Physical Data"].sizes = selectedSampleMeasurements[dateSampled]["Physical Data"].sizes;
                                 selectedMeas[dateSampled]["Physical Data"].samples = {};
                             }
-                            selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
+                            if (selectedSampleMeasurements[dateSampled]["Physical Data"]?.samples[sample] !== undefined) {
+                                selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
+                            }
                         }
                     }
                 }
@@ -427,6 +429,7 @@ function openSampleSelection(sampleMeasurements) {
 
         sampleCheckboxes.appendChild(checkboxContainer);
     });
+    createStandardFilterUI();
     populateAreaFilter();
 }
 
@@ -770,8 +773,9 @@ function getSelectedSampleMeasurements(selectedSamples) {
 //console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
 //console.log('2 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
                 }
-//console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
-                selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
+                if (sampleMeasurements[dateSampled][chemicalType].samples[sample] !== undefined) {
+                    selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
+                }
             } else {
                         //    						for (const chemicalType in sampleMeasurements[dateSampled]) {
                 let newData = {};
@@ -791,13 +795,17 @@ console.log(chemicalType,key,currentData);
                                     //console.log('Create ', dateSampled, chemicalType,chemical);
                                 newData.chemicals[chemical] = {};
                                 newData.chemicals[chemical].samples = {};
-                                newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                if (currentData[chemical].samples[sample] !== undefined) {
+                                    newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                }
                             }
                         } else {
                             newData.chemicals = selectedMeas[dateSampled][chemicalType].chemicals;
                             for (const chemical in dataset[chemicalType].chemicals) {
 //console.log('Create ', dateSampled, chemicalType, chemical,newData, currentData);
-                                newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                if (currentData[chemical].samples[sample] !== undefined) {
+                                    newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                }
                             }
                         }
                     } else {
@@ -809,11 +817,13 @@ console.log(chemicalType,key,currentData);
 //if (key === 'gorhamTest') {
 console.log(dateSampled,sample,key,currentData,newData);
 //}
-                            if (!newData[key]) {
-                                newData[key] = {};
-                                newData[key][sample] = currentData[sample];
-                            } else {
-                                newData[key][sample] = currentData[sample];
+                            if (currentData) {
+                                if (!newData[key]) {
+                                    newData[key] = {};
+                                }
+                                if (currentData[sample] !== undefined) {
+                                    newData[key][sample] = currentData[sample];
+                                }
                             }
                         }
                     }
@@ -1042,4 +1052,104 @@ function isPointInLayer(lat, lon, layer) {
     }
 
     return true;
+}
+
+function createStandardFilterUI() {
+    const sampleCheckboxes = document.getElementById('sampleCheckboxes');
+    if (!sampleCheckboxes) return;
+
+    let container = document.getElementById('standardFilterContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'standardFilterContainer';
+        container.style.marginBottom = '10px';
+        container.style.padding = '5px';
+        container.style.borderBottom = '1px solid #ccc';
+        sampleCheckboxes.parentNode.insertBefore(container, sampleCheckboxes);
+    } else {
+        container.innerHTML = '';
+    }
+
+    const title = document.createElement('div');
+    title.innerHTML = '<strong>Filter by Cefas Action Levels:</strong>';
+    container.appendChild(title);
+
+    if (typeof standards === 'undefined' || !standards["Cefas Action Levels"]) return;
+    const std = standards["Cefas Action Levels"];
+
+    const options = [
+        { label: "None", value: -1 },
+        { label: "Above " + (std.levelNames && std.levelNames[0] ? std.levelNames[0] : "Action Level 1"), value: 0 },
+        { label: "Above " + (std.levelNames && std.levelNames[1] ? std.levelNames[1] : "Action Level 2"), value: 1 }
+    ];
+
+    options.forEach(opt => {
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'inline-block';
+        wrapper.style.marginRight = '15px';
+
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'standardFilter';
+        radio.id = 'stdFilter_' + opt.value;
+        radio.value = opt.value;
+        if (opt.value === -1) radio.checked = true;
+        
+        radio.addEventListener('change', () => applyStandardFilter(opt.value));
+
+        const label = document.createElement('label');
+        label.htmlFor = 'stdFilter_' + opt.value;
+        label.textContent = opt.label;
+        label.style.marginLeft = '5px';
+
+        wrapper.appendChild(radio);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+    });
+}
+
+function applyStandardFilter(levelIndex) {
+    levelIndex = parseInt(levelIndex);
+    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+    
+    if (levelIndex === -1) {
+        checkboxes.forEach(cb => cb.checked = true);
+        return;
+    }
+
+    if (typeof standards === 'undefined' || !standards["Cefas Action Levels"]) return;
+    const std = standards["Cefas Action Levels"];
+    const stdUnit = extractUnit(std.unit);
+
+    checkboxes.forEach(cb => cb.checked = false);
+    const samplesToKeep = new Set();
+
+    for (const ds in selectedSampleMeasurements) {
+        const dataset = selectedSampleMeasurements[ds];
+        for (const sheetName in dataset) {
+            const sheet = dataset[sheetName];
+            if (!sheet.chemicals) continue;
+            const sheetUnit = extractUnit(sheet['Unit of measurement']);
+            const factor = factorUnit(sheetUnit, stdUnit);
+
+            for (const chemName in sheet.chemicals) {
+                let limit = null;
+                if (std.chemicals && std.chemicals[chemName] && Array.isArray(std.chemicals[chemName])) {
+                    limit = std.chemicals[chemName][levelIndex];
+                }
+                if (limit !== null && limit !== undefined) {
+                    const samples = sheet.chemicals[chemName].samples;
+                    for (const sampleName in samples) {
+                        const val = samples[sampleName];
+                        if (val !== undefined && val !== null && (val * factor) > limit) {
+                            samplesToKeep.add(ds + ': ' + sampleName);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    checkboxes.forEach(cb => {
+        if (samplesToKeep.has(cb.value)) cb.checked = true;
+    });
 }

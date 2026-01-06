@@ -1797,84 +1797,83 @@ function updateShapeColors(chemicalName) {
     const kmlColors = ['#FF0000', '#00FF00', '#0000FF'];
     let colorNo = 0;
 
-    if (!chemicalName) {
-        // Revert to default colors and reset tooltips
-        allShapeLayers.forEach(layer => {
-             layer.setStyle({
-                color: kmlColors[colorNo], 
-                weight: 2, 
-                opacity: 0.5,
-                fillColor: kmlColors[colorNo], 
-                fillOpacity: 0.2
-            });
-            colorNo = (colorNo + 1) % kmlColors.length;
-            // Reset tooltips
-            if (layer.options.baseTooltip) {
-                layer.setTooltipContent(layer.options.baseTooltip);
-            }
-        });
-        if (window.updateSummaryChart) window.updateSummaryChart();
-        return;
-    }
-
     // Calculate colors based on data standards
     let levels = null;
-    if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
-         if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
-            levels = standards[chosenStandard].chemicals[chemicalName];
-        } else {
-            if(standards[chosenStandard].chemicals[chemicalName]?.levels){
-                levels = standards[chosenStandard].chemicals[chemicalName].levels;
+    let breaks = null;
+    let unitAlign = 1;
+
+    if (chemicalName) {
+        if (standards[chosenStandard]?.chemicals?.[chemicalName]) {
+             if(!standards[chosenStandard].chemicals[chemicalName]?.definition) {
+                levels = standards[chosenStandard].chemicals[chemicalName];
+            } else {
+                if(standards[chosenStandard].chemicals[chemicalName]?.levels){
+                    levels = standards[chosenStandard].chemicals[chemicalName].levels;
+                }
             }
         }
-    }
-    
-    if (!levels) {
-        console.log("No standards found for shape coloring");
-        return; 
-    }
-    
-    let breaks = [...levels];
-    if (breaks[1] === null) {
-         if (upperLevelMode === '10x') {
-            breaks[1] = breaks[0] * 10;
-        } else {
-            breaks = [breaks[0]];
+        
+        if (levels) {
+            breaks = [...levels];
+            if (breaks[1] === null) {
+                 if (upperLevelMode === '10x') {
+                    breaks[1] = breaks[0] * 10;
+                } else {
+                    breaks = [breaks[0]];
+                }
+            }
+            
+            unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
+            if (unitAlign !== 1) {
+                breaks = breaks.map(l => l / unitAlign);
+            }
         }
-    }
-    
-    const unitAlign = factorUnit(contaminantStats[chemicalName].unit, extractUnit(standards[chosenStandard].unit));
-    if (unitAlign !== 1) {
-        breaks = breaks.map(l => l / unitAlign);
     }
 
     allShapeLayers.forEach(layer => {
         const stats = getAggregateStatsInShape(layer);
-        const maxVal = getMaxValueInShape(layer, chemicalName);
+        const concStats = getConcentrationStatsInShape(layer);
         
-        let color = '#808080'; // Default grey if no data
+        let color = kmlColors[colorNo]; // Default color
         let fillOpacity = 0.2;
+        let weight = 2;
+        let opacity = 0.5;
 
-        if (maxVal !== null) {
-            fillOpacity = 0.5;
-            if (breaks.length >= 2 && breaks[1] !== null) {
-                if (maxVal < breaks[0]) color = '#00FF00'; // Green
-                else if (maxVal < breaks[1]) color = '#FF0000'; // Red
-                else color = '#000000'; // Black
-            } else if (breaks.length >= 1) {
-                 if (maxVal < breaks[0]) color = '#00FF00';
-                 else color = '#FF0000';
+        if (chemicalName) {
+            const maxVal = getMaxValueInShape(layer, chemicalName);
+            
+            if (!levels) {
+                 color = '#808080';
+                 fillOpacity = 0.1;
+            } else {
+                color = '#808080'; // Default grey if no data
+                fillOpacity = 0.2;
+
+                if (maxVal !== null) {
+                    fillOpacity = 0.5;
+                    if (breaks.length >= 2 && breaks[1] !== null) {
+                        if (maxVal < breaks[0]) color = '#00FF00'; // Green
+                        else if (maxVal < breaks[1]) color = '#FF0000'; // Red
+                        else color = '#000000'; // Black
+                    } else if (breaks.length >= 1) {
+                         if (maxVal < breaks[0]) color = '#00FF00';
+                         else color = '#FF0000';
+                    }
+                } else {
+                     color = '#808080';
+                     fillOpacity = 0.1;
+                }
             }
         } else {
-             color = '#808080';
-             fillOpacity = 0.1;
+             colorNo = (colorNo + 1) % kmlColors.length;
         }
 
         layer.setStyle({
             color: color,
             fillColor: color,
             fillOpacity: fillOpacity,
-            weight: 2
+            weight: weight,
+            opacity: opacity
         });
 
         // Update Tooltip
@@ -1895,13 +1894,36 @@ function updateShapeColors(chemicalName) {
         window.areaStats.push({
             name: layer.options.name || layer.name || "Unnamed Area",
             stats: stats,
+            concentrationStats: concStats
         });
     });
     if (window.updateSummaryChart) window.updateSummaryChart();
 }
 
+function getSheetForChemical(chemName) {
+    if (typeof determinands !== 'undefined') {
+        for (const sheet in determinands) {
+            if (Array.isArray(determinands[sheet]) && determinands[sheet].includes(chemName)) {
+                return sheet;
+            }
+        }
+    }
+    if (chemName.includes('PAH') || chemName.includes('Benzo') || chemName.includes('Fluor')) return 'PAH data';
+    if (chemName.includes('PCB')) return 'PCB data';
+    if (chemName.includes('BDE')) return 'BDE data';
+    if (chemName.includes('TBT') || chemName.includes('DBT') || chemName.includes('Organotin')) return 'Organotins data';
+    if (chemName.includes('Dieldrin') || chemName.includes('DDT') || chemName.includes('Organochlorine')) return 'Organochlorine data';
+    if (chemName.includes('Arsenic') || chemName.includes('Cadmium') || chemName.includes('Chromium') || chemName.includes('Copper') || chemName.includes('Lead') || chemName.includes('Mercury') || chemName.includes('Nickel') || chemName.includes('Zinc') || chemName.includes('Trace metal')) return 'Trace metal data';
+    
+    return 'Other';
+}
+
 function getAggregateStatsInShape(layer) {
-    let counts = { between: 0, above: 0, totalExceedances: 0, betweenChemicals: new Set(), aboveChemicals: new Set() };
+    let counts = { 
+        between: 0, above: 0, totalExceedances: 0, 
+        betweenChemicals: new Set(), aboveChemicals: new Set(),
+        bySheet: {}
+    };
     
     // 1. Identify all samples within the shape
     const samplesInShape = new Set();
@@ -1919,6 +1941,11 @@ function getAggregateStatsInShape(layer) {
     
     Object.keys(standardChemicals).forEach(chemName => {
         if (!contaminantLayers[chemName]) return;
+
+        let sheetName = getSheetForChemical(chemName);
+        if (!counts.bySheet[sheetName]) {
+            counts.bySheet[sheetName] = { between: 0, above: 0, totalExceedances: 0, betweenChemicals: new Set(), aboveChemicals: new Set() };
+        }
 
         // Get levels
         let levels = standardChemicals[chemName];
@@ -1953,10 +1980,18 @@ function getAggregateStatsInShape(layer) {
                         counts.above++;
                         counts.totalExceedances++;
                         counts.aboveChemicals.add(chemName);
+                        
+                        counts.bySheet[sheetName].above++;
+                        counts.bySheet[sheetName].totalExceedances++;
+                        counts.bySheet[sheetName].aboveChemicals.add(chemName);
                     } else if (val > breaks[0]) {
                         counts.between++;
                         counts.totalExceedances++;
                         counts.betweenChemicals.add(chemName);
+
+                        counts.bySheet[sheetName].between++;
+                        counts.bySheet[sheetName].totalExceedances++;
+                        counts.bySheet[sheetName].betweenChemicals.add(chemName);
                     }
                 }
             }
@@ -1964,6 +1999,65 @@ function getAggregateStatsInShape(layer) {
     });
 
     return counts;
+}
+
+function getConcentrationStatsInShape(layer) {
+    const stats = {
+        sumAverage: 0,
+        sumHighest: 0,
+        bySheet: {}
+    };
+
+    // 1. Identify all samples within the shape
+    const samplesInShape = new Set();
+    allMapMarkers.forEach(marker => {
+        const latLng = marker.getLatLng();
+        if (isPointInLayerLocal(latLng.lat, latLng.lng, layer)) {
+            samplesInShape.add(marker.options.customId);
+        }
+    });
+
+    if (samplesInShape.size === 0) return stats;
+
+    // 2. Iterate over all available contaminant layers
+    Object.keys(contaminantLayers).forEach(chemName => {
+        // Exclude aggregate layers to avoid double counting mass
+        if (chemName.startsWith("Total ") || chemName.endsWith(" Sum")) return;
+
+        let sheetName = getSheetForChemical(chemName);
+        if (!stats.bySheet[sheetName]) {
+            stats.bySheet[sheetName] = { sumAverage: 0, sumHighest: 0 };
+        }
+
+        let values = [];
+        contaminantLayers[chemName].eachLayer(marker => {
+            if (samplesInShape.has(marker.options.customId)) {
+                let val = parseFloat(marker.options._chemValue);
+                if (!isNaN(val)) {
+                    // Normalize to mg/kg
+                    const unit = marker.options._chemUnit;
+                    if (unit === 'µg/kg') val = val / 1000;
+                    else if (unit === 'ng/kg') val = val / 1000000;
+                    else if (unit === 'g/kg') val = val * 1000;
+                    else if (unit === 'pg/kg') val = val / 1000000000;
+                    values.push(val);
+                }
+            }
+        });
+
+        if (values.length > 0) {
+            const maxVal = Math.max(...values);
+            const avgVal = values.reduce((a, b) => a + b, 0) / values.length;
+            
+            stats.sumHighest += maxVal;
+            stats.sumAverage += avgVal;
+            
+            stats.bySheet[sheetName].sumHighest += maxVal;
+            stats.bySheet[sheetName].sumAverage += avgVal;
+        }
+    });
+
+    return stats;
 }
 
 function getMaxValueInShape(layer, chemicalName) {
