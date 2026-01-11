@@ -891,7 +891,7 @@ div[id^="largemap-"] {
     <div id="mapModifiersModal" class="modal">
         <div class="modal-content">
             <h2>Map Modifiers</h2>
-            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling" placeholder="2">
+            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling" placeholder="1" step="0.1" value="1">
             <div class="modal-footer"><button onclick="closeMapModifiersModal()" class="secondary">Close</button></div>
         </div>
     </div>
@@ -1202,8 +1202,8 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
         function openMapModifiersModal() { document.getElementById('mapModifiersModal').style.display = 'block'; }
         function closeMapModifiersModal() { 
             document.getElementById('mapModifiersModal').style.display = 'none';
-            markerScaling = parseFloat(document.getElementById('markerScaling').value) || 2;
-         }
+            markerScaling = parseFloat(document.getElementById('markerScaling').value) || 1;
+        }
         function openAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'block'; }
         function closeAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'none'; }
         function openPcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'block'; }

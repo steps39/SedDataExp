@@ -2,7 +2,7 @@
     let radarPlot = "None";
     let resuspensionSize = 0;
     let kmlLayers = {};
-    let chosenStandard = 'Cefas Action Levels';
+    let chosenStandard = 'Proposed Cefas Action Levels';
 //    let chosenStandard = "Candian Quality Guidelines";
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
@@ -1017,6 +1017,43 @@ function createControlButtons() {
         dredgeContainer.appendChild(yearContainer);
         
         sidebar.insertBefore(dredgeContainer, sidebar.firstChild);
+
+        // --- Standards Selection ---
+        const stdContainer = document.createElement('div');
+        stdContainer.style.marginTop = '10px';
+        stdContainer.style.marginBottom = '10px';
+        stdContainer.style.width = '95%';
+        stdContainer.style.padding = '5px';
+        stdContainer.style.borderTop = '1px solid #ccc';
+        stdContainer.style.borderBottom = '1px solid #ccc';
+        
+        const stdLabel = document.createElement('div');
+        stdLabel.innerHTML = '<b>Quality Standard</b>';
+        stdContainer.appendChild(stdLabel);
+
+        const stdSelect = document.createElement('select');
+        stdSelect.id = 'standardDropdown';
+        stdSelect.style.width = '100%';
+        stdSelect.style.marginTop = '5px';
+        
+        if (typeof standards !== 'undefined') {
+            for (const key in standards) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = key;
+                if (key === chosenStandard) opt.selected = true;
+                stdSelect.appendChild(opt);
+            }
+        }
+
+        stdSelect.addEventListener('change', function() {
+            chosenStandard = this.value;
+            if (window.updateChart) window.updateChart();
+            if (typeof createStandardFilterUI === 'function') createStandardFilterUI();
+        });
+
+        stdContainer.appendChild(stdSelect);
+        sidebar.insertBefore(stdContainer, sidebar.firstChild);
 
 /*        // Create the Area Tooltips button
         const buttonArea = document.createElement('button');

@@ -55,6 +55,96 @@ standards =
             },
         }
     },
+    "Proposed Cefas Action Levels": {
+        "unit": "mg/kg dry weight",
+        "levelNames": ["Action Level 1", "Action Level 2"],
+        "levelAbbrev": ["AL1", "AL2"],
+        "multiples": {
+            "PAH data": {
+                "levels": [0.1, null],
+//                "definition": "Total PAHs (Sum of 25)",
+            },
+            "Organotins data": {
+                "levels": [0.1, 1.0],
+//                "definition": "Total PAHs (Sum of 25)",
+            },
+        },
+        "chemicals": {
+            "Arsenic (As)": [20, 100],
+            "Cadmium (Cd)": [0.4, 4],
+            "Chromium (Cr)": [50, 370],
+            "Copper (Cu)": [30, 300],
+            "Lead (Pb)": [50, 400],
+            "Mercury (Hg)": [0.25, 1.5],
+            "Nickel (Ni)": [30, 150],
+            "Zinc (Zn)": [130, 600],
+            "Fluoranthene": [0.6, 5.1],
+            "2,4,4'-tribromodiphenyl ether (BDE28)" : [0.038,0.11],
+            '2,2′,4,4′-Tetrabromodiphenyl ether (BDE47)' : [0.033,0.0975],
+            "2,3',4,4'-Tetrabromodiphenyl ether (BDE66)" : [0.033,0.0975],
+            "2,2',3,4,4'-Pentabromodiphenyl ether (BDE85)" : [0.0003,0.001],
+            "2,2',4,4',5-pentabromodiphenyl ether (BDE99)" : [0.0003,0.001],
+            '2,2′,4,4′,6-penta-bromodiphenyl ether (BDE100)' : [0.0003,0.001],
+            '2,2′,4,4′,5,5′-hexa-bromodiphenyl ether (BDE153)' : [0.367,1.1],
+            '2,2′,4,4′,5,6′-hexa-bromodiphenyl ether (BDE154)' : [0.367,1.1],
+            '2,2′,3,4,4′,5′,6-heptabromodiphenyl ether (BDE183)' : [4.666,14.0],
+            "2,2',3,3',4,4',5,5',6,6'-decabrominated diphenyl ether (BDE 209)" : [0.016,0.0475],
+            "2,4,4'-Trichlorobiphenyl" : [0.0006,0.0017],
+            "2,2',5,5'-Tetrachlorobiphenyl" : [0.0009,0.0027],
+            "2,2',4,5,5'-Pentachlorobiphenyl" : [0.001,0.003],
+            "2,3',4,4',5-Pentachlorobiphenyl" : [0.0002,0.0006],
+            "2,2',3,4,4',5'-Hexachlorobiphenyl" : [0.0026,0.0079],
+            "2,2',4,4',5,5'-Hexachlorobiphenyl" : [0.013,0.040],
+            "2,2',3,4,4',5,5'-Heptachlorobiphenyl" : [0.004,0.012],
+            //'Hexabromodiphenyl ether (BDE138)' : [,],
+            //'2,2´,4-tri-bromodiphenylether (BDE17)' : [,],
+            'Dieldrin': [0.005,null],
+            'Dichlorodiphenyltrichloroethane (PPDDT)' : [0.005,null],
+            "All PAHs": [0.1, null],
+            "All Organotins": [0.1, 0.5],
+            "All PCBs": [0.02, 0.2],
+            "ICES7 PCBs": {
+                "levels": [0.01, 0.09],
+                "definition": "ICES7: Sum of 7 PCBs",
+                "contains": [
+                    "2,2',5,5'-Tetrachlorobiphenyl",
+                    "2,4,4'-Trichlorobiphenyl",
+                    "2,2',3,4,4',5,5'-Heptachlorobiphenyl",
+                    "2,2',4,4',5,5'-Hexachlorobiphenyl",
+                    "2,2',3,4,4',5'-Hexachlorobiphenyl",
+                    "2,3',4,4',5-Pentachlorobiphenyl",
+                    "2,2',4,5,5'-Pentachlorobiphenyl"
+                ],
+            },
+            "Total PCB data": {
+                "levels": [0.02, 0.18],
+                "definition": "Total PCBs (Sum of 25)",
+            },
+            "Total Organochlorine data": {
+                "definition": "Total Organochlorine (Sum of 8)",
+            },
+            "Total Organotins data": {
+                "definition": "Total Organotins (Sum of 2)",
+            },
+            "Total Trace metal data": {
+                "definition": "Total Trace Metals (Sum of 8)",
+            },
+            "LMW PAH Sum": {
+                "levels": [0.552, 3.160],
+                "levelNames": ["Effect Range Low", "Effect Range Median"],
+                "levelAbbrev": ["ERL", "ERM"],
+                "definition": "Gorham-Test Protocol: LMW PAHs (Sum of 7)",
+                "contains": ["Acenapthene", "Acenapthylene", "Anthracene", "C1-Napthalenes",  "Fluorene","Napthalene", "Phenanthrene"]
+            },
+            "HMW PAH Sum" : {
+                "levels": [1.700, 9.600],
+                "levelNames": ["Effect Range Low", "Effect Range Median"],
+                "levelAbbrev": ["ERL", "ERM"],
+                "definition": "Gorham-Test Protocol: HMW PAHs (Sum of 6)",
+                "contains": ["Benz[a]anthracene", "Benzo[a]pyrene", "Chrysene", "Dibenz[a,h]anthracene", "Fluoranthene", "Pyrene"]
+            },
+        }
+    },
     "Candian Quality Guidelines": {
         "unit": "µg/kg dry weight",
         "noLevels": 2,

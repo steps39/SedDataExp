@@ -1071,11 +1071,11 @@ function createStandardFilterUI() {
     }
 
     const title = document.createElement('div');
-    title.innerHTML = '<strong>Filter by Cefas Action Levels:</strong>';
+    title.innerHTML = '<strong>Filter by ' + chosenStandard + ':</strong>';
     container.appendChild(title);
 
-    if (typeof standards === 'undefined' || !standards["Cefas Action Levels"]) return;
-    const std = standards["Cefas Action Levels"];
+    if (typeof standards === 'undefined' || !standards[chosenStandard]) return;
+    const std = standards[chosenStandard];
 
     const options = [
         { label: "None", value: -1 },
@@ -1117,8 +1117,8 @@ function applyStandardFilter(levelIndex) {
         return;
     }
 
-    if (typeof standards === 'undefined' || !standards["Cefas Action Levels"]) return;
-    const std = standards["Cefas Action Levels"];
+    if (typeof standards === 'undefined' || !standards[chosenStandard]) return;
+    const std = standards[chosenStandard];
     const stdUnit = extractUnit(std.unit);
 
     checkboxes.forEach(cb => cb.checked = false);

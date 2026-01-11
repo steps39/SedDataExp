@@ -73,6 +73,13 @@ function updateOptions() {
     // --- ADD THIS CALL ---
     // After determining which sheets are complete, update the dropdowns
     updateSortingOptionsState();
+    const msfInput = document.getElementById('markerScaling');
+    if (msfInput) {
+        const val = parseFloat(msfInput.value);
+        if (!isNaN(val) && val > 0) {
+            markerScaling = val;
+        }
+    }
     const primarySort = document.getElementById('primary-sorting-select').value;
     const secondarySort = document.getElementById('secondary-sorting-select').value;
 

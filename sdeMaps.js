@@ -24,6 +24,7 @@ let colorMode = 'scale';
 let upperLevelMode = '10x';
 let shapesColoredByData = false;
 let includeShapesOnStaticMaps = false;
+let markerScaling = 1;
 
 const highlightStyle = {
     radius: 10, fillColor: '#FFFF00', color: '#000000', weight: 2, opacity: 1, fillOpacity: 1
@@ -122,16 +123,16 @@ const highlightStyle = {
         // Convert meters to pixels based on zoom level
         if (zoomLevel === null) {
             // Fallback to pixel-based sizing
-            if (radiusInMeters === rSmallMeters) return 6;
-            if (radiusInMeters === rMedMeters) return 12;
-            return 18;
+            if (radiusInMeters === rSmallMeters) return 6 * markerScaling;
+            if (radiusInMeters === rMedMeters) return 12 * markerScaling;
+            return 18 * markerScaling;
         }
         
         // Meters per pixel calculation
         const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
         
         // FIX: Scale the result by 20 so the physical meter size translates to visible pixels
-        return (radiusInMeters / metersPerPixel) * 20;
+        return (radiusInMeters / metersPerPixel) * 20 * markerScaling;
     }
 
 /*srg251130    function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
@@ -1686,14 +1687,14 @@ function getDepthRadius(depth, min, max, zoomLevel = null) {
     // Convert meters to pixels based on zoom level
     if (zoomLevel === null) {
         // Fallback to pixel-based sizing for backward compatibility
-        return radiusInMeters / maxRadiusMeters * 20; // Scale to 4-20 pixel range
+        return (radiusInMeters / maxRadiusMeters * 20) * markerScaling; // Scale to 4-20 pixel range
     }
     
     // Calculate meters per pixel at this zoom level
     const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
     
     // FIX: Scale the result by 20 so the physical meter size translates to visible pixels
-    return (radiusInMeters / metersPerPixel) * 20;
+    return (radiusInMeters / metersPerPixel) * 20 * markerScaling;
 }
 
 /*srg251130 function getDepthRadius(depth, min, max, zoomLevel = null) {
