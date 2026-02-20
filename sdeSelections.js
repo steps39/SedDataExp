@@ -192,9 +192,9 @@ function selectChemicals() {
 }
 
 function getSelectedChemicalSampleMeasurements(selectedChemicals) {
-console.log(selectedChemicals);
-console.log(selectedSampleInfo);
-console.log(selectedSampleMeasurements);
+//console.log(selectedChemicals);
+//console.log(selectedSampleInfo);
+//console.log(selectedSampleMeasurements);
     selectedMeas = {};
     for (dateSampled in selectedSampleMeasurements) {
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
@@ -226,8 +226,8 @@ console.log(selectedSampleMeasurements);
                             }
                         }
                         for (sample in selectedSampleInfo[dateSampled].position) {
-console.log(selectedSampleMeasurements,dateSampled,chemicalType,chemical);
-console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
+//console.log(selectedSampleMeasurements,dateSampled,chemicalType,chemical);
+//console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
                            if (!selectedMeas[dateSampled][chemicalType]?.chemicals[chemical]) {
                                 selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
                                 selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
@@ -235,7 +235,7 @@ console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
 /*                            if (!selectedMeas[dateSampled][chemicalType].chemicals[chemical]?.samples) {
                                 selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
                             }*/
-console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
+//console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
                             selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
                            if (!selectedMeas[dateSampled]?.["Physical Data"]) {
                                 selectedMeas[dateSampled]["Physical Data"] = {};
@@ -255,9 +255,9 @@ console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
         }
     }
     for (dateSampled in selectedMeas) {
-        if ('Physical Data' in sampleMeasurements[dateSampled]){
+        if ('Physical Data' in selectedSampleMeasurements[dateSampled]){
             for (sample in selectedSampleInfo[dateSampled].position) {
-                selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
+                selectedMeas[dateSampled]['Physical Data'] = selectedSampleMeasurements[dateSampled]['Physical Data'];
             }
         }
     }
@@ -268,24 +268,24 @@ function getSelectedChemicalSampleInfo(selectedChemicals) {
     let selectedSamps = {};
     for (const dateSampled in selectedSampleMeasurements) {
         selectedSamps[dateSampled] = {};
-        selectedSamps[dateSampled]['Date sampled'] = sampleInfo[dateSampled]['Date sampled'];
-        selectedSamps[dateSampled].fileURL = sampleInfo[dateSampled].fileURL;
-        selectedSamps[dateSampled].Applicant = sampleInfo[dateSampled].Applicant;
-        selectedSamps[dateSampled]['Application number'] = sampleInfo[dateSampled]['Application number'];
-        selectedSamps[dateSampled]['Application title'] = sampleInfo[dateSampled]['Application title'];
-        selectedSamps[dateSampled]['label'] = sampleInfo[dateSampled]['label'];
+        selectedSamps[dateSampled]['Date sampled'] = selectedSampleInfo[dateSampled]['Date sampled'];
+        selectedSamps[dateSampled].fileURL = selectedSampleInfo[dateSampled].fileURL;
+        selectedSamps[dateSampled].Applicant = selectedSampleInfo[dateSampled].Applicant;
+        selectedSamps[dateSampled]['Application number'] = selectedSampleInfo[dateSampled]['Application number'];
+        selectedSamps[dateSampled]['Application title'] = selectedSampleInfo[dateSampled]['Application title'];
+        selectedSamps[dateSampled]['label'] = selectedSampleInfo[dateSampled]['label'];
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
             if (!('position' in selectedSamps[dateSampled])) {
-console.log('setting up position');
+//console.log('setting up position');
                 selectedSamps[dateSampled].position = {};
             }
             if ('Physical Data' != chemicalType) {
-console.log('getting positions',chemicalType,chemical);
+//console.log('getting positions',chemicalType,chemical);
                 for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
                     if (selectedChemicals.includes(chemical)) {
                         for (const sample in selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
 //if (sample.includes('Scar')) {
-    console.log('Sample',sample);
+//    console.log('Sample',sample);
 //}
                             selectedSamps[dateSampled].position[sample] = selectedSampleInfo[dateSampled].position[sample];
                         }

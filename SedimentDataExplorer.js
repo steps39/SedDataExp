@@ -2067,6 +2067,131 @@ function createExportButton(chart, instanceNo, container) {
     container.appendChild(button);
 }
         
+function createGnuplotExportButton(chart, instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
+    const button = document.createElement('button');
+    button.id = 'buttong' + instanceNo
+    button.textContent = 'Export Gnuplot';
+    button.addEventListener('click', () => {
+        exportGnuplot(instanceNo);
+    });
+    container.appendChild(button);
+}
+
+function exportGnuplot(instanceNo) {
+    const chart = chartInstance[instanceNo];
+    if (!chart) return;
+
+    const type = chart.config.type;
+    let title = chart.options.plugins.title.text;
+    if (Array.isArray(title)) title = title.join(' ');
+    title = title || 'Chart';
+    
+    let xLabel = chart.options.scales.x.title.text;
+    if (Array.isArray(xLabel)) xLabel = xLabel.join(' ');
+    xLabel = xLabel || 'X Axis';
+    
+    let yLabel = chart.options.scales.y.title.text;
+    if (Array.isArray(yLabel)) yLabel = yLabel.join(' ');
+    yLabel = yLabel || 'Y Axis';
+    
+    let gnuplotContent = `# Gnuplot script for ${title}\n`;
+    gnuplotContent += `set title "${title}"\n`;
+    gnuplotContent += `set xlabel "${xLabel}"\n`;
+    gnuplotContent += `set ylabel "${yLabel}"\n`;
+    gnuplotContent += `set datafile separator ","\n`;
+    gnuplotContent += `set term pngcairo size 1200,800\n`;
+    gnuplotContent += `set output "${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png"\n`;
+
+    if (type === 'bar') {
+        gnuplotContent += `set style data histograms\n`;
+        gnuplotContent += `set style histogram cluster gap 1\n`;
+        gnuplotContent += `set style fill solid border -1\n`;
+        gnuplotContent += `set boxwidth 0.9\n`;
+        gnuplotContent += `set xtics rotate by -90 scale 0\n`;
+        gnuplotContent += `set grid y\n`;
+        gnuplotContent += `set key outside\n`;
+
+        const datasets = chart.data.datasets;
+        const labels = chart.data.labels;
+        
+        let dataBlock = `$DATA << EOD\n`;
+        for (let i = 0; i < labels.length; i++) {
+            let row = `"${labels[i]}"`;
+            datasets.forEach(ds => {
+                if (!ds.hidden) {
+                    let val = ds.data[i];
+                    if (val === undefined || val === null) val = 0;
+                    row += `,${val}`;
+                }
+            });
+            dataBlock += row + `\n`;
+        }
+        dataBlock += `EOD\n`;
+        gnuplotContent += dataBlock;
+
+        let plotCmds = [];
+        let colIndex = 2; 
+        datasets.forEach((ds) => {
+            if (!ds.hidden) {
+                plotCmds.push(`$DATA using ${colIndex}:xtic(1) title "${ds.label}"`);
+                colIndex++;
+            }
+        });
+        
+        gnuplotContent += `plot ` + plotCmds.join(', ') + `\n`;
+
+    } else if (type === 'line') {
+        if (chart.options.scales.x.type === 'logarithmic') {
+            gnuplotContent += `set logscale x\n`;
+            gnuplotContent += `set format x "10^{%L}"\n`;
+        }
+        gnuplotContent += `set key outside\n`;
+        gnuplotContent += `set grid\n`;
+
+        const datasets = chart.data.datasets;
+        const labels = chart.data.labels;
+
+        let dataBlock = `$DATA << EOD\n`;
+        for (let i = 0; i < labels.length; i++) {
+            let row = `${labels[i]}`;
+            datasets.forEach(ds => {
+                if (!ds.hidden) {
+                    let val = ds.data[i];
+                    if (val === undefined || val === null) val = "NaN";
+                    row += `,${val}`;
+                }
+            });
+            dataBlock += row + `\n`;
+        }
+        dataBlock += `EOD\n`;
+        gnuplotContent += dataBlock;
+
+        let plotCmds = [];
+        let colIndex = 2;
+        datasets.forEach((ds) => {
+            if (!ds.hidden) {
+                plotCmds.push(`$DATA using 1:${colIndex} with lines title "${ds.label}" lw 2`);
+                colIndex++;
+            }
+        });
+        
+        gnuplotContent += `plot ` + plotCmds.join(', ') + `\n`;
+    }
+
+    const blob = new Blob([gnuplotContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]/gi, '_')}.gp`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
     // Function to create a button for resetting zoom
 function createResetZoomButton(chart,instanceNo, container) {
 //console.log('creating zoom buttom',instanceNo);
@@ -2246,6 +2371,7 @@ function removeButtons(chartInstanceNo) {
     removeButton(chartInstanceNo, 's');
     removeButton(chartInstanceNo, 'c');    
     removeButton(chartInstanceNo, 'e');    
+    removeButton(chartInstanceNo, 'g');
     removeButton(chartInstanceNo, 'r');
     removeButton(chartInstanceNo, 'epa');    
     removeButton(chartInstanceNo, 'lmw');    

@@ -1299,6 +1299,7 @@ function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
     createExportButton(chartInstance[instanceNo], instanceNo);
+    createGnuplotExportButton(chartInstance[instanceNo], instanceNo);
 
     Chart.register({
         id: 'selectSample',
@@ -1489,7 +1490,7 @@ function displayAnySampleChart(meas, fullSampleNames, datasets, instanceNo, titl
         if (parts.length>2) {
             parts[1] = parts[1] + ': ' + parts[2];
         }
-//console.log(parts[0],parts[1]);
+console.log(parts[0],parts[1]);
         readableLabels[i] = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
     }
 //console.log(readableLabels,datasets);
@@ -1641,6 +1642,7 @@ function displayAnyChart(meas, fullSampleNames, all, datasets, instanceNo, title
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
     createExportButton(chartInstance[instanceNo], instanceNo);
+    createGnuplotExportButton(chartInstance[instanceNo], instanceNo);
 //    let allChemicals = Object.keys(meas);
 //    let allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals
     function clickableScales(fullSampleNames, chart, canvas, click) {
@@ -1716,9 +1718,17 @@ function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs
     const allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals
     const datasets = allSamples.map((sample, index) => {
         const data = allChemicals.map(chemical => meas[chemical][sample]); // Using the first concentration value for simplicity
-//console.log(data);
+console.log(data);
+        let label = sample;
+        let parts = sample.split(": ");
+        if (parts.length > 2) {
+            parts[1] = parts[1] + ': ' + parts[2];
+        }
+        if (selectedSampleInfo[parts[0]] && selectedSampleInfo[parts[0]].position[parts[1]]) {
+            label = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
+        }
         return {
-            label: sample,
+            label: label,
             data: data,
             borderWidth: 1,
             yAxisID: 'y',
@@ -3070,6 +3080,7 @@ function updateSummaryChart() {
             createToggleLinLogButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
             createStackedButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
             createExportButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
         }
     }
 
@@ -3142,6 +3153,7 @@ function updateSummaryChart() {
             createToggleLinLogButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
             createStackedButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
             createExportButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
         }
     }
 
@@ -3208,6 +3220,7 @@ function updateSummaryChart() {
             createToggleLinLogButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
             createStackedButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
             createExportButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
         }
     }
 
@@ -3271,6 +3284,7 @@ function updateSummaryChart() {
             createToggleLinLogButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
             createStackedButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
             createExportButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
         }
     }
 
@@ -3356,6 +3370,7 @@ function updateSummaryChart() {
                 createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
                 createStackedButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
                 createExportButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
             }
         }
     }
@@ -3451,6 +3466,7 @@ function updateSummaryChart() {
                 createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
                 createStackedButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
                 createExportButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
             }
         }
     }
@@ -3556,6 +3572,7 @@ function updateSummaryChart() {
                 createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
                 createStackedButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
                 createExportButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
             }
         }
     }
@@ -3650,6 +3667,7 @@ function updateSummaryChart() {
                 createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
                 createStackedButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
                 createExportButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
             }
         }
     }

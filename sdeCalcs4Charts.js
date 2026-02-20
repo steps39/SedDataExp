@@ -273,7 +273,9 @@ console.log(ds);
 //console.log('dataforPSD ', unitTitle,ptsSizes,ptsAreas,ptsVolumes,measChart,measChartArea);
     let allSamples = Object.keys(measChart);
 //    if (!(xAxisSort === 'normal')) {
+console.log(allSamples);
         allSamples.sortComplexSamples();
+console.log(allSamples);
 //    }
     return {unitTitle, ptsSizes, measChart, measChartArea, measChartRelativeArea, splitWeights, splitAreas, splitRelativeAreas, cumWeights, cumAreas, allSamples}
 }
