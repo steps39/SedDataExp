@@ -903,14 +903,34 @@ function createControlButtons() {
     const sidebar = document.getElementById('controls-sidebar');
     if (sidebar) {
         const button = document.createElement('button');
-        button.textContent = 'Copy Settings URL';
+        button.textContent = 'Export Data to CSV';
         button.style.marginTop = '10px';
         button.style.marginBottom = '10px';
         button.style.width = '95%';
         button.style.padding = '5px';
         button.style.cursor = 'pointer';
-        button.onclick = generateURL;
+        button.onclick = exportToCSV;
         sidebar.insertBefore(button, sidebar.firstChild);
+
+        const buttonFiltered = document.createElement('button');
+        buttonFiltered.textContent = 'Export Filtered Data to CSV';
+        buttonFiltered.style.marginTop = '10px';
+        buttonFiltered.style.marginBottom = '10px';
+        buttonFiltered.style.width = '95%';
+        buttonFiltered.style.padding = '5px';
+        buttonFiltered.style.cursor = 'pointer';
+        buttonFiltered.onclick = exportFilteredToCSV;
+        sidebar.insertBefore(buttonFiltered, sidebar.firstChild);
+
+        const buttonCopy = document.createElement('button');
+        buttonCopy.textContent = 'Copy Settings URL';
+        buttonCopy.style.marginTop = '10px';
+        buttonCopy.style.marginBottom = '10px';
+        buttonCopy.style.width = '95%';
+        buttonCopy.style.padding = '5px';
+        buttonCopy.style.cursor = 'pointer';
+        buttonCopy.onclick = generateURL;
+        sidebar.insertBefore(buttonCopy, sidebar.firstChild);
 
         const buttonFD = document.createElement('button');
         buttonFD.textContent = 'Toggle File Display';
@@ -1099,6 +1119,150 @@ function loadDredgeVolumeFromUrl(url) {
         .catch(err => console.error("Error loading dredge volume data:", err));
 }
 
+    function exportToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in sampleMeasurements) {
+            const info = sampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in sampleMeasurements[dateSampled]) {
+                const sheet = sampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    function exportFilteredToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in selectedSampleMeasurements) {
+            const info = selectedSampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in selectedSampleMeasurements[dateSampled]) {
+                const sheet = selectedSampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_filtered_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+    
+
+
 function processDredgeVolumeData(data, sourceUrl = null) {
     const workbook = XLSX.read(data, {type: 'array'});
     const sheetName = workbook.SheetNames[0];
@@ -1121,7 +1285,151 @@ function processDredgeVolumeData(data, sourceUrl = null) {
             }
         }
     }
-    
+
+    function exportToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in sampleMeasurements) {
+            const info = sampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in sampleMeasurements[dateSampled]) {
+                const sheet = sampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    function exportFilteredToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in selectedSampleMeasurements) {
+            const info = selectedSampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in selectedSampleMeasurements[dateSampled]) {
+                const sheet = selectedSampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_filtered_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
     const areas = {};
     for (let i = 1; i < json.length; i++) {
         const row = json[i];
