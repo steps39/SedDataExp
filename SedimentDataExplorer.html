@@ -8,7 +8,7 @@
     
     <!-- External Scripts and Styles (Unchanged) -->
 <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  -->
-    <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script>
+<!--     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script> -->
     <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
     <script src="https://unpkg.com/chroma-js/dist/chroma.min.cjs"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -599,7 +599,7 @@ div[id^="largemap-"] {
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v1.20251207</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v2.20260409</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
@@ -727,15 +727,16 @@ div[id^="largemap-"] {
             <div id="fileDisplay"></div>
             <div id="sample-info-table-container"></div>
             <div id="everything-maps" style="display: none; margin-top: 1rem;">
-                <div id="map" class="map-container-original"></div>
-                <div id="map-legend" class="map-legend-container" style="display: none;">
-                    <h4>Legend</h4>
-                    </div>
                 <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
                     <button onclick="toggleFileDisplay()">Toggle File Display</button>
                     <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
+                    <button id="toggleAreaTooltipsBtn" onclick="toggleAllAreaTooltips()">Show All Area Names</button>
                     <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
                     <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
+                </div>
+                <div id="map" class="map-container-original"></div>
+                <div id="map-legend" class="map-legend-container" style="display: none;">
+                    <h4>Legend</h4>
                 </div>
             </div>
             
@@ -783,25 +784,36 @@ div[id^="largemap-"] {
         <div class="modal-content">
             <span class="close-button" onclick="cancelSampleSelection()">&times;</span>
             <h2>Select Samples</h2>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipSampleSelections(true)">Select All</button><button onclick="flipSampleSelections(false)">Select None</button><button onclick="selectHighlighted()">Select Highlighted</button></div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button onclick="flipSampleSelections(true)">Select All</button>
+                <button onclick="flipSampleSelections(false)">Select None</button>
+                <button onclick="selectHighlighted()">Select Highlighted</button>
+            </div>
             <hr>
 
             <p><strong>Filter Samples:</strong></p>
 
-<div class="horizontal-group">
-  <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
-  <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
-  <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
-</div>
+            <div class="input-group">
+                <label for="areaSelect">Filter by Area:</label>
+                <select id="areaSelect" class="full-width-select" onchange="applyAreaFilter()">
+                    <option value="">-- Select an Area --</option>
+                    </select>
+            </div>
 
-<div class="horizontal-group">
-  <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
-  <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
-</div>
+            <div class="horizontal-group">
+                <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
+                <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
+                <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
+            </div>
 
-<div class="input-group">
-  <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
-</div>
+            <div class="horizontal-group">
+                <label for="minDepth">Minimum depth:</label><input type="number" id="minDepth">
+                <label for="maxDepth">Maximum depth:</label><input type="number" id="maxDepth">
+            </div>
+
+            <div class="input-group">
+                <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
+            </div>
 
             <div>Must have measurement of - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label>
                 <input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label>
@@ -879,7 +891,7 @@ div[id^="largemap-"] {
     <div id="mapModifiersModal" class="modal">
         <div class="modal-content">
             <h2>Map Modifiers</h2>
-            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling" placeholder="2">
+            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling" placeholder="1" step="0.1" value="1">
             <div class="modal-footer"><button onclick="closeMapModifiersModal()" class="secondary">Close</button></div>
         </div>
     </div>
@@ -1190,8 +1202,8 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
         function openMapModifiersModal() { document.getElementById('mapModifiersModal').style.display = 'block'; }
         function closeMapModifiersModal() { 
             document.getElementById('mapModifiersModal').style.display = 'none';
-            markerScaling = parseFloat(document.getElementById('markerScaling').value) || 2;
-         }
+            markerScaling = parseFloat(document.getElementById('markerScaling').value) || 1;
+        }
         function openAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'block'; }
         function closeAdditionalChartsModal() { document.getElementById('additionalChartsModal').style.display = 'none'; }
         function openPcaOptionsModal() { document.getElementById('pcaOptionsModal').style.display = 'block'; }

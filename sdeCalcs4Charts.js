@@ -68,8 +68,8 @@ function recalculateConcentration(meas) {
 //console.log('PTSSIZES',ptsSizes);
         for (i=0;i<ptsSizes.length;i++) {
             if (ptsSizes[i] < resuspensionSize) {
-                cumWeight = selectedSampleMeasurements[ds]['Physical Data'].samples[sample].cumWeights[i];
-                cumArea = selectedSampleMeasurements[ds]['Physical Data'].samples[sample].cumAreas[i];
+                cumWeight = selectedSampleMeasurements[ds]['Physical Data']?.samples[sample]?.cumWeights?.[i] || 1;
+                cumArea = selectedSampleMeasurements[ds]['Physical Data']?.samples[sample]?.cumAreas?.[i] || 1;
                 concentrateFactor[ds][sample] = cumArea / cumWeight;
                 break;
             }
@@ -113,8 +113,8 @@ function recalculateConcentrationComplex(meas) {
 //console.log('PTSSIZES',ptsSizes);
         for (i=0;i<ptsSizes.length;i++) {
             if (ptsSizes[i] < resuspensionSize) {
-                cumWeight = selectedSampleMeasurements[ds]['Physical Data'].samples[sample].cumWeights[i];
-                cumArea = selectedSampleMeasurements[ds]['Physical Data'].samples[sample].cumAreas[i];
+                cumWeight = selectedSampleMeasurements[ds]['Physical Data']?.samples[sample]?.cumWeights?.[i] || 1;
+                cumArea = selectedSampleMeasurements[ds]['Physical Data']?.samples[sample]?.cumAreas?.[i] || 1;
                 concentrateFactor[ds][sample] = cumArea / cumWeight;
                 break;
             }
@@ -234,7 +234,7 @@ function dataForPSDCharting(sheetName) {
     let cumAreas = {};
 //srg250308    datesSampled.sort();
        datesSampled.forEach (ds => {
-console.log(ds);
+//console.log(ds);
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
             ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
             ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
@@ -273,7 +273,9 @@ console.log(ds);
 //console.log('dataforPSD ', unitTitle,ptsSizes,ptsAreas,ptsVolumes,measChart,measChartArea);
     let allSamples = Object.keys(measChart);
 //    if (!(xAxisSort === 'normal')) {
+//console.log(allSamples);
         allSamples.sortComplexSamples();
+//console.log(allSamples);
 //    }
     return {unitTitle, ptsSizes, measChart, measChartArea, measChartRelativeArea, splitWeights, splitAreas, splitRelativeAreas, cumWeights, cumAreas, allSamples}
 }
@@ -377,19 +379,19 @@ function dataForTotalScatterCharting(sheetName, chartType) {
                     switch (chartType) {
                         case "totalArea":
                             console.log(ds,s);
-                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s].totalArea;
+                            xValue = sampleMeasurements[ds]['Physical Data']?.samples[s]?.totalArea;
                             break;
 
                         case "totalHC":
-                            xValue = sampleMeasurements[ds]['PAH data'].totalHC[s];
+                            xValue = sampleMeasurements[ds]['PAH data']?.totalHC?.[s];
                             break;
 
                         case "totalSolids":
-                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Total solids (% total sediment)'];
+                            xValue = sampleMeasurements[ds]['Physical Data']?.samples[s]?.['Total solids (% total sediment)'];
                             break;
 
                         case "organicCarbon":
-                            xValue = sampleMeasurements[ds]['Physical Data'].samples[s]['Organic matter (total organic carbon)'];
+                            xValue = sampleMeasurements[ds]['Physical Data']?.samples[s]?.['Organic matter (total organic carbon)'];
                             break;
 
                         default:
@@ -774,4 +776,3 @@ function ringFractionsForPAHs() {
 //}
 return {unitTitle, measChart}
 }
-

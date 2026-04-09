@@ -36,7 +36,7 @@ ddLookup.chemical = {'pcb101' : "2,2',4,5,5'-Pentachlorobiphenyl" , 'pcb105' : "
     'bde99' : "2,2',4,4',5-pentabromodiphenyl ether (BDE99)", 'bde209' : "2,2',3,3',4,4',5,5',6,6'-decabrominated diphenyl ether (BDE 209)" ,
     'dbt' : "Dibutyltine (DBT)" , 'tbt' : "Tributyltin (TBT)" , 'as' : "Arsenic (As)" , 'cd' : "Cadmium (Cd)" , 'cr' : "Chromium (Cr)" , 'cu' : "Copper (Cu)" ,
     'hg' : "Mercury (Hg)" , 'ni' : "Nickel (Ni)" , 'pb' : "Lead (Pb)" , 'zn' : "Zinc (Zn)" };
-ddLookup.reverseChemical = {}
+ddLookup.reverseChemical = {};
 for (abbrev in ddLookup.chemical) {
     ddLookup.reverseChemical[ddLookup.chemical[abbrev]] = abbrev;
 }

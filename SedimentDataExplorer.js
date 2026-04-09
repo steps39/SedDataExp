@@ -2,7 +2,7 @@
     let radarPlot = "None";
     let resuspensionSize = 0;
     let kmlLayers = {};
-    let chosenStandard = 'Cefas Action Levels';
+    let chosenStandard = 'Proposed Cefas Action Levels';
 //    let chosenStandard = "Candian Quality Guidelines";
 //		import {parse, stringify, toJSON, fromJSON} from 'flatted';
     const autocolors = window['chartjs-plugin-autocolors'];
@@ -10,6 +10,7 @@
     const annotationPlugin = window['chartjs-plugin-annotation'];
     Chart.register(annotationPlugin);
     // Importing the necessary library for coordinate conversion
+    window.dredgeVolumeData = null;
 //    const osGridConverter = require('os-transform.js');
     const osGridConverter = window['os-transform.js'];
 
@@ -652,10 +653,8 @@ function postLoadSnapShot() {
     }
     
     function importShapes() {
-        urls = {};
+        let urls = [];
         if (firstTime) {
-            firstTime = false;
-            files = {};
             // Get the current URL
             const currentURL = window.location.href;
             
@@ -664,16 +663,17 @@ function postLoadSnapShot() {
 
             // Get the value of the 'locations' parameter
             const shapesParam = suppliedParams.get('shapes');
-            if (!shapesParam) {
-                return;
-            } else {
+            if (shapesParam) {
                     urls = shapesParam.split(',').map(url => url.trim()); // Split comma-separated URLs
             }
         } else {
             const fileInput = document.getElementById('fileShapes');
             const urlInput = document.getElementById('urlShapes');
             const files = fileInput.files; // Files is now a FileList object containing multiple files
-            urls = urlInput.value.trim().split(',').map(url => url.trim()); // Split comma-separated URLs
+            const urlVal = urlInput.value.trim();
+            if (urlVal) {
+                urls = urlVal.split(',').map(url => url.trim()); // Split comma-separated URLs
+            }
 
             if (files.length === 0 && urls.length === 0) {
                 alert('Please select files or enter URLs.');
@@ -681,14 +681,19 @@ function postLoadSnapShot() {
             }
             // Process files
             for (let i = 0; i < files.length; i++) {
-                filename = files[i].name;
+                const filename = files[i].name;
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    const data = new Uint8Array(e.target.result);
-                    processExcelLocations(data,filename);
+                    const content = e.target.result;
+                    const blob = new Blob([content], {type: 'application/vnd.google-earth.kml+xml'});
+                    const url = URL.createObjectURL(blob);
+                    kmlLayers[filename] = url;
                 };
-                reader.readAsArrayBuffer(files[i]);
+                reader.readAsText(files[i]);
             }
+            // Clear the input field after reading locations
+            fileInput.value = '';
+            urlInput.value = '';
         }
         // Process URLs only if URLs are supplied
         if (urls.length > 0) {
@@ -714,9 +719,6 @@ console.log(filename);  // Output: MLA_2015_00088-LOCATIONS.kml
                     });*/
                 });
         }
-        // Clear the input field after reading locations
-        fileInput.value = '';
-        urlInput.value = '';
     }
    
     function processExcelLocations(data,url) {
@@ -783,9 +785,683 @@ function toggleSidebar() {
     toggleBtn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
 }
 
+function generateURL() {
+    const params = new URLSearchParams();
+
+    // 1. Data URLs
+    const dataUrls = new Set();
+    if (typeof sampleInfo !== 'undefined') {
+        Object.values(sampleInfo).forEach(info => {
+            if (info.fileURL && /^https?:\/\//i.test(info.fileURL)) {
+                dataUrls.add(info.fileURL);
+            }
+        });
+    }
+    if (dataUrls.size > 0) {
+        params.set('urls', Array.from(dataUrls).join(','));
+    }
+
+    // 2. Shapes
+    const shapeUrls = new Set();
+    if (typeof kmlLayers !== 'undefined') {
+        Object.values(kmlLayers).forEach(url => {
+            if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+                shapeUrls.add(url);
+            }
+        });
+    }
+    if (shapeUrls.size > 0) {
+        params.set('shapes', Array.from(shapeUrls).join(','));
+    }
+
+    // 3. Selected Charts
+    const selCharts = [];
+    if (typeof dataSheetNamesCheckboxes !== 'undefined') {
+        dataSheetNamesCheckboxes.forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox && checkbox.checked) {
+                selCharts.push(id);
+            }
+        });
+    }
+    if (selCharts.length > 0) {
+        params.set('selcharts', selCharts.join(','));
+    }
+
+    // 4. Sub Charts
+    const subCharts = [];
+    if (typeof subChartNames !== 'undefined') {
+        subChartNames.forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox && checkbox.checked) {
+                subCharts.push(id);
+            }
+        });
+    }
+    if (subCharts.length > 0) {
+        params.set('subcharts', subCharts.join(','));
+    }
+
+    // 5. Sort
+    if (typeof xAxisSort !== 'undefined' && xAxisSort !== 'normal') {
+        params.set('sort', xAxisSort);
+    }
+
+    // 6. Look
+    if (typeof lookSetting !== 'undefined' && lookSetting !== 'colour') {
+        params.set('look', lookSetting);
+    }
+
+    // 7. Dredge Data
+    if (typeof CEFASfilename !== 'undefined' && CEFASfilename && /^https?:\/\//i.test(CEFASfilename)) {
+        params.set('durl', CEFASfilename);
+        
+        const lat = document.getElementById('centreLatitude')?.value;
+        if (lat) params.set('dlat', lat);
+        
+        const lon = document.getElementById('centreLongitude')?.value;
+        if (lon) params.set('dlon', lon);
+        
+        const rad = document.getElementById('radius')?.value;
+        if (rad) params.set('drad', rad);
+        
+        const start = document.getElementById('startDate')?.value;
+        if (start) params.set('dstart', start);
+        
+        const finish = document.getElementById('finishDate')?.value;
+        if (finish) params.set('dfinish', finish);
+        
+        const lics = document.getElementById('mlApplications')?.value;
+        if (lics) params.set('dlics', lics);
+    }
+
+    // 8. Dredge Volume Data URL
+    if (window.dredgeVolumeData && window.dredgeVolumeData.sourceUrl) {
+        params.set('dredgevol', window.dredgeVolumeData.sourceUrl);
+    }
+
+    // 9. Dredge Volume Year Range
+    const dStart = document.getElementById('dredgeStartYear')?.value;
+    if (dStart) params.set('dvolstart', dStart);
+    
+    const dEnd = document.getElementById('dredgeEndYear')?.value;
+    if (dEnd) params.set('dvolend', dEnd);
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    // Decode URI component to show spaces instead of %20 or +
+    const newUrl = decodeURIComponent(baseUrl + '?' + params.toString().replace(/\+/g, ' '));
+
+    navigator.clipboard.writeText(newUrl).then(() => {
+        alert('URL copied to clipboard:\n' + newUrl);
+    }, (err) => {
+        console.error('Could not copy text: ', err);
+        prompt("Copy this URL:", newUrl);
+    });
+}
+
+function createControlButtons() {
+    const sidebar = document.getElementById('controls-sidebar');
+    if (sidebar) {
+        const button = document.createElement('button');
+        button.textContent = 'Export Data to CSV';
+        button.style.marginTop = '10px';
+        button.style.marginBottom = '10px';
+        button.style.width = '95%';
+        button.style.padding = '5px';
+        button.style.cursor = 'pointer';
+        button.onclick = exportToCSV;
+        sidebar.insertBefore(button, sidebar.firstChild);
+
+        const buttonFiltered = document.createElement('button');
+        buttonFiltered.textContent = 'Export Filtered Data to CSV';
+        buttonFiltered.style.marginTop = '10px';
+        buttonFiltered.style.marginBottom = '10px';
+        buttonFiltered.style.width = '95%';
+        buttonFiltered.style.padding = '5px';
+        buttonFiltered.style.cursor = 'pointer';
+        buttonFiltered.onclick = exportFilteredToCSV;
+        sidebar.insertBefore(buttonFiltered, sidebar.firstChild);
+
+        const buttonCopy = document.createElement('button');
+        buttonCopy.textContent = 'Copy Settings URL';
+        buttonCopy.style.marginTop = '10px';
+        buttonCopy.style.marginBottom = '10px';
+        buttonCopy.style.width = '95%';
+        buttonCopy.style.padding = '5px';
+        buttonCopy.style.cursor = 'pointer';
+        buttonCopy.onclick = generateURL;
+        sidebar.insertBefore(buttonCopy, sidebar.firstChild);
+
+        const buttonFD = document.createElement('button');
+        buttonFD.textContent = 'Toggle File Display';
+        buttonFD.style.marginTop = '10px';
+        buttonFD.style.marginBottom = '10px';
+        buttonFD.style.width = '95%';
+        buttonFD.style.padding = '5px';
+        buttonFD.style.cursor = 'pointer';
+        buttonFD.onclick = toggleFileDisplay;
+        sidebar.insertBefore(buttonFD, sidebar.firstChild);
+
+        const buttonSS = document.createElement('button');
+        buttonSS.id = 'toggleStaticShapesBtn';
+        buttonSS.textContent = 'Static Maps Shapes: Off';
+        buttonSS.style.marginTop = '10px';
+        buttonSS.style.marginBottom = '10px';
+        buttonSS.style.width = '95%';
+        buttonSS.style.padding = '5px';
+        buttonSS.style.cursor = 'pointer';
+        buttonSS.onclick = function() {
+            if (window.toggleStaticShapes) window.toggleStaticShapes();
+        };
+        sidebar.insertBefore(buttonSS, sidebar.firstChild);
+
+        // --- Dredge Data Input Section ---
+        const dredgeContainer = document.createElement('div');
+        dredgeContainer.style.marginTop = '10px';
+        dredgeContainer.style.padding = '5px';
+        dredgeContainer.style.borderTop = '1px solid #ccc';
+        dredgeContainer.style.borderBottom = '1px solid #ccc';
+        
+        const dredgeLabel = document.createElement('div');
+        dredgeLabel.innerHTML = '<b>Dredge Volumes (xlsx/ods)</b>';
+        dredgeContainer.appendChild(dredgeLabel);
+        
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.xlsx, .ods';
+        fileInput.style.width = '95%';
+        fileInput.style.marginTop = '5px';
+        fileInput.addEventListener('change', handleDredgeVolumeUpload);
+        dredgeContainer.appendChild(fileInput);
+        
+        // URL Input
+        const urlContainer = document.createElement('div');
+        urlContainer.style.marginTop = '5px';
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.id = 'dredgeVolUrl';
+        urlInput.placeholder = 'URL to Dredge Data';
+        urlInput.style.width = '70%';
+        urlContainer.appendChild(urlInput);
+
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = 'Load';
+        loadBtn.style.width = '25%';
+        loadBtn.onclick = function() {
+            const url = document.getElementById('dredgeVolUrl').value;
+            if (url) loadDredgeVolumeFromUrl(url);
+        };
+        urlContainer.appendChild(loadBtn);
+        dredgeContainer.appendChild(urlContainer);
+
+        const densityContainer = document.createElement('div');
+        densityContainer.style.marginTop = '5px';
+        densityContainer.innerHTML = 'Density (T/m³): ';
+        
+        const densityInput = document.createElement('input');
+        densityInput.type = 'number';
+        densityInput.id = 'dredgeDensity';
+        densityInput.value = '1.5';
+        densityInput.step = '0.1';
+        densityInput.style.width = '60px';
+        densityInput.addEventListener('change', function() {
+            if (window.updateSummaryChart) window.updateSummaryChart();
+        });
+        densityContainer.appendChild(densityInput);
+        dredgeContainer.appendChild(densityContainer);
+
+        const yearContainer = document.createElement('div');
+        yearContainer.style.marginTop = '5px';
+        yearContainer.innerHTML = 'Years: ';
+        
+        const startYearInput = document.createElement('input');
+        startYearInput.type = 'number';
+        startYearInput.id = 'dredgeStartYear';
+        startYearInput.placeholder = 'Start';
+        startYearInput.style.width = '60px';
+        startYearInput.style.marginRight = '5px';
+        startYearInput.addEventListener('change', function() {
+            if (window.updateSummaryChart) window.updateSummaryChart();
+        });
+        yearContainer.appendChild(startYearInput);
+
+        const endYearInput = document.createElement('input');
+        endYearInput.type = 'number';
+        endYearInput.id = 'dredgeEndYear';
+        endYearInput.placeholder = 'End';
+        endYearInput.style.width = '60px';
+        endYearInput.addEventListener('change', function() {
+            if (window.updateSummaryChart) window.updateSummaryChart();
+        });
+        yearContainer.appendChild(endYearInput);
+        dredgeContainer.appendChild(yearContainer);
+        
+        sidebar.insertBefore(dredgeContainer, sidebar.firstChild);
+
+        // --- Standards Selection ---
+        const stdContainer = document.createElement('div');
+        stdContainer.style.marginTop = '10px';
+        stdContainer.style.marginBottom = '10px';
+        stdContainer.style.width = '95%';
+        stdContainer.style.padding = '5px';
+        stdContainer.style.borderTop = '1px solid #ccc';
+        stdContainer.style.borderBottom = '1px solid #ccc';
+        
+        const stdLabel = document.createElement('div');
+        stdLabel.innerHTML = '<b>Quality Standard</b>';
+        stdContainer.appendChild(stdLabel);
+
+        const stdSelect = document.createElement('select');
+        stdSelect.id = 'standardDropdown';
+        stdSelect.style.width = '100%';
+        stdSelect.style.marginTop = '5px';
+        
+        if (typeof standards !== 'undefined') {
+            for (const key in standards) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = key;
+                if (key === chosenStandard) opt.selected = true;
+                stdSelect.appendChild(opt);
+            }
+        }
+
+        stdSelect.addEventListener('change', function() {
+            chosenStandard = this.value;
+            if (window.updateChart) window.updateChart();
+            if (typeof createStandardFilterUI === 'function') createStandardFilterUI();
+        });
+
+        stdContainer.appendChild(stdSelect);
+        sidebar.insertBefore(stdContainer, sidebar.firstChild);
+
+/*        // Create the Area Tooltips button
+        const buttonArea = document.createElement('button');
+        buttonArea.id = 'toggleAreaTooltipsBtn';
+        buttonArea.textContent = 'Show All Area Names';
+        buttonArea.style.marginTop = '10px';
+        buttonArea.style.marginBottom = '10px';
+        buttonArea.style.width = '95%';
+        buttonArea.style.padding = '5px';
+        buttonArea.style.cursor = 'pointer';
+//        buttonArea.onclick = toggleAllAreaTooltips;
+
+        // Try to place it next to the "Show All Sample Names" button if it exists
+        const sampleBtn = document.getElementById('toggleTooltipsBtn');
+        if (sampleBtn && sampleBtn.parentNode) {
+            // Insert after the sample button
+            sampleBtn.parentNode.insertBefore(buttonArea, sampleBtn.nextSibling);
+        } else {
+            // Fallback to inserting at the top of the sidebar
+            sidebar.insertBefore(buttonArea, sidebar.firstChild);
+        }*/
+    }
+}
+
+function handleDredgeVolumeUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        processDredgeVolumeData(data);
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function loadDredgeVolumeFromUrl(url) {
+    fetch(url)
+        .then(response => response.arrayBuffer())
+        .then(data => {
+            processDredgeVolumeData(new Uint8Array(data), url);
+        })
+        .catch(err => console.error("Error loading dredge volume data:", err));
+}
+
+    function exportToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in sampleMeasurements) {
+            const info = sampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in sampleMeasurements[dateSampled]) {
+                const sheet = sampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    function exportFilteredToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in selectedSampleMeasurements) {
+            const info = selectedSampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in selectedSampleMeasurements[dateSampled]) {
+                const sheet = selectedSampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_filtered_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+    
+
+
+function processDredgeVolumeData(data, sourceUrl = null) {
+    const workbook = XLSX.read(data, {type: 'array'});
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+    
+    if (json.length < 2) return;
+    
+    const years = [];
+    const yearIndices = [];
+    const processedYears = new Set();
+    // Assume row 0 is headers. Start from column 1 (Reach is col 0)
+    for (let i = 1; i < json[0].length; i++) {
+        const val = parseInt(json[0][i]);
+        if (!isNaN(val) && val >= 2001 && val <= 2024) {
+            if (!processedYears.has(val)) {
+                years.push(val);
+                yearIndices.push(i);
+                processedYears.add(val);
+            }
+        }
+    }
+
+    function exportToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in sampleMeasurements) {
+            const info = sampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in sampleMeasurements[dateSampled]) {
+                const sheet = sampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    function exportFilteredToCSV() {
+        const rows = [];
+        rows.push(['Sampling Date', 'Sampling Qualifier', 'Latitude', 'Longitude', 'Depth', 'Chemical Name', 'Chemical Shortname', 'Concentration', 'Units', 'Marine Licence', 'Sample Name', 'File url']);
+
+        for (const dateSampled in selectedSampleMeasurements) {
+            const info = selectedSampleInfo[dateSampled];
+            if (!info) continue;
+
+            const fullDate = info['Date sampled'] || '';
+            const dateOnly = fullDate.slice(0, 10);
+            const qualifier = fullDate.slice(10).trim();
+
+            const licence = info['Application number'] || '';
+            const url = info['fileURL'] || '';
+            
+            for (const sheetName in selectedSampleMeasurements[dateSampled]) {
+                const sheet = selectedSampleMeasurements[dateSampled][sheetName];
+                if (!sheet.chemicals) continue;
+
+                const units = sheet['Unit of measurement'] || '';
+
+                for (const chemical in sheet.chemicals) {
+                    const shortName = (typeof ddLookup !== 'undefined' && ddLookup.reverseChemical && ddLookup.reverseChemical[chemical]) ? ddLookup.reverseChemical[chemical] : '';
+
+                    const samples = sheet.chemicals[chemical].samples;
+                    for (const sampleName in samples) {
+                        const concentration = samples[sampleName];
+                        
+                        let lat = '', lon = '', depth = '';
+                        if (info.position && info.position[sampleName]) {
+                            const pos = info.position[sampleName];
+                            lat = pos['Position latitude'];
+                            lon = pos['Position longitude'];
+                            const d = pos['Sampling depth (m)'];
+                            if (d) {
+                                if (d.minDepth === d.maxDepth) {
+                                    depth = d.minDepth;
+                                } else {
+                                    depth = `${d.minDepth}-${d.maxDepth}`;
+                                }
+                            }
+                        }
+
+                        rows.push([dateOnly, qualifier, lat, lon, depth, chemical, shortName, concentration, units, licence, sampleName, url]);
+                    }
+                }
+            }
+        }
+
+        const csvContent = rows.map(row => 
+            row.map(field => {
+                const str = String(field === null || field === undefined ? '' : field);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "sediment_data_filtered_export.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+
+    const areas = {};
+    for (let i = 1; i < json.length; i++) {
+        const row = json[i];
+        let areaName = row[0];
+        if (areaName !== undefined && areaName !== null) {
+            // Check if areaName is just a number
+            if (!isNaN(areaName) && !isNaN(parseFloat(areaName))) {
+                areaName = "Chart " + areaName;
+            } else {
+                areaName = String(areaName);
+            }
+
+            areas[areaName] = {};
+            for (let k = 0; k < yearIndices.length; k++) {
+                const colIdx = yearIndices[k];
+                const year = years[k];
+                let vol = parseFloat(row[colIdx]);
+                if (isNaN(vol)) vol = 0;
+                areas[areaName][year] = vol;
+            }
+        }
+    }
+    
+    window.dredgeVolumeData = { years, areas, sourceUrl };
+    if (window.updateSummaryChart) window.updateSummaryChart();
+}
+
 function importData() {
     var urls = {};
     if (firstTime) {
+        createControlButtons();
+        importShapes();
         importLocations();
         firstTime = false;
         files = {};
@@ -849,6 +1525,25 @@ function importData() {
             }*/
             importDredgeData(durlParam,dlat,dlon,drad,dstart,dfinish,dlicences);
         }
+        const dredgeVolParam = suppliedParams.get('dredgevol');
+        if (dredgeVolParam) {
+            loadDredgeVolumeFromUrl(dredgeVolParam);
+            const urlInput = document.getElementById('dredgeVolUrl');
+            if (urlInput) urlInput.value = dredgeVolParam;
+        }
+
+        const dVolStartParam = suppliedParams.get('dvolstart');
+        if (dVolStartParam) {
+            const startInput = document.getElementById('dredgeStartYear');
+            if (startInput) startInput.value = dVolStartParam;
+        }
+
+        const dVolEndParam = suppliedParams.get('dvolend');
+        if (dVolEndParam) {
+            const endInput = document.getElementById('dredgeEndYear');
+            if (endInput) endInput.value = dVolEndParam;
+        }
+
         const sortParam = suppliedParams.get('sort');
 //console.log(durlParam);
         if (sortParam) {
@@ -856,7 +1551,9 @@ function importData() {
 //            xAxisSortRadio = document.querySelector('input[name="sorting"][xAxisSort]');
 //            xAxisSortRadio = document.querySelector('input[name="sorting"]');
             xAxisSortRadio = document.getElementById(xAxisSort);
-            xAxisSortRadio.checked = true;
+            if (xAxisSortRadio) {
+                xAxisSortRadio.checked = true;
+            }
 /*            switch (sortParam) {
                 case 'normal': xAxisSort = 'normal'; break
                 case 'latitude': xAxisSort = 'latitude'; break
@@ -868,7 +1565,7 @@ function importData() {
         }
         const lookParam = suppliedParams.get('look');
 //console.log(durlParam);
-        if (sortParam) {
+        if (lookParam) {
             lookSetting = lookParam;
             lookRadio = document.getElementById(look);
             lookRadio.checked = true;
@@ -956,7 +1653,7 @@ function importData() {
 //console.log('processexceldata again');
                         })
                         .catch(error => {
-                            console.error('Error fetching the file:', error);
+                            console.error('Error fetching the file ',url,':', error);
                         })
                 );
             });
@@ -1664,9 +2361,11 @@ console.log(row);
 }
 
 // Function to create a button for resetting zoom
-function createExportButton(chart, instanceNo) {
+function createExportButton(chart, instanceNo, container) {
     //console.log('creating zoom buttom',instanceNo);
-    const container = document.getElementById('chartContainer');
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttone' + instanceNo
     button.textContent = 'Export';
@@ -1676,10 +2375,137 @@ function createExportButton(chart, instanceNo) {
     container.appendChild(button);
 }
         
+function createGnuplotExportButton(chart, instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
+    const button = document.createElement('button');
+    button.id = 'buttong' + instanceNo
+    button.textContent = 'Export Gnuplot';
+    button.addEventListener('click', () => {
+        exportGnuplot(instanceNo);
+    });
+    container.appendChild(button);
+}
+
+function exportGnuplot(instanceNo) {
+    const chart = chartInstance[instanceNo];
+    if (!chart) return;
+
+    const type = chart.config.type;
+    let title = chart.options.plugins.title.text;
+    if (Array.isArray(title)) title = title.join(' ');
+    title = title || 'Chart';
+    
+    let xLabel = chart.options.scales.x.title.text;
+    if (Array.isArray(xLabel)) xLabel = xLabel.join(' ');
+    xLabel = xLabel || 'X Axis';
+    
+    let yLabel = chart.options.scales.y.title.text;
+    if (Array.isArray(yLabel)) yLabel = yLabel.join(' ');
+    yLabel = yLabel || 'Y Axis';
+    
+    let gnuplotContent = `# Gnuplot script for ${title}\n`;
+    gnuplotContent += `set title "${title}"\n`;
+    gnuplotContent += `set xlabel "${xLabel}"\n`;
+    gnuplotContent += `set ylabel "${yLabel}"\n`;
+    gnuplotContent += `set datafile separator ","\n`;
+    gnuplotContent += `set term pngcairo size 1200,800\n`;
+    gnuplotContent += `set output "${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png"\n`;
+
+    if (type === 'bar') {
+        gnuplotContent += `set style data histograms\n`;
+        gnuplotContent += `set style histogram cluster gap 1\n`;
+        gnuplotContent += `set style fill solid border -1\n`;
+        gnuplotContent += `set boxwidth 0.9\n`;
+        gnuplotContent += `set xtics rotate by -90 scale 0\n`;
+        gnuplotContent += `set grid y\n`;
+        gnuplotContent += `set key outside\n`;
+
+        const datasets = chart.data.datasets;
+        const labels = chart.data.labels;
+        
+        let dataBlock = `$DATA << EOD\n`;
+        for (let i = 0; i < labels.length; i++) {
+            let row = `"${labels[i]}"`;
+            datasets.forEach(ds => {
+                if (!ds.hidden) {
+                    let val = ds.data[i];
+                    if (val === undefined || val === null) val = 0;
+                    row += `,${val}`;
+                }
+            });
+            dataBlock += row + `\n`;
+        }
+        dataBlock += `EOD\n`;
+        gnuplotContent += dataBlock;
+
+        let plotCmds = [];
+        let colIndex = 2; 
+        datasets.forEach((ds) => {
+            if (!ds.hidden) {
+                plotCmds.push(`$DATA using ${colIndex}:xtic(1) title "${ds.label}"`);
+                colIndex++;
+            }
+        });
+        
+        gnuplotContent += `plot ` + plotCmds.join(', ') + `\n`;
+
+    } else if (type === 'line') {
+        if (chart.options.scales.x.type === 'logarithmic') {
+            gnuplotContent += `set logscale x\n`;
+            gnuplotContent += `set format x "10^{%L}"\n`;
+        }
+        gnuplotContent += `set key outside\n`;
+        gnuplotContent += `set grid\n`;
+
+        const datasets = chart.data.datasets;
+        const labels = chart.data.labels;
+
+        let dataBlock = `$DATA << EOD\n`;
+        for (let i = 0; i < labels.length; i++) {
+            let row = `${labels[i]}`;
+            datasets.forEach(ds => {
+                if (!ds.hidden) {
+                    let val = ds.data[i];
+                    if (val === undefined || val === null) val = "NaN";
+                    row += `,${val}`;
+                }
+            });
+            dataBlock += row + `\n`;
+        }
+        dataBlock += `EOD\n`;
+        gnuplotContent += dataBlock;
+
+        let plotCmds = [];
+        let colIndex = 2;
+        datasets.forEach((ds) => {
+            if (!ds.hidden) {
+                plotCmds.push(`$DATA using 1:${colIndex} with lines title "${ds.label}" lw 2`);
+                colIndex++;
+            }
+        });
+        
+        gnuplotContent += `plot ` + plotCmds.join(', ') + `\n`;
+    }
+
+    const blob = new Blob([gnuplotContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]/gi, '_')}.gp`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
     // Function to create a button for resetting zoom
-function createResetZoomButton(chart,instanceNo) {
+function createResetZoomButton(chart,instanceNo, container) {
 //console.log('creating zoom buttom',instanceNo);
-    const container = document.getElementById('chartContainer');
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttonz'+instanceNo
     button.textContent = 'Reset Zoom';
@@ -1690,8 +2516,10 @@ function createResetZoomButton(chart,instanceNo) {
 }
     
 // Function to create a button for toggling legend
-function createToggleLegendButton(chart,instanceNo) {
-    const container = document.getElementById('chartContainer');
+function createToggleLegendButton(chart,instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttonl'+instanceNo
     if (!legends[instanceNo]) {
@@ -1765,8 +2593,10 @@ function createToggleCanvasSize(canvas, chart,instanceNo,chemical) {
 }
     
 // Function to create a button for toggling log scale
-function createToggleLinLogButton(chart,instanceNo) {
-    const container = document.getElementById('chartContainer');
+function createToggleLinLogButton(chart,instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttono'+instanceNo
     if (!ylinlog[instanceNo]) {
@@ -1791,8 +2621,10 @@ function createToggleLinLogButton(chart,instanceNo) {
 }
     
 // Function to create a button for toggling legend
-function createStackedButton(chart,instanceNo) {
-    const container = document.getElementById('chartContainer');
+function createStackedButton(chart,instanceNo, container) {
+    if (!container) {
+        container = document.getElementById('chartContainer');
+    }
     const button = document.createElement('button');
     button.id = 'buttons'+instanceNo
     if (!stacked[instanceNo]) {
@@ -1847,6 +2679,7 @@ function removeButtons(chartInstanceNo) {
     removeButton(chartInstanceNo, 's');
     removeButton(chartInstanceNo, 'c');    
     removeButton(chartInstanceNo, 'e');    
+    removeButton(chartInstanceNo, 'g');
     removeButton(chartInstanceNo, 'r');
     removeButton(chartInstanceNo, 'epa');    
     removeButton(chartInstanceNo, 'lmw');    
@@ -1921,14 +2754,18 @@ function filenameDisplay() {
     // Blank it each time
     fileDisplayDiv.innerHTML = "";
 
-    let colorIndex = 0; // Use a new index for colors
     const datesSampled = Object.keys(selectedSampleInfo);
-    datesSampled.sort();
+    if (datesSampled.length > 1) {
+        datesSampled.sort((a, b) => {
+            const labelA = selectedSampleInfo[a].label || a;
+            const labelB = selectedSampleInfo[b].label || b;
+            return labelA.localeCompare(labelB);
+        });
+    }
 
     datesSampled.forEach(dateSampled => {
         // Get the corresponding color for the dataset
-        const currentColor = markerColors[colorIndex];
-        colorIndex = (colorIndex + 1) % markerColors.length; // Loop through colors
+        const currentColor = (typeof dateColors !== 'undefined' && dateColors[dateSampled]) ? dateColors[dateSampled] : '#000000';
 
         const fileURL = sampleInfo[dateSampled].fileURL;
 

@@ -192,9 +192,9 @@ function selectChemicals() {
 }
 
 function getSelectedChemicalSampleMeasurements(selectedChemicals) {
-console.log(selectedChemicals);
-console.log(selectedSampleInfo);
-console.log(selectedSampleMeasurements);
+//console.log(selectedChemicals);
+//console.log(selectedSampleInfo);
+//console.log(selectedSampleMeasurements);
     selectedMeas = {};
     for (dateSampled in selectedSampleMeasurements) {
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
@@ -211,23 +211,23 @@ console.log(selectedSampleMeasurements);
                             selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
                             if (chemicalType == 'PAH data') {
                                 // Just copy all common data even if only 1 PAH is selected
-                                selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
-                                selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
-                                selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
-                                selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+                                if (sampleMeasurements[dateSampled][chemicalType].gorhamTest !== undefined) selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
+                                if (sampleMeasurements[dateSampled][chemicalType].total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                if (sampleMeasurements[dateSampled][chemicalType].totalHC !== undefined) selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
+                                if (sampleMeasurements[dateSampled][chemicalType].totalHCUnit !== undefined) selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
                             }
                             if (chemicalType == 'PCB data') {
                                 //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
 /*                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
                                 selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];*/
 //                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
-                                selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                if (sampleMeasurements[dateSampled][chemicalType].congenerTest !== undefined) selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
+                                if (sampleMeasurements[dateSampled][chemicalType].total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
                             }
                         }
                         for (sample in selectedSampleInfo[dateSampled].position) {
-console.log(selectedSampleMeasurements,dateSampled,chemicalType,chemical);
-console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
+//console.log(selectedSampleMeasurements,dateSampled,chemicalType,chemical);
+//console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
                            if (!selectedMeas[dateSampled][chemicalType]?.chemicals[chemical]) {
                                 selectedMeas[dateSampled][chemicalType].chemicals[chemical] = {};
                                 selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
@@ -235,17 +235,19 @@ console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
 /*                            if (!selectedMeas[dateSampled][chemicalType].chemicals[chemical]?.samples) {
                                 selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples = {};
                             }*/
-console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
+//console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
                             selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
-                           if (!selectedMeas[dateSampled]?.["Physical Data"]) {
+/*                           if (!selectedMeas[dateSampled]?.["Physical Data"]) {
                                 selectedMeas[dateSampled]["Physical Data"] = {};
                                 selectedMeas[dateSampled]["Physical Data"]["Date analysed"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Date analysed"]
                                 selectedMeas[dateSampled]["Physical Data"]["Laboratory/contractor"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Laboratory/contractor"];
                                 selectedMeas[dateSampled]["Physical Data"]["Unit of measurement"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Unit of measurement"];
                                 selectedMeas[dateSampled]["Physical Data"].sizes = selectedSampleMeasurements[dateSampled]["Physical Data"].sizes;
                                 selectedMeas[dateSampled]["Physical Data"].samples = {};
+                            }*/
+                            if (selectedSampleMeasurements[dateSampled]["Physical Data"]?.samples[sample] !== undefined) {
+                                selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
                             }
-                            selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
                         }
                     }
                 }
@@ -253,9 +255,9 @@ console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
         }
     }
     for (dateSampled in selectedMeas) {
-        if ('Physical Data' in sampleMeasurements[dateSampled]){
+        if ('Physical Data' in selectedSampleMeasurements[dateSampled]){
             for (sample in selectedSampleInfo[dateSampled].position) {
-                selectedMeas[dateSampled]['Physical Data'] = sampleMeasurements[dateSampled]['Physical Data']
+                selectedMeas[dateSampled]['Physical Data'] = selectedSampleMeasurements[dateSampled]['Physical Data'];
             }
         }
     }
@@ -266,24 +268,24 @@ function getSelectedChemicalSampleInfo(selectedChemicals) {
     let selectedSamps = {};
     for (const dateSampled in selectedSampleMeasurements) {
         selectedSamps[dateSampled] = {};
-        selectedSamps[dateSampled]['Date sampled'] = sampleInfo[dateSampled]['Date sampled'];
-        selectedSamps[dateSampled].fileURL = sampleInfo[dateSampled].fileURL;
-        selectedSamps[dateSampled].Applicant = sampleInfo[dateSampled].Applicant;
-        selectedSamps[dateSampled]['Application number'] = sampleInfo[dateSampled]['Application number'];
-        selectedSamps[dateSampled]['Application title'] = sampleInfo[dateSampled]['Application title'];
-        selectedSamps[dateSampled]['label'] = sampleInfo[dateSampled]['label'];
+        selectedSamps[dateSampled]['Date sampled'] = selectedSampleInfo[dateSampled]['Date sampled'];
+        selectedSamps[dateSampled].fileURL = selectedSampleInfo[dateSampled].fileURL;
+        selectedSamps[dateSampled].Applicant = selectedSampleInfo[dateSampled].Applicant;
+        selectedSamps[dateSampled]['Application number'] = selectedSampleInfo[dateSampled]['Application number'];
+        selectedSamps[dateSampled]['Application title'] = selectedSampleInfo[dateSampled]['Application title'];
+        selectedSamps[dateSampled]['label'] = selectedSampleInfo[dateSampled]['label'];
         for (const chemicalType in selectedSampleMeasurements[dateSampled]) {
             if (!('position' in selectedSamps[dateSampled])) {
-console.log('setting up position');
+//console.log('setting up position');
                 selectedSamps[dateSampled].position = {};
             }
             if ('Physical Data' != chemicalType) {
-console.log('getting positions',chemicalType,chemical);
+//console.log('getting positions',chemicalType,chemical);
                 for (const chemical in selectedSampleMeasurements[dateSampled][chemicalType].chemicals) {
                     if (selectedChemicals.includes(chemical)) {
                         for (const sample in selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples) {
 //if (sample.includes('Scar')) {
-    console.log('Sample',sample);
+//    console.log('Sample',sample);
 //}
                             selectedSamps[dateSampled].position[sample] = selectedSampleInfo[dateSampled].position[sample];
                         }
@@ -427,6 +429,8 @@ function openSampleSelection(sampleMeasurements) {
 
         sampleCheckboxes.appendChild(checkboxContainer);
     });
+    createStandardFilterUI();
+    populateAreaFilter();
 }
 
 function flipSampleSelections(selection) {
@@ -769,8 +773,9 @@ function getSelectedSampleMeasurements(selectedSamples) {
 //console.log('1 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
 //console.log('2 psd selectedMeas ',dateSampled,chemicalType,selectedMeas);
                 }
-//console.log('3 psd selectedMeas ',dateSampled,chemicalType,sample,selectedMeas);
-                selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
+                if (sampleMeasurements[dateSampled][chemicalType].samples[sample] !== undefined) {
+                    selectedMeas[dateSampled][chemicalType].samples[sample] = sampleMeasurements[dateSampled][chemicalType].samples[sample];
+                }
             } else {
                         //    						for (const chemicalType in sampleMeasurements[dateSampled]) {
                 let newData = {};
@@ -790,13 +795,17 @@ console.log(chemicalType,key,currentData);
                                     //console.log('Create ', dateSampled, chemicalType,chemical);
                                 newData.chemicals[chemical] = {};
                                 newData.chemicals[chemical].samples = {};
-                                newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                if (currentData[chemical].samples[sample] !== undefined) {
+                                    newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                }
                             }
                         } else {
                             newData.chemicals = selectedMeas[dateSampled][chemicalType].chemicals;
                             for (const chemical in dataset[chemicalType].chemicals) {
 //console.log('Create ', dateSampled, chemicalType, chemical,newData, currentData);
-                                newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                if (currentData[chemical].samples[sample] !== undefined) {
+                                    newData.chemicals[chemical].samples[sample] = currentData[chemical].samples[sample];
+                                }
                             }
                         }
                     } else {
@@ -808,11 +817,13 @@ console.log(chemicalType,key,currentData);
 //if (key === 'gorhamTest') {
 console.log(dateSampled,sample,key,currentData,newData);
 //}
-                            if (!newData[key]) {
-                                newData[key] = {};
-                                newData[key][sample] = currentData[sample];
-                            } else {
-                                newData[key][sample] = currentData[sample];
+                            if (currentData) {
+                                if (!newData[key]) {
+                                    newData[key] = {};
+                                }
+                                if (currentData[sample] !== undefined) {
+                                    newData[key][sample] = currentData[sample];
+                                }
                             }
                         }
                     }
@@ -871,3 +882,274 @@ function clearSelections() {
     updateChart();
 }
 
+function populateAreaFilter() {
+    const areaSelect = document.getElementById('areaSelect');
+
+    if (!areaSelect) return;
+
+    // Clear existing options except the first "Select an Area"
+    areaSelect.innerHTML = '<option value="">-- Select an Area --</option>';    
+
+    // Check if we have shapes loaded (allShapeLayers is global from sdeMaps.js)
+    if (typeof allShapeLayers === 'undefined' || allShapeLayers.length === 0) {
+        const option = document.createElement('option');
+        option.text = "No shapes loaded";
+        option.disabled = true;
+        areaSelect.appendChild(option);
+        return;
+    }
+
+    allShapeLayers.forEach((layer, index) => {
+        // 1. Extract Name
+        // We try standard properties, then the tooltip if properties are missing
+        let name = layer.options?.name || layer.name || layer.feature?.properties?.name || "Unnamed Area";
+        
+        // If name is still generic, try to parse it from the binded Tooltip content
+        if ((name === "Unnamed Area" || name === "") && layer.getTooltip()) {
+            const tooltipContent = layer.getTooltip().getContent();
+            // Regex to strip HTML tags like <b>Name</b>
+            const div = document.createElement("div");
+            div.innerHTML = tooltipContent;
+            name = div.innerText.split('\n')[0] || "Unnamed Area";
+        }
+
+        // 2. Extract Area
+        // We recalculate it here to be safe, ensuring consistency with sdeMaps.js
+        let areaHa = 0;
+        const latLngs = layer.getLatLngs();
+        if (Array.isArray(latLngs) && latLngs.length > 0) {
+             // Handle simple polygons vs polygons with holes/multipolygons
+             if (Array.isArray(latLngs[0]) && !Array.isArray(latLngs[0][0]) && typeof latLngs[0][0] !== 'number') {
+                // Polygon with holes or simple nested array
+                let areaM2 = L.GeometryUtil.geodesicArea(latLngs[0]);
+                for (let i = 1; i < latLngs.length; i++) {
+                    areaM2 -= L.GeometryUtil.geodesicArea(latLngs[i]);
+                }
+                areaHa = areaM2 / 10000;
+            } else {
+                // Simple Polygon
+                areaHa = L.GeometryUtil.geodesicArea(latLngs) / 10000;
+            }
+        }
+
+        // 3. Create Option
+        const option = document.createElement('option');
+        option.value = index; // We use the index in allShapeLayers array as the value
+        option.text = `${name} (${areaHa.toFixed(2)} ha)`;
+        areaSelect.appendChild(option);
+    });
+}
+
+/**
+ * Triggered when the user selects an area from the dropdown.
+ * Unchecks all samples, then checks only those falling inside the selected polygon.
+ */
+function applyAreaFilter() {
+    const areaSelect = document.getElementById('areaSelect');
+    const selectedIndex = areaSelect.value;
+
+    // If no area selected, do nothing (or reset? usually better to do nothing so other filters work)
+    if (selectedIndex === "") return;
+
+    const selectedLayer = allShapeLayers[parseInt(selectedIndex)];
+    if (!selectedLayer) return;
+
+    // 1. Deselect all checkboxes first
+    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+
+    // 2. Iterate all samples and check if inside polygon
+    // Note: selectedSampleInfo is global from the main app
+    for (const dateSampled in selectedSampleInfo) {
+        for (const sample in selectedSampleInfo[dateSampled].position) {
+            
+            // Get Sample Coordinates
+            const lat = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position latitude']);
+            const lon = parseFloat(selectedSampleInfo[dateSampled].position[sample]['Position longitude']);
+
+            if (isNaN(lat) || isNaN(lon)) continue;
+
+            // Check if point is inside the selected layer
+            if (isPointInLayer(lat, lon, selectedLayer)) {
+                // Check the specific checkbox
+                // ID format from openSampleSelection: `sample_${dateSampled + ': ' + sample}`
+                const checkBoxId = `sample_${dateSampled}: ${sample}`;
+                const checkbox = document.getElementById(checkBoxId);
+                if (checkbox) checkbox.checked = true;
+            }
+        }
+    }
+}
+
+/**
+ * Helper: Checks if a Lat/Lon is inside a Leaflet Polygon Layer.
+ * Handles Polygons, Polygons with holes, and MultiPolygons.
+ */
+function isPointInLayer(lat, lon, layer) {
+    const point = [lat, lon];
+    const latlngs = layer.getLatLngs();
+
+    // Leaflet stores LatLngs differently depending on shape complexity:
+    // 1. Simple Polygon: [ [Lat,Lon], [Lat,Lon] ... ]  (Wait, Leaflet uses objects usually, but we need points)
+    //    Actually Leaflet .getLatLngs() returns [ L.LatLng, L.LatLng... ] for simple,
+    //    or [ [L.LatLng...], [L.LatLng...] ] for holes/multipolygons.
+    
+    // Helper to run Ray Casting on a ring of L.LatLng objects
+    function isInsideRing(pt, ring) {
+        let x = pt[0], y = pt[1];
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            let xi = ring[i].lat, yi = ring[i].lng;
+            let xj = ring[j].lat, yj = ring[j].lng;
+            
+            let intersect = ((yi > y) != (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // Determine structure depth
+    // Case A: Simple Polygon (Level 1 array of objects) - Leaflet often wraps this in an array too [[...]]
+    // Case B: Polygon with holes (Level 2 array: [OuterRing, Hole1, Hole2])
+    // Case C: MultiPolygon (Level 3 array)
+
+    // We normalize to handle the specific Leaflet structure
+    let rings = latlngs;
+    
+    // If it's a flat array of LatLng objects (rare in imported KMLs, usually wrapped), wrap it
+    if (latlngs[0] && ('lat' in latlngs[0])) {
+        rings = [latlngs];
+    }
+
+    // Check Outer Ring (Index 0)
+    // For MultiPolygons, we might need deeper iteration, but usually KML import results in
+    // distinct Polygon layers. Assuming Simple Polygon or Polygon w/ Holes here.
+    
+    // If MultiPolygon (array of arrays of arrays), we need to check if it's in ANY of them
+    if (Array.isArray(rings[0]) && Array.isArray(rings[0][0])) {
+         // It is likely a MultiPolygon or just deeply nested. 
+         // We iterate all top-level shapes.
+         for (let i = 0; i < rings.length; i++) {
+             // For each polygon in the multipolygon, check inside outer ring (index 0)
+             // ignoring holes for simplicity or recurse if strictness needed
+             if (isInsideRing(point, rings[i][0] || rings[i])) return true;
+         }
+         return false;
+    }
+    
+    // Standard Polygon (Index 0 is outer boundary, 1+ are holes)
+    const insideOuter = isInsideRing(point, rings[0]);
+    if (!insideOuter) return false;
+
+    // If inside outer, check holes (if any exist)
+    if (rings.length > 1) {
+        for (let i = 1; i < rings.length; i++) {
+            if (isInsideRing(point, rings[i])) {
+                return false; // It's in a hole, so it's outside
+            }
+        }
+    }
+
+    return true;
+}
+
+function createStandardFilterUI() {
+    const sampleCheckboxes = document.getElementById('sampleCheckboxes');
+    if (!sampleCheckboxes) return;
+
+    let container = document.getElementById('standardFilterContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'standardFilterContainer';
+        container.style.marginBottom = '10px';
+        container.style.padding = '5px';
+        container.style.borderBottom = '1px solid #ccc';
+        sampleCheckboxes.parentNode.insertBefore(container, sampleCheckboxes);
+    } else {
+        container.innerHTML = '';
+    }
+
+    const title = document.createElement('div');
+    title.innerHTML = '<strong>Filter by ' + chosenStandard + ':</strong>';
+    container.appendChild(title);
+
+    if (typeof standards === 'undefined' || !standards[chosenStandard]) return;
+    const std = standards[chosenStandard];
+
+    const options = [
+        { label: "None", value: -1 },
+        { label: "Above " + (std.levelNames && std.levelNames[0] ? std.levelNames[0] : "Action Level 1"), value: 0 },
+        { label: "Above " + (std.levelNames && std.levelNames[1] ? std.levelNames[1] : "Action Level 2"), value: 1 }
+    ];
+
+    options.forEach(opt => {
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'inline-block';
+        wrapper.style.marginRight = '15px';
+
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'standardFilter';
+        radio.id = 'stdFilter_' + opt.value;
+        radio.value = opt.value;
+        if (opt.value === -1) radio.checked = true;
+        
+        radio.addEventListener('change', () => applyStandardFilter(opt.value));
+
+        const label = document.createElement('label');
+        label.htmlFor = 'stdFilter_' + opt.value;
+        label.textContent = opt.label;
+        label.style.marginLeft = '5px';
+
+        wrapper.appendChild(radio);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+    });
+}
+
+function applyStandardFilter(levelIndex) {
+    levelIndex = parseInt(levelIndex);
+    const checkboxes = document.querySelectorAll('#sampleCheckboxes input[type="checkbox"]');
+    
+    if (levelIndex === -1) {
+        checkboxes.forEach(cb => cb.checked = true);
+        return;
+    }
+
+    if (typeof standards === 'undefined' || !standards[chosenStandard]) return;
+    const std = standards[chosenStandard];
+    const stdUnit = extractUnit(std.unit);
+
+    checkboxes.forEach(cb => cb.checked = false);
+    const samplesToKeep = new Set();
+
+    for (const ds in selectedSampleMeasurements) {
+        const dataset = selectedSampleMeasurements[ds];
+        for (const sheetName in dataset) {
+            const sheet = dataset[sheetName];
+            if (!sheet.chemicals) continue;
+            const sheetUnit = extractUnit(sheet['Unit of measurement']);
+            const factor = factorUnit(sheetUnit, stdUnit);
+
+            for (const chemName in sheet.chemicals) {
+                let limit = null;
+                if (std.chemicals && std.chemicals[chemName] && Array.isArray(std.chemicals[chemName])) {
+                    limit = std.chemicals[chemName][levelIndex];
+                }
+                if (limit !== null && limit !== undefined) {
+                    const samples = sheet.chemicals[chemName].samples;
+                    for (const sampleName in samples) {
+                        const val = samples[sampleName];
+                        if (val !== undefined && val !== null && (val * factor) > limit) {
+                            samplesToKeep.add(ds + ': ' + sampleName);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    checkboxes.forEach(cb => {
+        if (samplesToKeep.has(cb.value)) cb.checked = true;
+    });
+}

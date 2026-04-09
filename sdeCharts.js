@@ -5,6 +5,26 @@
 chartNameSep = '   '// Three spaces to separate dataset name from sample name for point labels
 
 // Mapping of sorting options to required data sheets
+window.areaStats = [];
+let summaryChartInstanceNoTotal = -1;
+let summaryChartInstanceNoUnique = -1;
+let summaryChartInstanceNoAvg = -1;
+let summaryChartInstanceNoMax = -1;
+let summaryChartInstanceNoDredge = -1;
+let summaryChartInstanceNoDredgeArea = -1;
+let summaryChartInstanceNoDredgeVolYear = -1;
+let summaryChartInstanceNoDredgeVolArea = -1;
+
+const sheetColors = {
+    'Trace metal data': '#e41a1c', // Red
+    'PAH data': '#377eb8', // Blue
+    'PCB data': '#4daf4a', // Green
+    'BDE data': '#984ea3', // Purple
+    'Organotins data': '#ff7f00', // Orange
+    'Organochlorine data': '#ffff33', // Yellow
+    'Physical Data': '#a65628', // Brown
+    'Other': '#999999' // Grey
+};
 
 function updateSortingOptionsState() {
     const primarySelect = document.getElementById('primary-sorting-select');
@@ -53,6 +73,13 @@ function updateOptions() {
     // --- ADD THIS CALL ---
     // After determining which sheets are complete, update the dropdowns
     updateSortingOptionsState();
+    const msfInput = document.getElementById('markerScaling');
+    if (msfInput) {
+        const val = parseFloat(msfInput.value);
+        if (!isNaN(val) && val > 0) {
+            markerScaling = val;
+        }
+    }
     const primarySort = document.getElementById('primary-sorting-select').value;
     const secondarySort = document.getElementById('secondary-sorting-select').value;
 
@@ -130,9 +157,11 @@ function updateChart(){
         createRadarPlot(selectedMeas, radarPlot);
     }
 //console.log('lastInstanceNo ',lastInstanceNo);			
+    lastInstanceNo = displaySummaryChart(lastInstanceNo);
 //console.log(selectedMeas);
 console.log('about to display sample map');
-    sampleMap(selectedMeas);
+    sampleMap();
+//srg260408    sampleMap(selectedMeas);
     filenameDisplay();
 }
 
@@ -554,13 +583,38 @@ function displayCharts(sheetName, instanceNo) {
                 const max = stats ? (stats.valueMax*stats.rescale).toFixed(2) : 'N/A';
                 const unit = stats ? stats.unit : '';
                 
+                let standardsText = '';
+                if (typeof colorMode !== 'undefined' && colorMode === 'standards' && typeof standards !== 'undefined' && typeof chosenStandard !== 'undefined') {
+                    let levels = null;
+                    if (standards[chosenStandard]?.chemicals?.[contaminantName]) {
+                        if(!standards[chosenStandard].chemicals[contaminantName]?.definition) {
+                            levels = standards[chosenStandard].chemicals[contaminantName];
+                        } else {
+                            if(standards[chosenStandard].chemicals[contaminantName]?.levels){
+                                levels = standards[chosenStandard].chemicals[contaminantName].levels;
+                            }
+                        }
+                    }
+                    if (levels) {
+                        let displayLevels = [...levels];
+                        if (typeof factorUnit === 'function' && typeof extractUnit === 'function' && stats) {
+                             const unitAlign = factorUnit(stats.unit, extractUnit(standards[chosenStandard].unit));
+                             if (unitAlign !== 1) {
+                                displayLevels = displayLevels.map(l => l !== null ? l / unitAlign : null);
+                             }
+                        }
+                        if (displayLevels[0] !== null && displayLevels[0] !== undefined) standardsText += ` AL1: ${displayLevels[0].toFixed(2)}`;
+                        if (displayLevels[1] !== null && displayLevels[1] !== undefined) standardsText += ` AL2: ${displayLevels[1].toFixed(2)}`;
+                    }
+                }
+                
                 const titleElement = document.createElement('h4');
                 titleElement.style.margin = '0';
                 titleElement.style.padding = '5px';
                 titleElement.style.backgroundColor = '#f0f0f0';
                 titleElement.style.cursor = 'pointer';
                 titleElement.style.fontSize = '14px';
-                titleElement.innerHTML = `${contaminantName}<br>(${min} - ${max} ${unit})`;
+                titleElement.innerHTML = `${contaminantName}<br><span style="font-size: smaller;">(${min} - ${max} ${unit})${standardsText}</span>`;
                 mapWrapper.appendChild(titleElement);
                 
                 const mapElement = document.createElement('div');
@@ -935,11 +989,6 @@ function displayCombinedScatterChart(meas, sheetName, instanceNo, unitTitle) {
     const ctx = document.getElementById('chart' + instanceNo).getContext('2d');
 //console.log(instanceNo,ctx,chartConfig);
     chartInstance[instanceNo] = new Chart(ctx, chartConfig);
-    createResetZoomButton(chartInstance[instanceNo], instanceNo);
-    createToggleLegendButton(chartInstance[instanceNo], instanceNo);
-    createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
-    createStackedButton(chartInstance[instanceNo], instanceNo);
-    createExportButton(chartInstance[instanceNo], instanceNo);
 //  console.log(ddatasets);
 }
 
@@ -1251,6 +1300,7 @@ function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
     createExportButton(chartInstance[instanceNo], instanceNo);
+    createGnuplotExportButton(chartInstance[instanceNo], instanceNo);
 
     Chart.register({
         id: 'selectSample',
@@ -1593,6 +1643,7 @@ function displayAnyChart(meas, fullSampleNames, all, datasets, instanceNo, title
     createToggleLinLogButton(chartInstance[instanceNo], instanceNo);
     createStackedButton(chartInstance[instanceNo], instanceNo);
     createExportButton(chartInstance[instanceNo], instanceNo);
+    createGnuplotExportButton(chartInstance[instanceNo], instanceNo);
 //    let allChemicals = Object.keys(meas);
 //    let allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals
     function clickableScales(fullSampleNames, chart, canvas, click) {
@@ -1669,8 +1720,16 @@ function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs
     const datasets = allSamples.map((sample, index) => {
         const data = allChemicals.map(chemical => meas[chemical][sample]); // Using the first concentration value for simplicity
 //console.log(data);
+        let label = sample;
+        let parts = sample.split(": ");
+        if (parts.length > 2) {
+            parts[1] = parts[1] + ': ' + parts[2];
+        }
+        if (selectedSampleInfo[parts[0]] && selectedSampleInfo[parts[0]].position[parts[1]]) {
+            label = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
+        }
         return {
-            label: sample,
+            label: label,
             data: data,
             borderWidth: 1,
             yAxisID: 'y',
@@ -1795,10 +1854,13 @@ function displayTotalSolidOrganicC(sortedSamples, sheetName, instanceNo, unitTit
         if (parts.length >2) {
             parts[1] = parts[1] + ': ' + parts[2];
         }
-        if (selectedSampleMeasurements[parts[0]]?.['Physical Data']) {
-            samplesWithData.push(allSamples[i]);
-            totalSolids.push(selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Total solids (% total sediment)']);
-            organicC.push(selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]]['Organic matter (total organic carbon)']);
+        if (selectedSampleMeasurements[parts[0]]?.['Physical Data']?.samples?.[parts[1]]) {
+            const physData = selectedSampleMeasurements[parts[0]]['Physical Data'].samples[parts[1]];
+            if (physData['Total solids (% total sediment)'] !== undefined || physData['Organic matter (total organic carbon)'] !== undefined) {
+                samplesWithData.push(allSamples[i]);
+                totalSolids.push(physData['Total solids (% total sediment)']);
+                organicC.push(physData['Organic matter (total organic carbon)']);
+            }
         }
     });
 
@@ -2837,3 +2899,778 @@ console.log('clickedSampleIdentifier', clickedSampleIdentifier);
 
     console.log(`PCA chart for ${sheetName} (Instance ${instanceNo}) rendered successfully with color coding.`);
 }
+
+function displaySummaryChart(instanceNo) {
+    instanceNo += 1;
+    summaryChartInstanceNoTotal = instanceNo;
+    
+    const useTabs = document.getElementById('useTabs').checked;
+    const mainChartContainer = document.getElementById('chartContainer');
+    let targetContainer;
+
+    if (useTabs) {
+        let tabButtonsContainer = document.getElementById('chart-tab-buttons');
+        if (!tabButtonsContainer) {
+            tabButtonsContainer = document.createElement('div');
+            tabButtonsContainer.id = 'chart-tab-buttons';
+            tabButtonsContainer.className = 'tab-buttons';
+            mainChartContainer.appendChild(tabButtonsContainer);
+        }
+
+        const tabContentId = 'tab-summary';
+        
+        const tabButton = document.createElement('button');
+        tabButton.className = 'tab-button';
+        tabButton.textContent = 'Summary';
+        tabButton.onclick = (event) => openTab(event, tabContentId);
+        tabButtonsContainer.appendChild(tabButton);
+
+        const tabContentPanel = document.createElement('div');
+        tabContentPanel.id = tabContentId;
+        tabContentPanel.className = 'tab-content';
+        mainChartContainer.appendChild(tabContentPanel);
+        
+        targetContainer = tabContentPanel;
+    } else {
+        targetContainer = document.createElement('div');
+        targetContainer.className = 'chart-sheet-container';
+        targetContainer.innerHTML = `<h2 style="padding-top: 2rem; border-bottom: 1px solid #ccc;">Summary</h2>`;
+        mainChartContainer.appendChild(targetContainer);
+    }
+
+    // Chart 1: Total Exceedances
+    const canvasTotal = document.createElement('canvas');
+    canvasTotal.id = 'chart' + instanceNo;
+    canvasTotal.style.marginBottom = '30px';
+    canvasTotal.style.borderBottom = '1px solid #eee';
+    canvasTotal.style.paddingBottom = '20px';
+    targetContainer.appendChild(canvasTotal);
+
+    // Chart 2: Unique Exceedances
+    instanceNo += 1;
+    summaryChartInstanceNoUnique = instanceNo;
+    const canvasUnique = document.createElement('canvas');
+    canvasUnique.id = 'chart' + instanceNo;
+    targetContainer.appendChild(canvasUnique);
+
+    // Chart 3: Sum of Average Concentrations
+    instanceNo += 1;
+    summaryChartInstanceNoAvg = instanceNo;
+    const canvasAvg = document.createElement('canvas');
+    canvasAvg.id = 'chart' + instanceNo;
+    canvasAvg.style.marginBottom = '30px';
+    canvasAvg.style.borderBottom = '1px solid #eee';
+    canvasAvg.style.paddingBottom = '20px';
+    targetContainer.appendChild(canvasAvg);
+
+    // Chart 4: Sum of Highest Concentrations
+    instanceNo += 1;
+    summaryChartInstanceNoMax = instanceNo;
+    const canvasMax = document.createElement('canvas');
+    canvasMax.id = 'chart' + instanceNo;
+    targetContainer.appendChild(canvasMax);
+
+    // Chart 5: Dredge Volume vs Year (Stacked by Area)
+    instanceNo += 1;
+    summaryChartInstanceNoDredgeVolYear = instanceNo;
+    const canvasDredgeVolYear = document.createElement('canvas');
+    canvasDredgeVolYear.id = 'chart' + instanceNo;
+    canvasDredgeVolYear.style.marginBottom = '30px';
+    canvasDredgeVolYear.style.borderBottom = '1px solid #eee';
+    canvasDredgeVolYear.style.paddingBottom = '20px';
+    targetContainer.appendChild(canvasDredgeVolYear);
+
+    // Chart 6: Dredge Volume vs Area (Stacked by Year)
+    instanceNo += 1;
+    summaryChartInstanceNoDredgeVolArea = instanceNo;
+    const canvasDredgeVolArea = document.createElement('canvas');
+    canvasDredgeVolArea.id = 'chart' + instanceNo;
+    canvasDredgeVolArea.style.marginBottom = '30px';
+    canvasDredgeVolArea.style.borderBottom = '1px solid #eee';
+    canvasDredgeVolArea.style.paddingBottom = '20px';
+    targetContainer.appendChild(canvasDredgeVolArea);
+
+    // Chart 5: Dredge Contamination Weight
+    instanceNo += 1;
+    summaryChartInstanceNoDredge = instanceNo;
+    const canvasDredge = document.createElement('canvas');
+    canvasDredge.id = 'chart' + instanceNo;
+    canvasDredge.style.marginBottom = '30px';
+    canvasDredge.style.borderBottom = '1px solid #eee';
+    canvasDredge.style.paddingBottom = '20px';
+    targetContainer.appendChild(canvasDredge);
+
+    // Chart 6: Dredge Contamination Weight (vs Area)
+    instanceNo += 1;
+    summaryChartInstanceNoDredgeArea = instanceNo;
+    const canvasDredgeArea = document.createElement('canvas');
+    canvasDredgeArea.id = 'chart' + instanceNo;
+    targetContainer.appendChild(canvasDredgeArea);
+    
+    updateSummaryChart();
+    return instanceNo;
+}
+
+function updateSummaryChart() {
+    if (!window.areaStats || window.areaStats.length === 0) return;
+
+    // --- Chart 1: Total Exceedances ---
+    if (summaryChartInstanceNoTotal !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoTotal);
+        if (ctx) {
+            const labels = window.areaStats.map(item => item.name);
+            let datasets = [];
+            
+            // Collect all unique sheets present
+            const allSheets = new Set();
+            window.areaStats.forEach(item => {
+                if (item.stats.bySheet) {
+                    Object.keys(item.stats.bySheet).forEach(s => allSheets.add(s));
+                }
+            });
+
+            Array.from(allSheets).sort().forEach(sheet => {
+                const data = window.areaStats.map(item => {
+                    const s = item.stats.bySheet[sheet];
+                    return s ? s.totalExceedances : 0;
+                });
+
+                datasets.push({
+                    label: sheet,
+                    data: data,
+                    backgroundColor: sheetColors[sheet] || sheetColors['Other']
+                });
+            });
+
+            if (chartInstance[summaryChartInstanceNoTotal]) {
+                chartInstance[summaryChartInstanceNoTotal].destroy();
+            }
+            removeButtons(summaryChartInstanceNoTotal);
+
+            chartInstance[summaryChartInstanceNoTotal] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Total Chemical Exceedances by Area'
+                },
+                zoom: {
+                    pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                    limits: { y: { min: 0 } },
+                    zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                }
+            },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, title: { display: true, text: 'Count of Exceedances' } }
+            }
+        }
+    });
+            const buttonContainer = document.createElement('div');
+            ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+            legends[summaryChartInstanceNoTotal] = true;
+            ylinlog[summaryChartInstanceNoTotal] = false;
+            stacked[summaryChartInstanceNoTotal] = true;
+            createResetZoomButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+            createToggleLegendButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+            createToggleLinLogButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+            createStackedButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+            createExportButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoTotal], summaryChartInstanceNoTotal, buttonContainer);
+        }
+    }
+
+    // --- Chart 2: Unique Exceedances ---
+    if (summaryChartInstanceNoUnique !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoUnique);
+        if (ctx) {
+            const labels = window.areaStats.map(item => item.name);
+            let datasets = [];
+            
+            const allSheets = new Set();
+            window.areaStats.forEach(item => {
+                if (item.stats.bySheet) {
+                    Object.keys(item.stats.bySheet).forEach(s => allSheets.add(s));
+                }
+            });
+
+            Array.from(allSheets).sort().forEach(sheet => {
+                const data = window.areaStats.map(item => {
+                    const s = item.stats.bySheet[sheet];
+                    if (!s) return 0;
+                    // Combine sets to get unique chemicals regardless of level
+                    const combined = new Set([...s.betweenChemicals, ...s.aboveChemicals]);
+                    return combined.size;
+                });
+
+                datasets.push({
+                    label: sheet,
+                    data: data,
+                    backgroundColor: sheetColors[sheet] || sheetColors['Other']
+                });
+            });
+
+            if (chartInstance[summaryChartInstanceNoUnique]) {
+                chartInstance[summaryChartInstanceNoUnique].destroy();
+            }
+            removeButtons(summaryChartInstanceNoUnique);
+
+            chartInstance[summaryChartInstanceNoUnique] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Unique Chemical Exceedances by Area'
+                        },
+                        zoom: {
+                            pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                            limits: { y: { min: 0 } },
+                            zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                        }
+                    },
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Count of Unique Chemicals' } }
+                    }
+                }
+            });
+            const buttonContainer = document.createElement('div');
+            ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+            legends[summaryChartInstanceNoUnique] = true;
+            ylinlog[summaryChartInstanceNoUnique] = false;
+            stacked[summaryChartInstanceNoUnique] = true;
+            createResetZoomButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+            createToggleLegendButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+            createToggleLinLogButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+            createStackedButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+            createExportButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoUnique], summaryChartInstanceNoUnique, buttonContainer);
+        }
+    }
+
+    // --- Chart 3: Sum of Average Concentrations ---
+    if (summaryChartInstanceNoAvg !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoAvg);
+        if (ctx) {
+            const labels = window.areaStats.map(item => item.name);
+            let datasets = [];
+            
+            const allSheets = new Set();
+            window.areaStats.forEach(item => {
+                if (item.concentrationStats.bySheet) {
+                    Object.keys(item.concentrationStats.bySheet).forEach(s => allSheets.add(s));
+                }
+            });
+
+            Array.from(allSheets).sort().forEach(sheet => {
+                const data = window.areaStats.map(item => {
+                    const s = item.concentrationStats.bySheet[sheet];
+                    return s ? s.sumAverage : 0;
+                });
+
+                datasets.push({
+                    label: sheet,
+                    data: data,
+                    backgroundColor: sheetColors[sheet] || sheetColors['Other']
+                });
+            });
+
+            if (chartInstance[summaryChartInstanceNoAvg]) {
+                chartInstance[summaryChartInstanceNoAvg].destroy();
+            }
+            removeButtons(summaryChartInstanceNoAvg);
+
+            chartInstance[summaryChartInstanceNoAvg] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Total Mass of Contaminants (Average) per Area' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                            limits: { y: { min: 0 } },
+                            zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                        }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'mg/kg' } }
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'mg/kg' } } }
+                }
+            });
+            const buttonContainer = document.createElement('div');
+            ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+            legends[summaryChartInstanceNoAvg] = true;
+            ylinlog[summaryChartInstanceNoAvg] = false;
+            stacked[summaryChartInstanceNoAvg] = true;
+            createResetZoomButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+            createToggleLegendButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+            createToggleLinLogButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+            createStackedButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+            createExportButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoAvg], summaryChartInstanceNoAvg, buttonContainer);
+        }
+    }
+
+    // --- Chart 4: Sum of Highest Concentrations ---
+    if (summaryChartInstanceNoMax !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoMax);
+        if (ctx) {
+            const labels = window.areaStats.map(item => item.name);
+            let datasets = [];
+            
+            const allSheets = new Set();
+            window.areaStats.forEach(item => {
+                if (item.concentrationStats.bySheet) {
+                    Object.keys(item.concentrationStats.bySheet).forEach(s => allSheets.add(s));
+                }
+            });
+
+            Array.from(allSheets).sort().forEach(sheet => {
+                const data = window.areaStats.map(item => {
+                    const s = item.concentrationStats.bySheet[sheet];
+                    return s ? s.sumHighest : 0;
+                });
+
+                datasets.push({
+                    label: sheet,
+                    data: data,
+                    backgroundColor: sheetColors[sheet] || sheetColors['Other']
+                });
+            });
+
+            if (chartInstance[summaryChartInstanceNoMax]) {
+                chartInstance[summaryChartInstanceNoMax].destroy();
+            }
+            removeButtons(summaryChartInstanceNoMax);
+
+            chartInstance[summaryChartInstanceNoMax] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    plugins: {
+                        title: { display: true, text: 'Total Mass of Contaminants (Highest) per Area' },
+                        zoom: {
+                            pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                            limits: { y: { min: 0 } },
+                            zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                        }
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'mg/kg' } } }
+                }
+            });
+            const buttonContainer = document.createElement('div');
+            ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+            legends[summaryChartInstanceNoMax] = true;
+            ylinlog[summaryChartInstanceNoMax] = false;
+            stacked[summaryChartInstanceNoMax] = true;
+            createResetZoomButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+            createToggleLegendButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+            createToggleLinLogButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+            createStackedButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+            createExportButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+            createGnuplotExportButton(chartInstance[summaryChartInstanceNoMax], summaryChartInstanceNoMax, buttonContainer);
+        }
+    }
+
+    // --- Chart 5: Dredge Volume vs Year (Stacked by Area) ---
+    if (summaryChartInstanceNoDredgeVolYear !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoDredgeVolYear);
+        if (ctx) {
+            if (window.dredgeVolumeData && window.areaStats.length > 0) {
+                let years = window.dredgeVolumeData.years;
+                const startYearInput = document.getElementById('dredgeStartYear');
+                const endYearInput = document.getElementById('dredgeEndYear');
+                if (startYearInput && startYearInput.value) {
+                    years = years.filter(y => y >= parseInt(startYearInput.value));
+                }
+                if (endYearInput && endYearInput.value) {
+                    years = years.filter(y => y <= parseInt(endYearInput.value));
+                }
+
+                const datasets = [];
+                // Generate colors for areas
+                const colors = [
+                    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', 
+                    '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'
+                ];
+
+                window.areaStats.forEach((area, index) => {
+                    const areaName = area.name;
+                    let dredgeArea = window.dredgeVolumeData.areas[areaName] || window.dredgeVolumeData.areas[areaName.trim()];
+                    
+                    if (dredgeArea) {
+                        const data = years.map(year => dredgeArea[year] || 0);
+                        datasets.push({
+                            label: areaName,
+                            data: data,
+                            backgroundColor: colors[index % colors.length]
+                        });
+                    }
+                });
+
+                if (chartInstance[summaryChartInstanceNoDredgeVolYear]) {
+                    chartInstance[summaryChartInstanceNoDredgeVolYear].destroy();
+                }
+                removeButtons(summaryChartInstanceNoDredgeVolYear);
+
+                chartInstance[summaryChartInstanceNoDredgeVolYear] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: years,
+                        datasets: datasets
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: 'Dredge Volume per Year' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (context.parsed.y !== null) label += context.parsed.y.toLocaleString() + ' m³';
+                                        return label;
+                                    }
+                                }
+                            },
+                            zoom: {
+                                pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                                limits: { y: { min: 0 } },
+                                zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                            }
+                        },
+                        scales: {
+                            x: { stacked: true, title: { display: true, text: 'Year' } },
+                            y: { stacked: true, title: { display: true, text: 'Volume (m³)' } }
+                        }
+                    }
+                });
+                const buttonContainer = document.createElement('div');
+                ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+                legends[summaryChartInstanceNoDredgeVolYear] = true;
+                ylinlog[summaryChartInstanceNoDredgeVolYear] = false;
+                stacked[summaryChartInstanceNoDredgeVolYear] = true;
+                createResetZoomButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+                createToggleLegendButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+                createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+                createStackedButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+                createExportButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredgeVolYear], summaryChartInstanceNoDredgeVolYear, buttonContainer);
+            }
+        }
+    }
+
+    // --- Chart 6: Dredge Volume vs Area (Stacked by Year) ---
+    if (summaryChartInstanceNoDredgeVolArea !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoDredgeVolArea);
+        if (ctx) {
+            if (window.dredgeVolumeData && window.areaStats.length > 0) {
+                let years = window.dredgeVolumeData.years;
+                const startYearInput = document.getElementById('dredgeStartYear');
+                const endYearInput = document.getElementById('dredgeEndYear');
+                if (startYearInput && startYearInput.value) {
+                    years = years.filter(y => y >= parseInt(startYearInput.value));
+                }
+                if (endYearInput && endYearInput.value) {
+                    years = years.filter(y => y <= parseInt(endYearInput.value));
+                }
+
+                const datasets = [];
+                const areaLabels = [];
+                const areaDataMap = [];
+
+                window.areaStats.forEach((area) => {
+                    const areaName = area.name;
+                    let dredgeArea = window.dredgeVolumeData.areas[areaName] || window.dredgeVolumeData.areas[areaName.trim()];
+                    
+                    if (dredgeArea) {
+                        areaLabels.push(areaName);
+                        areaDataMap.push({ name: areaName, dredgeData: dredgeArea });
+                    }
+                });
+
+                const yearColors = [
+                    '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', 
+                    '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928',
+                    '#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', 
+                    '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'
+                ];
+
+                years.forEach((year, yIndex) => {
+                    const data = areaDataMap.map(item => item.dredgeData[year] || 0);
+                    datasets.push({
+                        label: year.toString(),
+                        data: data,
+                        backgroundColor: yearColors[yIndex % yearColors.length]
+                    });
+                });
+
+                if (chartInstance[summaryChartInstanceNoDredgeVolArea]) {
+                    chartInstance[summaryChartInstanceNoDredgeVolArea].destroy();
+                }
+                removeButtons(summaryChartInstanceNoDredgeVolArea);
+
+                chartInstance[summaryChartInstanceNoDredgeVolArea] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: areaLabels,
+                        datasets: datasets
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: 'Dredge Volume per Area' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (context.parsed.y !== null) label += context.parsed.y.toLocaleString() + ' m³';
+                                        return label;
+                                    }
+                                }
+                            },
+                            zoom: {
+                                pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                                limits: { y: { min: 0 } },
+                                zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                            }
+                        },
+                        scales: {
+                            x: { stacked: true, title: { display: true, text: 'Area' } },
+                            y: { stacked: true, title: { display: true, text: 'Volume (m³)' } }
+                        }
+                    }
+                });
+                const buttonContainer = document.createElement('div');
+                ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+                legends[summaryChartInstanceNoDredgeVolArea] = true;
+                ylinlog[summaryChartInstanceNoDredgeVolArea] = false;
+                stacked[summaryChartInstanceNoDredgeVolArea] = true;
+                createResetZoomButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+                createToggleLegendButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+                createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+                createStackedButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+                createExportButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredgeVolArea], summaryChartInstanceNoDredgeVolArea, buttonContainer);
+            }
+        }
+    }
+
+    // --- Chart 5: Dredge Contamination Weight ---
+    if (summaryChartInstanceNoDredge !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoDredge);
+        if (ctx) {
+            if (window.dredgeVolumeData && window.areaStats.length > 0) {
+                const densityInput = document.getElementById('dredgeDensity');
+                const density = densityInput ? (parseFloat(densityInput.value) || 1.5) : 1.5;
+                
+                let years = window.dredgeVolumeData.years;
+                const startYearInput = document.getElementById('dredgeStartYear');
+                const endYearInput = document.getElementById('dredgeEndYear');
+                if (startYearInput && startYearInput.value) {
+                    years = years.filter(y => y >= parseInt(startYearInput.value));
+                }
+                if (endYearInput && endYearInput.value) {
+                    years = years.filter(y => y <= parseInt(endYearInput.value));
+                }
+
+                const datasets = [];
+                
+                // Generate a color for each area
+                const colors = [
+                    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', 
+                    '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'
+                ];
+
+                window.areaStats.forEach((area, index) => {
+                    const areaName = area.name;
+                    // Check if we have dredge data for this area
+                    // We try exact match, or maybe the area name in stats is contained in dredge data or vice versa
+                    // For now, assume exact match or simple trim
+                    let dredgeArea = window.dredgeVolumeData.areas[areaName] || window.dredgeVolumeData.areas[areaName.trim()];
+                    
+                    if (dredgeArea) {
+                        // Calculate concentration metric: Sum of Average + Sum of Highest (mg/kg)
+                        const concMetric = (area.concentrationStats.sumAverage || 0) + (area.concentrationStats.sumHighest || 0);
+                        
+                        const data = years.map(year => {
+                            const vol = dredgeArea[year] || 0; // m^3
+                            // Weight (Tonnes) = Volume (m^3) * Density (T/m^3) * Concentration (mg/kg) * 1e-6
+                            return vol * density * concMetric * 1e-6;
+                        });
+
+                        datasets.push({
+                            label: areaName,
+                            data: data,
+                            backgroundColor: colors[index % colors.length]
+                        });
+                    }
+                });
+
+                if (chartInstance[summaryChartInstanceNoDredge]) {
+                    chartInstance[summaryChartInstanceNoDredge].destroy();
+                }
+                removeButtons(summaryChartInstanceNoDredge);
+
+                chartInstance[summaryChartInstanceNoDredge] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: years,
+                        datasets: datasets
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: `Total Weight of Contamination Disposed per Year (Density: ${density} T/m³)` },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y.toFixed(3) + ' Tonnes';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            zoom: {
+                                pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                                limits: { y: { min: 0 } },
+                                zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                            }
+                        },
+                        scales: {
+                            x: { stacked: true, title: { display: true, text: 'Year' } },
+                            y: { stacked: true, title: { display: true, text: 'Contamination Weight (Tonnes)' } }
+                        }
+                    }
+                });
+                const buttonContainer = document.createElement('div');
+                ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+                legends[summaryChartInstanceNoDredge] = true;
+                ylinlog[summaryChartInstanceNoDredge] = false;
+                stacked[summaryChartInstanceNoDredge] = true;
+                createResetZoomButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+                createToggleLegendButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+                createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+                createStackedButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+                createExportButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredge], summaryChartInstanceNoDredge, buttonContainer);
+            }
+        }
+    }
+
+    // --- Chart 6: Dredge Contamination Weight (vs Area) ---
+    if (summaryChartInstanceNoDredgeArea !== -1) {
+        const ctx = document.getElementById('chart' + summaryChartInstanceNoDredgeArea);
+        if (ctx) {
+            if (window.dredgeVolumeData && window.areaStats.length > 0) {
+                const densityInput = document.getElementById('dredgeDensity');
+                const density = densityInput ? (parseFloat(densityInput.value) || 1.5) : 1.5;
+                
+                let years = window.dredgeVolumeData.years;
+                const startYearInput = document.getElementById('dredgeStartYear');
+                const endYearInput = document.getElementById('dredgeEndYear');
+                if (startYearInput && startYearInput.value) {
+                    years = years.filter(y => y >= parseInt(startYearInput.value));
+                }
+                if (endYearInput && endYearInput.value) {
+                    years = years.filter(y => y <= parseInt(endYearInput.value));
+                }
+
+                const datasets = [];
+                
+                const areaLabels = [];
+                const areaDataMap = [];
+
+                window.areaStats.forEach((area) => {
+                    const areaName = area.name;
+                    let dredgeArea = window.dredgeVolumeData.areas[areaName] || window.dredgeVolumeData.areas[areaName.trim()];
+                    
+                    if (dredgeArea) {
+                        const concMetric = (area.concentrationStats.sumAverage || 0) + (area.concentrationStats.sumHighest || 0);
+                        areaLabels.push(areaName);
+                        areaDataMap.push({ name: areaName, concMetric: concMetric, dredgeData: dredgeArea });
+                    }
+                });
+
+                const yearColors = [
+                    '#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', 
+                    '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928',
+                    '#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', 
+                    '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f'
+                ];
+
+                years.forEach((year, yIndex) => {
+                    const data = areaDataMap.map(item => {
+                        const vol = item.dredgeData[year] || 0;
+                        return vol * density * item.concMetric * 1e-6;
+                    });
+
+                    datasets.push({
+                        label: year.toString(),
+                        data: data,
+                        backgroundColor: yearColors[yIndex % yearColors.length]
+                    });
+                });
+
+                if (chartInstance[summaryChartInstanceNoDredgeArea]) {
+                    chartInstance[summaryChartInstanceNoDredgeArea].destroy();
+                }
+                removeButtons(summaryChartInstanceNoDredgeArea);
+
+                chartInstance[summaryChartInstanceNoDredgeArea] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: areaLabels,
+                        datasets: datasets
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: `Total Weight of Contamination Disposed per Area (Density: ${density} T/m³)` },
+                            zoom: {
+                                pan: { enabled: true, mode: 'xy', modifierKey: 'shift' },
+                                limits: { y: { min: 0 } },
+                                zoom: { wheel: { enabled: true }, drag: { enabled: true }, mode: 'xy' }
+                            }
+                        },
+                        scales: {
+                            x: { title: { display: true, text: 'Area' } },
+                            y: { title: { display: true, text: 'Contamination Weight (Tonnes)' } }
+                        }
+                    }
+                });
+                const buttonContainer = document.createElement('div');
+                ctx.parentNode.insertBefore(buttonContainer, ctx.nextSibling);
+                legends[summaryChartInstanceNoDredgeArea] = true;
+                ylinlog[summaryChartInstanceNoDredgeArea] = false;
+                stacked[summaryChartInstanceNoDredgeArea] = true;
+                createResetZoomButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+                createToggleLegendButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+                createToggleLinLogButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+                createStackedButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+                createExportButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+                createGnuplotExportButton(chartInstance[summaryChartInstanceNoDredgeArea], summaryChartInstanceNoDredgeArea, buttonContainer);
+            }
+        }
+    }
+}
+window.updateSummaryChart = updateSummaryChart;
