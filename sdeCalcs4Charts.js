@@ -234,7 +234,7 @@ function dataForPSDCharting(sheetName) {
     let cumAreas = {};
 //srg250308    datesSampled.sort();
        datesSampled.forEach (ds => {
-console.log(ds);
+//console.log(ds);
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
             ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
             ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
@@ -273,9 +273,9 @@ console.log(ds);
 //console.log('dataforPSD ', unitTitle,ptsSizes,ptsAreas,ptsVolumes,measChart,measChartArea);
     let allSamples = Object.keys(measChart);
 //    if (!(xAxisSort === 'normal')) {
-console.log(allSamples);
+//console.log(allSamples);
         allSamples.sortComplexSamples();
-console.log(allSamples);
+//console.log(allSamples);
 //    }
     return {unitTitle, ptsSizes, measChart, measChartArea, measChartRelativeArea, splitWeights, splitAreas, splitRelativeAreas, cumWeights, cumAreas, allSamples}
 }

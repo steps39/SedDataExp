@@ -2754,14 +2754,18 @@ function filenameDisplay() {
     // Blank it each time
     fileDisplayDiv.innerHTML = "";
 
-    let colorIndex = 0; // Use a new index for colors
     const datesSampled = Object.keys(selectedSampleInfo);
-    datesSampled.sort();
+    if (datesSampled.length > 1) {
+        datesSampled.sort((a, b) => {
+            const labelA = selectedSampleInfo[a].label || a;
+            const labelB = selectedSampleInfo[b].label || b;
+            return labelA.localeCompare(labelB);
+        });
+    }
 
     datesSampled.forEach(dateSampled => {
         // Get the corresponding color for the dataset
-        const currentColor = markerColors[colorIndex];
-        colorIndex = (colorIndex + 1) % markerColors.length; // Loop through colors
+        const currentColor = (typeof dateColors !== 'undefined' && dateColors[dateSampled]) ? dateColors[dateSampled] : '#000000';
 
         const fileURL = sampleInfo[dateSampled].fileURL;
 

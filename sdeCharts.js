@@ -160,7 +160,8 @@ function updateChart(){
     lastInstanceNo = displaySummaryChart(lastInstanceNo);
 //console.log(selectedMeas);
 console.log('about to display sample map');
-    sampleMap(selectedMeas);
+    sampleMap();
+//srg260408    sampleMap(selectedMeas);
     filenameDisplay();
 }
 
@@ -1490,7 +1491,7 @@ function displayAnySampleChart(meas, fullSampleNames, datasets, instanceNo, titl
         if (parts.length>2) {
             parts[1] = parts[1] + ': ' + parts[2];
         }
-console.log(parts[0],parts[1]);
+//console.log(parts[0],parts[1]);
         readableLabels[i] = selectedSampleInfo[parts[0]].label + ': ' + selectedSampleInfo[parts[0]].position[parts[1]].label;
     }
 //console.log(readableLabels,datasets);
@@ -1718,7 +1719,7 @@ function displayChemicalChart(meas, sheetName, instanceNo, unitTitle, dsiplayALs
     const allSamples = Object.keys(meas[allChemicals[0]]); // Assuming all samples have the same chemicals
     const datasets = allSamples.map((sample, index) => {
         const data = allChemicals.map(chemical => meas[chemical][sample]); // Using the first concentration value for simplicity
-console.log(data);
+//console.log(data);
         let label = sample;
         let parts = sample.split(": ");
         if (parts.length > 2) {

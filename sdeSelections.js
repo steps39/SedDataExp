@@ -237,14 +237,14 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
                             }*/
 //console.log(selectedMeas[dateSampled][chemicalType].chemicals[chemical]);
                             selectedMeas[dateSampled][chemicalType].chemicals[chemical].samples[sample] = selectedSampleMeasurements[dateSampled][chemicalType].chemicals[chemical].samples[sample];
-                           if (!selectedMeas[dateSampled]?.["Physical Data"]) {
+/*                           if (!selectedMeas[dateSampled]?.["Physical Data"]) {
                                 selectedMeas[dateSampled]["Physical Data"] = {};
                                 selectedMeas[dateSampled]["Physical Data"]["Date analysed"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Date analysed"]
                                 selectedMeas[dateSampled]["Physical Data"]["Laboratory/contractor"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Laboratory/contractor"];
                                 selectedMeas[dateSampled]["Physical Data"]["Unit of measurement"] = selectedSampleMeasurements[dateSampled]["Physical Data"]["Unit of measurement"];
                                 selectedMeas[dateSampled]["Physical Data"].sizes = selectedSampleMeasurements[dateSampled]["Physical Data"].sizes;
                                 selectedMeas[dateSampled]["Physical Data"].samples = {};
-                            }
+                            }*/
                             if (selectedSampleMeasurements[dateSampled]["Physical Data"]?.samples[sample] !== undefined) {
                                 selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
                             }
