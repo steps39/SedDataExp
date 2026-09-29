@@ -328,36 +328,36 @@ let ranges = {
         return sizes.length - 1;
     }
 
-    // Gravel: > 2.0 mm (0.002 m)
-    let endIndex = findEndIndex(startIndex, size => size > 0.002);
+    // Gravel: > 2.0 mm (2000 µm)
+    let endIndex = findEndIndex(startIndex, size => size > 2000);
     if (endIndex >= startIndex) {
         ranges['Gravel'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Very Coarse & Coarse Sand: 0.5 mm – 2.0 mm (0.0005 m – 0.002 m)
-    endIndex = findEndIndex(startIndex, size => size <= 0.002 && size >= 0.0005);
+    // Very Coarse & Coarse Sand: 0.5 mm – 2.0 mm (500 µm – 2000 µm)
+    endIndex = findEndIndex(startIndex, size => size <= 2000 && size >= 500);
     if (endIndex >= startIndex) {
         ranges['Very Coarse And Coarse Sand'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Medium Sand: 0.25 mm – 0.5 mm (0.00025 m – 0.0005 m)
-    endIndex = findEndIndex(startIndex, size => size < 0.0005 && size >= 0.00025);
+    // Medium Sand: 0.25 mm – 0.5 mm (250 µm – 500 µm)
+    endIndex = findEndIndex(startIndex, size => size < 500 && size >= 250);
     if (endIndex >= startIndex) {
         ranges['Medium Sand'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Fine & Very Fine Sand: 0.0625 mm – 0.25 mm (0.0000625 m – 0.00025 m)
-    endIndex = findEndIndex(startIndex, size => size < 0.00025 && size >= 0.0000625);
+    // Fine & Very Fine Sand: 0.0625 mm – 0.25 mm (62.5 µm – 250 µm)
+    endIndex = findEndIndex(startIndex, size => size < 250 && size >= 62.5);
     if (endIndex >= startIndex) {
         ranges['Fine And Very Fine Sand'] = [startIndex, endIndex];
         startIndex = endIndex + 1;
     }
 
-    // Silt & Clay: < 0.0625 mm (< 0.0000625 m)
-    endIndex = findEndIndex(startIndex, size => size < 0.0000625);
+    // Silt & Clay: < 0.0625 mm (< 62.5 µm)
+    endIndex = findEndIndex(startIndex, size => size < 62.5);
     if (endIndex >= startIndex) {
         ranges['Silt And Clay'] = [startIndex, endIndex];
     }
@@ -421,7 +421,7 @@ function psdSplit(psd) {
 
 
 standard_phiSizes = [-5.5,-5.0,-4.5,-4.0,-3.5,-3.0,-2.5,-2.0,-1.5,-1.0,-0.5,0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,10.5,11.0,11.5,12.0,12.5,13.0,13.5,14.0,14.5];
-standard_ptsSizes = standard_phiSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+standard_ptsSizes = standard_phiSizes.map(phiSize => Math.pow(2, -phiSize) * 1000);
 
 function InterresamplePsd(currentPsd, ptsSizes, standard_ptsSizes) {
     function interpolate(x, x0, y0, x1, y1) {
@@ -499,7 +499,7 @@ function psdPostProcess(currentPsd, sizes) {
     sizes = sizes.slice(0,-1);
 //console.log(sizes)    
     //Sizes are in mm so convert to SI
-    current_ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+    current_ptsSizes = sizes.map(phiSize => Math.pow(2, -phiSize) * 1000);
 //console.log(current_ptsSizes);
 //console.log(standard_ptsSizes);
     if (current_ptsSizes.length !== standard_ptsSizes.length) {
@@ -511,8 +511,8 @@ function psdPostProcess(currentPsd, sizes) {
 //console.log(currentPsd);
     ptsSizes = standard_ptsSizes;
 //console.log(ptsSizes);
-    ptsAreas = ptsSizes.map(size => Math.PI * size * size);
-    ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
+    ptsAreas = ptsSizes.map(size => Math.PI * (size * 1e-6) * (size * 1e-6));
+    ptsVolumes = ptsSizes.map(size => (Math.PI * Math.pow(size * 1e-6, 3)) / 6);
 //    ranges = determineRanges(ptsSizes);
 //console.log(ptsSizes,ptsAreas,ptsVolumes);
     areas = [];
@@ -943,3 +943,223 @@ function parseCoordinates(latitude, longitude) {
     }
     return null;
 }
+
+/**
+ * Returns statistics (mean, min, max, standard deviation, unit) for all determinands in a specific data sheet.
+ * @param {string} sheetName - Name of the data sheet (e.g. 'PAH data', 'PCB data', 'Trace metal data', etc.)
+ * @param {object} [measurements=selectedSampleMeasurements] - Sample measurements object
+ * @returns {Array<object>} Array of determinand statistics objects
+ */
+function getSheetStatistics(sheetName, measurements = selectedSampleMeasurements) {
+    if (!measurements || typeof measurements !== 'object') {
+        return [];
+    }
+
+    const statsMap = {};
+
+    function addValue(detName, val, unitStr) {
+        if (val === null || val === undefined || isNaN(val)) return;
+        const numVal = parseFloat(val);
+        if (isNaN(numVal)) return;
+
+        if (!statsMap[detName]) {
+            statsMap[detName] = { values: [], unit: unitStr || '' };
+        }
+        statsMap[detName].values.push(numVal);
+        if (unitStr && !statsMap[detName].unit) {
+            statsMap[detName].unit = unitStr;
+        }
+    }
+
+    for (const dateSampled in measurements) {
+        const sheetData = measurements[dateSampled]?.[sheetName];
+        if (!sheetData) continue;
+
+        const defaultUnit = sheetData['Unit of measurement'] || '';
+
+        // 1. Chemicals data (always included for all sheets)
+        if (sheetData.chemicals) {
+            for (const chemName in sheetData.chemicals) {
+                const chemObj = sheetData.chemicals[chemName];
+                const unitStr = chemObj.unit || defaultUnit;
+                if (chemObj.samples) {
+                    for (const sample in chemObj.samples) {
+                        addValue(chemName, chemObj.samples[sample], unitStr);
+                    }
+                }
+            }
+        }
+
+        // 2. Additional data by sheet type
+        if (sheetName === 'BDE data') {
+            if (sheetData.total) {
+                for (const sample in sheetData.total) {
+                    addValue('Total', sheetData.total[sample], defaultUnit);
+                }
+            }
+        } else if (sheetName === 'Organotins data') {
+            if (sheetData.total) {
+                for (const sample in sheetData.total) {
+                    addValue('Total', sheetData.total[sample], defaultUnit);
+                }
+            }
+        } else if (sheetName === 'PAH data') {
+            if (sheetData.total) {
+                for (const sample in sheetData.total) {
+                    addValue('Total', sheetData.total[sample], defaultUnit);
+                }
+            }
+            if (sheetData.totalHC) {
+                const thcUnit = sheetData.totalHCUnit || defaultUnit;
+                for (const sample in sheetData.totalHC) {
+                    addValue('Total Hydrocarbon', sheetData.totalHC[sample], thcUnit);
+                }
+            }
+            if (sheetData.gorhamTest) {
+                for (const sample in sheetData.gorhamTest) {
+                    const g = sheetData.gorhamTest[sample];
+                    if (g) {
+                        addValue('Gorham LMW Sum', g.lmwSum, defaultUnit);
+                        addValue('Gorham HMW Sum', g.hmwSum, defaultUnit);
+                    }
+                }
+            }
+            if (sheetData.ratios) {
+                for (const sample in sheetData.ratios) {
+                    const rObj = sheetData.ratios[sample];
+                    if (rObj) {
+                        for (const rKey in rObj) {
+                            addValue(rKey, rObj[rKey], '');
+                        }
+                    }
+                }
+            }
+            if (sheetData.ringSums) {
+                for (const sample in sheetData.ringSums) {
+                    const rsObj = sheetData.ringSums[sample];
+                    if (rsObj) {
+                        for (const rsKey in rsObj) {
+                            addValue(rsKey, rsObj[rsKey], defaultUnit);
+                        }
+                    }
+                }
+            }
+            if (sheetData.simpleRatios) {
+                for (const sample in sheetData.simpleRatios) {
+                    const srObj = sheetData.simpleRatios[sample];
+                    if (srObj) {
+                        for (const srKey in srObj) {
+                            addValue(srKey, srObj[srKey], '');
+                        }
+                    }
+                }
+            }
+        } else if (sheetName === 'PCB data') {
+            if (sheetData.total) {
+                for (const sample in sheetData.total) {
+                    addValue('Total', sheetData.total[sample], defaultUnit);
+                }
+            }
+            if (sheetData.congenerTest) {
+                for (const sample in sheetData.congenerTest) {
+                    const cObj = sheetData.congenerTest[sample];
+                    if (cObj) {
+                        addValue('ICES7 PCB Sum', cObj.ICES7, defaultUnit);
+                        addValue('All PCB Sum', cObj.All, defaultUnit);
+                    }
+                }
+            }
+        } else if (sheetName === 'Trace metal data') {
+            if (sheetData.total) {
+                for (const sample in sheetData.total) {
+                    addValue('Total', sheetData.total[sample], defaultUnit);
+                }
+            }
+        }
+    }
+
+    const results = [];
+    for (const detName in statsMap) {
+        const vals = statsMap[detName].values;
+        const n = vals.length;
+        if (n === 0) continue;
+
+        const sum = vals.reduce((a, b) => a + b, 0);
+        const mean = sum / n;
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        const variance = n > 1 ? vals.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (n - 1) : 0;
+        const stdDev = Math.sqrt(variance);
+
+        results.push({
+            determinand: detName,
+            sampleCount: n,
+            noOfSamples: n,
+            count: n,
+            mean: mean,
+            minimum: min,
+            maximum: max,
+            standardDeviation: stdDev,
+            'standard deviation': stdDev,
+            stdDev: stdDev,
+            unit: statsMap[detName].unit || ''
+        });
+    }
+
+    return results;
+}
+
+/**
+ * Retrieves Action Level 1 and Action Level 2 standard thresholds for a determinand.
+ * @param {string} determinandName 
+ * @param {string} sheetName 
+ * @returns {{al1: number|null, al2: number|null}}
+ */
+function getDeterminandActionLevels(determinandName, sheetName) {
+    if (typeof standards === 'undefined' || typeof chosenStandard === 'undefined' || !standards[chosenStandard]) {
+        return { al1: null, al2: null };
+    }
+    const std = standards[chosenStandard];
+    let rawLevels = null;
+
+    if (std.chemicals && std.chemicals[determinandName]) {
+        rawLevels = std.chemicals[determinandName];
+    } else if (determinandName === 'Total' || determinandName.startsWith('Total ')) {
+        if (std.chemicals && std.chemicals['Total ' + sheetName]) {
+            rawLevels = std.chemicals['Total ' + sheetName];
+        } else if (std.chemicals && std.chemicals['All PAHs'] && sheetName === 'PAH data') {
+            rawLevels = std.chemicals['All PAHs'];
+        } else if (std.chemicals && std.chemicals['All Organotins'] && sheetName === 'Organotins data') {
+            rawLevels = std.chemicals['All Organotins'];
+        } else if (std.chemicals && std.chemicals['All PCBs'] && sheetName === 'PCB data') {
+            rawLevels = std.chemicals['All PCBs'];
+        } else if (std.chemicals && std.chemicals['Total PCB data'] && sheetName === 'PCB data') {
+            rawLevels = std.chemicals['Total PCB data'];
+        } else if (std.multiples && std.multiples[sheetName]) {
+            rawLevels = std.multiples[sheetName];
+        }
+    } else if (determinandName === 'Gorham LMW Sum' || determinandName === 'LMW PAH Sum') {
+        if (std.chemicals && std.chemicals['LMW PAH Sum']) rawLevels = std.chemicals['LMW PAH Sum'];
+    } else if (determinandName === 'Gorham HMW Sum' || determinandName === 'HMW PAH Sum') {
+        if (std.chemicals && std.chemicals['HMW PAH Sum']) rawLevels = std.chemicals['HMW PAH Sum'];
+    } else if (determinandName === 'ICES7 PCB Sum' || determinandName === 'ICES7') {
+        if (std.chemicals && std.chemicals['ICES7 PCBs']) rawLevels = std.chemicals['ICES7 PCBs'];
+    }
+
+    if (!rawLevels) return { al1: null, al2: null };
+
+    let levelsArray = null;
+    if (Array.isArray(rawLevels)) {
+        levelsArray = rawLevels;
+    } else if (rawLevels.levels && Array.isArray(rawLevels.levels)) {
+        levelsArray = rawLevels.levels;
+    }
+
+    if (!levelsArray) return { al1: null, al2: null };
+
+    const al1 = levelsArray[0] !== undefined && levelsArray[0] !== null ? parseFloat(levelsArray[0]) : null;
+    const al2 = levelsArray[1] !== undefined && levelsArray[1] !== null ? parseFloat(levelsArray[1]) : null;
+
+    return { al1, al2 };
+}
+

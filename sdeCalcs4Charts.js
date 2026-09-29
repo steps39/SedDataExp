@@ -60,7 +60,7 @@ function recalculateConcentration(meas) {
         let ptsSizes = [];
         if (allSizes[ds] == undefined || allSizes[ds] == null) {
             ptsSizes = selectedSampleMeasurements[ds]['Physical Data'].sizes;
-            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize) * 1000);
             allSizes[ds] = ptsSizes;
             concentrateFactor[ds] = {};
         }
@@ -105,7 +105,7 @@ function recalculateConcentrationComplex(meas) {
         if (allSizes[ds] == undefined || allSizes[ds] == null) {
 //console.log(ds,sample);
             ptsSizes = selectedSampleMeasurements[ds]['Physical Data'].sizes;
-            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize) * 1000);
             allSizes[ds] = ptsSizes;
             concentrateFactor[ds] = {};
         }
@@ -237,7 +237,7 @@ function dataForPSDCharting(sheetName) {
 //console.log(ds);
         if (!(selectedSampleMeasurements[ds][ct] == undefined || selectedSampleMeasurements[ds][ct] == null)) {
             ptsSizes = selectedSampleMeasurements[ds][ct].sizes;
-            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize)/1000);
+            ptsSizes = ptsSizes.map(phiSize => Math.pow(2, -phiSize) * 1000);
             ptsAreas = ptsSizes.map(size => (Math.PI * size * size) / 4);
             ptsVolumes = ptsSizes.map(size => (Math.PI * size * size * size) / 6);
         for (const s in selectedSampleMeasurements[ds][ct].samples) {

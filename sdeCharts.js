@@ -107,10 +107,6 @@ function updateOptions() {
     resuspensionSize = parseFloat(document.getElementById('resuspensionsize').value);
     if (isNaN(resuspensionSize)) {
         resuspensionSize = 0;
-    } else {
-        if (resuspensionSize > 0 ) {
-            resuspensionSize = resuspensionSize / 1000000;
-        }
     }
     const useTabs = document.getElementById('useTabs').checked;
     const mainChartContainer = document.getElementById('chartContainer');
@@ -335,6 +331,8 @@ function displayCharts(sheetName, instanceNo) {
     mainChartContainer.id = 'chartContainer-placeholder';
     targetContainer.id = originalChartContainerId;
 
+    renderSheetStatisticsTable(sheetName, targetContainer);
+
     let scatterData = {};
     if(sheetName === 'Physical Data') {
         retData = dataForPSDCharting(sheetName);
@@ -443,7 +441,7 @@ function displayCharts(sheetName, instanceNo) {
             if (completeSheet['Physical Data']) {
                 if (resuspensionSize > 0) {
                     instanceNo += 1;
-                    displaySampleChart(concentrateMeas, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize * 1000000 + 'µm');
+                    displaySampleChart(concentrateMeas, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize + 'µm');
                 }
                 if (subsToDisplay['relationareadensity']) {
                     instanceNo += 1;
@@ -457,7 +455,7 @@ function displayCharts(sheetName, instanceNo) {
             if (completeSheet['Physical Data']) {
                 if (resuspensionSize > 0) {
                     instanceNo += 1;
-                    displayChemicalChart(concentrateMeas, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize * 1000000 + 'µm', true);
+                    displayChemicalChart(concentrateMeas, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize + 'µm', true);
                 }
                 if (subsToDisplay['relationareadensity']) {
                     instanceNo += 1;
@@ -688,7 +686,7 @@ function displayCharts(sheetName, instanceNo) {
                 concentrateSums = retData['concentrateMeas'];
                 concentrateFactor = retData['concentrateFactor'];
                 instanceNo += 1;
-                displayGorhamTest(concentrateSums, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize * 1000000 + 'µm');
+                displayGorhamTest(concentrateSums, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize + 'µm');
             }
         }
         if (sheetName === 'PAH data' && subsToDisplay['totalhc']) {
@@ -735,7 +733,7 @@ function displayCharts(sheetName, instanceNo) {
                 concentrateSums = retData['concentrateMeas'];
                 concentrateFactor = retData['concentrateFactor'];
                 instanceNo += 1;
-                displayCongener(concentrateSums, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize * 1000000 + 'µm');
+                displayCongener(concentrateSums, sheetName, instanceNo, unitTitle + ' < ' + resuspensionSize + 'µm');
             }
         }
     }
@@ -1276,7 +1274,7 @@ function displayPSDChart(sizes, meas, sheetName, instanceNo, unitTitle, subTitle
                         position: 'bottom',
                         title: {
                             display: true,
-                            text: 'm'
+                            text: 'μm'
                             }
                     },
                     y: {
@@ -1946,7 +1944,7 @@ function displayResuspensionFractions(sizes, cumWeights, cumAreas, sheetName, in
 
 //    console.log(datasets);
 
-    displayAnySampleChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm and Concentration factor', 'Fraction', true);
+    displayAnySampleChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize + 'µm and Concentration factor', 'Fraction', true);
 //  displayAnyChart(cumWeights, samples, datasets, instanceNo, sheetName + ': Fractions < ' + resuspensionSize * 1000000 + 'µm', unitTitle, true);
 //  displayAnyChart(sums, samples,datasets,instanceNo,sheetName + ': Total hydrocarbon & Total PAH',unitTitle,true);
     // Update the chart
@@ -3674,3 +3672,184 @@ function updateSummaryChart() {
     }
 }
 window.updateSummaryChart = updateSummaryChart;
+
+function renderSheetStatisticsTable(sheetName, container) {
+    if (!container || typeof getSheetStatistics !== 'function') return;
+
+    const stats = getSheetStatistics(sheetName);
+    if (!stats || stats.length === 0) return;
+
+    const statsDiv = document.createElement('div');
+    statsDiv.className = 'sheet-stats-container';
+    statsDiv.style.margin = '15px 0 25px 0';
+    statsDiv.style.padding = '15px';
+    statsDiv.style.backgroundColor = '#f8f9fa';
+    statsDiv.style.borderRadius = '8px';
+    statsDiv.style.border = '1px solid #e0e0e0';
+    statsDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+
+    const headerContainer = document.createElement('div');
+    headerContainer.style.display = 'flex';
+    headerContainer.style.justifyContent = 'space-between';
+    headerContainer.style.alignItems = 'center';
+    headerContainer.style.marginBottom = '12px';
+
+    const title = document.createElement('h3');
+    title.style.margin = '0';
+    title.style.fontSize = '1.1rem';
+    title.style.color = '#333';
+    title.style.fontWeight = '600';
+    title.textContent = `Statistics: ${sheetName}`;
+    headerContainer.appendChild(title);
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'export-stats-btn';
+    exportBtn.textContent = 'Export Statistics (CSV)';
+    exportBtn.style.padding = '6px 14px';
+    exportBtn.style.backgroundColor = '#007bff';
+    exportBtn.style.color = '#ffffff';
+    exportBtn.style.border = 'none';
+    exportBtn.style.borderRadius = '4px';
+    exportBtn.style.cursor = 'pointer';
+    exportBtn.style.fontSize = '0.85rem';
+    exportBtn.style.fontWeight = '500';
+    exportBtn.style.transition = 'background-color 0.2s';
+    exportBtn.onmouseover = () => exportBtn.style.backgroundColor = '#0056b3';
+    exportBtn.onmouseout = () => exportBtn.style.backgroundColor = '#007bff';
+
+    exportBtn.onclick = function() {
+        exportSheetStatisticsToCSV(sheetName, stats);
+    };
+    headerContainer.appendChild(exportBtn);
+
+    statsDiv.appendChild(headerContainer);
+
+    const tableWrapper = document.createElement('div');
+    tableWrapper.style.overflowX = 'auto';
+
+    const table = document.createElement('table');
+    table.className = 'sheet-stats-table';
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontSize = '0.9rem';
+    table.style.textAlign = 'left';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr style="background-color: #e9ecef; border-bottom: 2px solid #dee2e6; color: #495057;">
+            <th style="padding: 8px 12px; font-weight: 600;">Determinand</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">No. of Samples</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Mean</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Minimum</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Maximum</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Std Dev</th>
+            <th style="padding: 8px 12px; font-weight: 600;">Unit</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Action Level 1</th>
+            <th style="padding: 8px 12px; font-weight: 600; text-align: right;">Action Level 2</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    function fmt(val) {
+        if (val === null || val === undefined || isNaN(val)) return '-';
+        if (Math.abs(val) < 0.0001 && val !== 0) return val.toExponential(3);
+        return Number(val.toFixed(4)).toString();
+    }
+
+    stats.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #dee2e6';
+        if (index % 2 === 1) tr.style.backgroundColor = '#f8f9fa';
+
+        let al1Str = '-';
+        let al2Str = '-';
+        if (typeof getDeterminandActionLevels === 'function') {
+            const { al1, al2 } = getDeterminandActionLevels(item.determinand, sheetName);
+            if (al1 !== null) al1Str = fmt(al1);
+            if (al2 !== null) al2Str = fmt(al2);
+        }
+
+        const countVal = item.sampleCount ?? item.noOfSamples ?? item.count ?? 0;
+
+        tr.innerHTML = `
+            <td style="padding: 8px 12px; font-weight: 500;">${item.determinand}</td>
+            <td style="padding: 8px 12px; text-align: right;">${countVal}</td>
+            <td style="padding: 8px 12px; text-align: right;">${fmt(item.mean)}</td>
+            <td style="padding: 8px 12px; text-align: right;">${fmt(item.minimum)}</td>
+            <td style="padding: 8px 12px; text-align: right;">${fmt(item.maximum)}</td>
+            <td style="padding: 8px 12px; text-align: right;">${fmt(item.standardDeviation)}</td>
+            <td style="padding: 8px 12px;">${item.unit || '-'}</td>
+            <td style="padding: 8px 12px; text-align: right; color: #28a745; font-weight: 500;">${al1Str}</td>
+            <td style="padding: 8px 12px; text-align: right; color: #dc3545; font-weight: 500;">${al2Str}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    tableWrapper.appendChild(table);
+    statsDiv.appendChild(tableWrapper);
+
+    container.appendChild(statsDiv);
+}
+
+function exportSheetStatisticsToCSV(sheetName, stats) {
+    if (!stats || stats.length === 0) return;
+
+    const rows = [];
+    rows.push(['Determinand', 'No. of Samples', 'Mean', 'Minimum', 'Maximum', 'Standard Deviation', 'Unit', 'Action Level 1', 'Action Level 2']);
+
+    function fmtCSV(val) {
+        if (val === null || val === undefined || isNaN(val)) return '';
+        return Number(val.toFixed(4)).toString();
+    }
+
+    stats.forEach(item => {
+        let al1Str = '';
+        let al2Str = '';
+        if (typeof getDeterminandActionLevels === 'function') {
+            const { al1, al2 } = getDeterminandActionLevels(item.determinand, sheetName);
+            if (al1 !== null) al1Str = fmtCSV(al1);
+            if (al2 !== null) al2Str = fmtCSV(al2);
+        }
+
+        const countVal = item.sampleCount ?? item.noOfSamples ?? item.count ?? 0;
+
+        rows.push([
+            item.determinand,
+            countVal,
+            fmtCSV(item.mean),
+            fmtCSV(item.minimum),
+            fmtCSV(item.maximum),
+            fmtCSV(item.standardDeviation),
+            item.unit || '',
+            al1Str,
+            al2Str
+        ]);
+    });
+
+    const csvContent = rows.map(row =>
+        row.map(field => {
+            const str = String(field === null || field === undefined ? '' : field);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }).join(',')
+    ).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        const filename = `${sheetName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_statistics.csv`;
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+

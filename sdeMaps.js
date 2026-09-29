@@ -10,6 +10,7 @@ let overlayLayers = {};
 let contaminantLayers = {};
 let contaminantStats = {};
 let contaminantHeatmaps = {};
+let contaminantMarkerData = {};
 let dateColors = {};
 let markers = {};
 let sampleDepths = {};
@@ -31,6 +32,13 @@ const highlightStyle = {
 };
 
     function applyDynamicStyling(chemicalName, zoomLevel = null) {
+        if (zoomLevel === null && typeof map !== 'undefined' && map && typeof map.getZoom === 'function') {
+            try {
+                zoomLevel = map.getZoom();
+            } catch (e) {
+                zoomLevel = null;
+            }
+        }
         const stats = contaminantStats[chemicalName];
         if (!stats) return;
         const { valueMin, valueMax, depthMin, depthMax } = stats;
@@ -45,7 +53,7 @@ const highlightStyle = {
                     break; 
                 }
             }
-            const radius = getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel);
+            const radius = getDepthRadius(depth, depthMin, depthMax, zoomLevel);
             marker.setStyle({ fillColor: color, radius });
         });
     }
@@ -101,38 +109,7 @@ const highlightStyle = {
     }
 
     function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
-        // Define geographic sizes in meters for each depth level
-        const rSmallMeters = 5;    // 5 meters for shallow samples
-        const rMedMeters = 10;     // 10 meters for medium depth samples
-        const rLargeMeters = 15;   // 15 meters for deep samples
-        
-        let radiusInMeters;
-        if (depth == null || isNaN(depth) || depthMin === depthMax) {
-            radiusInMeters = rSmallMeters;
-        } else {
-            const logMin = Math.log((depthMin ?? 0) + 1);
-            const logMax = Math.log((depthMax ?? 0) + 1);
-            const logVal = Math.log(depth + 1);
-            const t = (logVal - logMin) / (logMax - logMin);
-            
-            if (t <= 1 / 3) radiusInMeters = rSmallMeters;
-            else if (t <= 2 / 3) radiusInMeters = rMedMeters;
-            else radiusInMeters = rLargeMeters;
-        }
-        
-        // Convert meters to pixels based on zoom level
-        if (zoomLevel === null) {
-            // Fallback to pixel-based sizing
-            if (radiusInMeters === rSmallMeters) return 6 * markerScaling;
-            if (radiusInMeters === rMedMeters) return 12 * markerScaling;
-            return 18 * markerScaling;
-        }
-        
-        // Meters per pixel calculation
-        const metersPerPixel = 40075017 / (256 * Math.pow(2, zoomLevel)) * Math.cos(54.596 * Math.PI / 180);
-        
-        // FIX: Scale the result by 20 so the physical meter size translates to visible pixels
-        return (radiusInMeters / metersPerPixel) * 20 * markerScaling;
+        return getDepthRadius(depth, depthMin, depthMax, zoomLevel);
     }
 
 /*srg251130    function getLogDepthRadius3Levels(depth, depthMin, depthMax, zoomLevel = null) {
@@ -503,7 +480,7 @@ function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupN
     });
 //console.log(sampleMeasurements);
     contaminantStats = computeContaminationStats();
-    let contaminantMarkerData = {};
+    contaminantMarkerData = {};
 
     // Build a lookup of all chemical values by sample (with full sample names)
     let allChemicalValues = {};
@@ -595,7 +572,7 @@ function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupN
             if (isNaN(lat) || isNaN(lon)) return;
             
             const depth = sampleDepths[fullSampleName];
-            const initialRadius = getLogDepthRadius3Levels(depth, depthMin, depthMax);
+            const initialRadius = getDepthRadius(depth, depthMin, depthMax);
             
 //console.log(`${chemicalName} - Sample: ${fullSampleName}, Depth: ${depth}, Radius: ${initialRadius}`);
             
@@ -638,7 +615,7 @@ function computeIndividualStats(statsByChem, unit, values, chemicalName, lookupN
             if (isNaN(point.lat) || isNaN(point.lng)) return;
             const normalizedLevel = Math.min((point.value - stats.valueMin) / (stats.valueMax - stats.valueMin || 1), 1);
             for (let i = 3; i >= 1; i--) {
-                let baseRadius = (point.depth != null && !isNaN(point.depth)) ? 100 + (getLogDepthRadius3Levels(point.depth, stats.depthMin, stats.depthMax) - 6) * 5 : 100;
+                let baseRadius = (point.depth != null && !isNaN(point.depth)) ? 100 + (getDepthRadius(point.depth, stats.depthMin, stats.depthMax) / markerScaling - 3) * (60 / 17) : 100;
                 const layerScale = 0.3 + (i - 1) * 0.35;
                 const valueScale = 0.5 + normalizedLevel * 1.0;
                 const radius = baseRadius * layerScale * valueScale;
@@ -919,6 +896,7 @@ function sampleMap(meas) {
     isHeatmapMode = false;
     activeContaminant = null;
     allShapeLayers = [];
+    let legend = null;
 
     const markerColors = ['#FF5733', '#33CFFF', '#33FF57', '#FF33A1', '#A133FF', '#FFC300', '#33FFA1', '#C70039', '#900C3F'];
     const datesSampled = Object.keys(selectedSampleInfo);
@@ -1057,6 +1035,7 @@ function sampleMap(meas) {
         if (activeContaminant && contaminantLayers[activeContaminant]) {
             applyDynamicStyling(activeContaminant, currentZoom);
         }
+        updateLegendForMode();
     });
     // --- CHANGE END ---
 
@@ -1266,7 +1245,7 @@ console.log("Map created", noLocations, noSamples);
             activeContaminant = currentContaminant;
             if (contaminantLayers[activeContaminant]) {
                 map.addLayer(contaminantLayers[activeContaminant]);
-                applyDynamicStyling(activeContaminant);
+                applyDynamicStyling(activeContaminant, map.getZoom());
             }
             isHeatmapMode = false;
             updateLegendForMode();
@@ -1283,25 +1262,176 @@ console.log("Map created", noLocations, noSamples);
         }
     }
 
-    let legend = L.control({ position: "bottomleft" });
+    legend = L.control({ position: "bottomleft" });
     legend.onAdd = function () {
         this._div = L.DomUtil.create("div", "info legend");
         this.update();
         return this._div;
     };
-    function makeDepthLegend(min, max) {
-        const mid = (min + max) / 2;
-        const values = [min, mid, max];
-        return values.map(v => `
-<svg height="30" width="60" style="vertical-align:middle">
-<circle cx="25" cy="15" r="${getDepthRadius(v, min, max)}"
-stroke="black" stroke-width="1"
-fill="grey" fill-opacity="0.6" />
-</svg> ≈ ${isFinite(v) ? v.toFixed(2) : '—'} m
-`).join("<br>");
+    function makeDepthLegend(min, max, chemicalName = null) {
+        try {
+            if (!isFinite(max) || max <= 0) return '';
+
+            const currentZoom = (typeof map !== 'undefined' && map && typeof map.getZoom === 'function') ? map.getZoom() : null;
+            const maxRadius = getDepthRadius(max, min, max, currentZoom);
+            let diameter = Math.round(maxRadius * 2);
+            if (isNaN(diameter) || diameter <= 0) diameter = 40;
+
+            // Gather intermediate depths from actual samples if available
+            let sampleDepthsList = [];
+            if (chemicalName && typeof contaminantLayers !== 'undefined' && contaminantLayers[chemicalName]) {
+                try {
+                    contaminantLayers[chemicalName].eachLayer(m => {
+                        const d = m.options ? m.options._depth : null;
+                        if (d != null && !isNaN(d) && d > 0 && d < max) {
+                            sampleDepthsList.push(d);
+                        }
+                    });
+                    sampleDepthsList = [...new Set(sampleDepthsList)].sort((a, b) => a - b);
+                } catch (e) {
+                    console.warn('Error reading depths from contaminantLayers:', e);
+                }
+            } else if (typeof sampleDepths !== 'undefined' && sampleDepths) {
+                try {
+                    sampleDepthsList = Object.values(sampleDepths)
+                        .filter(d => d != null && !isNaN(d) && d > 0 && d < max);
+                    sampleDepthsList = [...new Set(sampleDepthsList)].sort((a, b) => a - b);
+                } catch (e) {
+                    console.warn('Error reading depths from sampleDepths:', e);
+                }
+            }
+
+            let intermediateDepths = [];
+            if (diameter >= 90) {
+                // Select 2 intermediate depths closest to 1/3 and 2/3 of the scale
+                if (sampleDepthsList.length >= 2) {
+                    const logMax = Math.log(max + 1);
+                    const getT = (d) => Math.log(d + 1) / logMax;
+                    let best1 = sampleDepthsList[0], diff1 = Math.abs(getT(best1) - 0.33);
+                    let best2 = sampleDepthsList[sampleDepthsList.length - 1], diff2 = Math.abs(getT(best2) - 0.67);
+                    for (const d of sampleDepthsList) {
+                        const t = getT(d);
+                        if (Math.abs(t - 0.33) < diff1) {
+                            best1 = d;
+                            diff1 = Math.abs(t - 0.33);
+                        }
+                        if (Math.abs(t - 0.67) < diff2 && d !== best1) {
+                            best2 = d;
+                            diff2 = Math.abs(t - 0.67);
+                        }
+                    }
+                    intermediateDepths = [best1, best2].sort((a, b) => a - b);
+                } else if (sampleDepthsList.length === 1) {
+                    intermediateDepths = sampleDepthsList;
+                } else {
+                    const d1 = Number((max / 3).toFixed(max < 1 ? 2 : 1));
+                    const d2 = Number(((2 * max) / 3).toFixed(max < 1 ? 2 : 1));
+                    if (d1 > 0 && d2 > d1 && d2 < max) {
+                        intermediateDepths = [d1, d2];
+                    } else if (d1 > 0 && d1 < max) {
+                        intermediateDepths = [d1];
+                    }
+                }
+            } else if (diameter >= 50) {
+                // Select 1 intermediate depth closest to middle of scale
+                if (sampleDepthsList.length > 0) {
+                    const logMax = Math.log(max + 1);
+                    const getT = (d) => Math.log(d + 1) / logMax;
+                    let best = sampleDepthsList[0], diff = Math.abs(getT(best) - 0.5);
+                    for (const d of sampleDepthsList) {
+                        const t = getT(d);
+                        if (Math.abs(t - 0.5) < diff) {
+                            best = d;
+                            diff = Math.abs(t - 0.5);
+                        }
+                    }
+                    intermediateDepths = [best];
+                } else {
+                    const dMid = Number((max / 2).toFixed(max < 1 ? 2 : 1));
+                    if (dMid > 0 && dMid < max) {
+                        intermediateDepths = [dMid];
+                    }
+                }
+            }
+
+            const paddingLeft = 24;
+            const paddingRight = 24;
+            const svgWidth = Math.round(diameter + paddingLeft + paddingRight);
+            const rulerY = 14;
+
+            const formatD = (d) => d % 1 === 0 ? d.toFixed(0) : (d * 10 % 1 === 0 ? d.toFixed(1) : d.toFixed(2));
+
+            const allDepths = [
+                { depth: 0, label: "0 m", isZero: true, isEnd: false },
+                ...intermediateDepths.map(d => ({ depth: d, label: formatD(d) + " m", isZero: false, isEnd: false })),
+                { depth: max, label: formatD(max) + " m", isZero: false, isEnd: true }
+            ];
+
+            allDepths.forEach(item => {
+                const r = getDepthRadius(item.depth, min, max, currentZoom);
+                const sampleDiameter = Math.round(r * 2);
+                item.x = Math.round(paddingLeft + sampleDiameter);
+            });
+
+            let hasStagger = false;
+            for (let i = 0; i < allDepths.length - 1; i++) {
+                if (allDepths[i+1].x - allDepths[i].x < 28) {
+                    hasStagger = true;
+                    break;
+                }
+            }
+
+            allDepths.forEach((item, idx) => {
+                if (hasStagger && idx % 2 === 1) {
+                    item.yText = rulerY + 23;
+                    item.tickBottom = rulerY + 11;
+                } else {
+                    item.yText = rulerY + 14;
+                    item.tickBottom = rulerY + 6;
+                }
+            });
+
+            const svgHeight = hasStagger ? 42 : 32;
+
+            let svg = `<svg height="${svgHeight}" width="${svgWidth}" style="display:block; overflow:visible;">`;
+            
+            // Horizontal ruler line: length equals the diameter of the deepest sample displayed
+            svg += `<line x1="${paddingLeft}" y1="${rulerY}" x2="${paddingLeft + diameter}" y2="${rulerY}" stroke="#333" stroke-width="2" />`;
+            
+            // Start of ruler origin tick (zero diameter reference mark)
+            svg += `<line x1="${paddingLeft}" y1="${rulerY - 7}" x2="${paddingLeft}" y2="${rulerY + 7}" stroke="#111" stroke-width="2" />`;
+
+            // Minor ticks along the ruler if diameter is wide enough
+            if (diameter >= 40) {
+                for (let p = 0.1; p < 0.99; p += 0.1) {
+                    const mx = Math.round(paddingLeft + p * diameter);
+                    if (!allDepths.some(item => Math.abs(item.x - mx) < 3)) {
+                        svg += `<line x1="${mx}" y1="${rulerY - 3}" x2="${mx}" y2="${rulerY + 3}" stroke="#aaa" stroke-width="1" />`;
+                    }
+                }
+            }
+
+            // Draw depth ticks and labels (0 m at 0 m diameter, intermediate depths, max depth at right end)
+            allDepths.forEach((item) => {
+                const topY = (item.isEnd || item.isZero) ? rulerY - 6 : rulerY - 4;
+                const strokeW = (item.isEnd || item.isZero) ? 2 : 1.5;
+                const color = (item.isEnd || item.isZero) ? "#111" : "#444";
+                const fontWeight = (item.isEnd || item.isZero) ? "600" : "normal";
+
+                svg += `<line x1="${item.x}" y1="${topY}" x2="${item.x}" y2="${item.tickBottom}" stroke="${color}" stroke-width="${strokeW}" />`;
+                svg += `<text x="${item.x}" y="${item.yText}" font-size="10.5" font-weight="${fontWeight}" fill="#222" font-family="Arial, sans-serif" text-anchor="middle">${item.label}</text>`;
+            });
+
+            svg += `</svg>`;
+            return `<div style="overflow-x: auto; max-width: 100%; padding-top: 4px; padding-bottom: 2px;">${svg}</div>`;
+        } catch (err) {
+            console.error('Error generating depth ruler in makeDepthLegend:', err);
+            return '';
+        }
     }
 
     function updateLegendForMode() {
+        if (!legend || typeof legend.update !== 'function') return;
         if (!activeContaminant) {
             legend.update();
             return;
@@ -1309,15 +1439,59 @@ fill="grey" fill-opacity="0.6" />
         legend.update({ chemicalName: activeContaminant });
     }
 
+    window.isContaminantLegendHidden = false;
+    window.toggleContaminantLegend = function() {
+        window.isContaminantLegendHidden = !window.isContaminantLegendHidden;
+        if (activeContaminant) {
+            legend.update({ chemicalName: activeContaminant });
+        } else {
+            legend.update();
+        }
+    };
+
     legend.update = function (props) {
+        const toggleIcon = window.isContaminantLegendHidden ? '+' : '−';
+        const displayStyle = window.isContaminantLegendHidden ? 'none' : 'block';
+
+        let globalDepthLegend = '';
+        const minD = (typeof depthStatsGlobal !== 'undefined' && isFinite(depthStatsGlobal.min)) ? depthStatsGlobal.min : 0;
+        const maxD = (typeof depthStatsGlobal !== 'undefined' && isFinite(depthStatsGlobal.max)) ? depthStatsGlobal.max : 0;
+        if (maxD > 0 && minD !== maxD) {
+            try {
+                globalDepthLegend = `
+<br>
+<div><strong>Sample depth</strong><br>
+${makeDepthLegend(minD, maxD, null)}</div>
+`;
+            } catch (e) {
+                console.error("Error generating depth legend ruler:", e);
+                globalDepthLegend = '';
+            }
+        }
+
         if (!props || !activeContaminant) {
-            this._div.innerHTML = `<h4>Contaminant legend</h4><i>Toggle a contaminant layer</i>`;
+            this._div.innerHTML = `
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h4 style="margin: 0; margin-right: 10px;">Contaminant legend</h4>
+    <button onclick="window.toggleContaminantLegend()" style="background: none; border: 1px solid #ccc; cursor: pointer; padding: 2px 6px; border-radius: 3px;" title="Toggle Legend">${toggleIcon}</button>
+</div>
+<div style="display: ${displayStyle}; margin-top: 5px;">
+    ${globalDepthLegend}
+</div>`;
             return;
         }
         const { chemicalName } = props;
         const stats = contaminantStats[chemicalName];
         if (!stats) {
-            this._div.innerHTML = "<h4>Contaminant legend</h4><i>No data</i>";
+            this._div.innerHTML = `
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h4 style="margin: 0; margin-right: 10px;">Contaminant legend</h4>
+    <button onclick="window.toggleContaminantLegend()" style="background: none; border: 1px solid #ccc; cursor: pointer; padding: 2px 6px; border-radius: 3px;" title="Toggle Legend">${toggleIcon}</button>
+</div>
+<div style="display: ${displayStyle}; margin-top: 5px;">
+    <i>No data</i>
+    ${globalDepthLegend}
+</div>`;
             return;
         }
         const unit = stats.unit ? ` ${stats.unit}` : "";
@@ -1383,13 +1557,25 @@ fill="grey" fill-opacity="0.6" />
 </div>
 `;
         }
-        const depthLegend = (!isHeatmapMode & !(stats.depthMin === stats.depthMax)) ? `
+        let depthLegend = '';
+        if (!isHeatmapMode && stats && stats.depthMax > 0 && stats.depthMin !== stats.depthMax) {
+            try {
+                depthLegend = `
 <br>
-<div><strong>Sample depth → radius</strong><br>
-${makeDepthLegend(stats.depthMin, stats.depthMax)}</div>
-` : '';
+<div><strong>Sample depth</strong><br>
+${makeDepthLegend(stats.depthMin, stats.depthMax, chemicalName)}</div>
+`;
+            } catch (e) {
+                console.error("Error generating depth legend ruler:", e);
+                depthLegend = '';
+            }
+        }
         this._div.innerHTML = `
-<h4>${chemicalName}</h4>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+    <h4 style="margin: 0; margin-right: 10px;">${chemicalName}</h4>
+    <button onclick="window.toggleContaminantLegend()" style="background: none; border: 1px solid #ccc; cursor: pointer; padding: 2px 6px; border-radius: 3px;" title="Toggle Legend">${toggleIcon}</button>
+</div>
+<div style="display: ${displayStyle};">
 ${toggleButton}
 ${toggleColorButton}
 ${toggleUpperLevelButton}
@@ -1397,6 +1583,7 @@ ${toggleShapeColorButton}
 <strong>${legendType}</strong>
 ${legendContent}
 ${depthLegend}
+</div>
 `;
     };
     legend.addTo(map);
@@ -1679,7 +1866,8 @@ function getDepthRadius(depth, min, max, zoomLevel = null) {
         if (logMax === logMin) {
             radiusInMeters = minRadiusMeters;
         } else {
-            const t = (logVal - logMin) / (logMax - logMin);
+            let t = (logVal - logMin) / (logMax - logMin);
+            t = Math.max(0, Math.min(1, t));
             radiusInMeters = minRadiusMeters + t * (maxRadiusMeters - minRadiusMeters);
         }
     }

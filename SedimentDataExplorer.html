@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sediment Data Explorer</title>
-    
+
     <!-- External Scripts and Styles (Unchanged) -->
-<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  -->
-<!--     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  -->
+    <!--     <script src="https://rawgit.com/kawanet/msgpack-lite/master/dist/msgpack.min.js"></script> -->
     <script src="https://unpkg.com/flatted@3.2.9/min.js"></script>
     <script src="https://unpkg.com/chroma-js/dist/chroma.min.cjs"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -23,18 +23,19 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="https://harrywood.co.uk/maps/examples/leaflet/leaflet-plugins/layer/vector/KML.js"></script>
-    <script src="https://unpkg.com/leaflet.layergroup.collision@0.2.0/dist/leaflet.layergroup.collision-src.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script
+        src="https://unpkg.com/leaflet.layergroup.collision@0.2.0/dist/leaflet.layergroup.collision-src.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/pca-js@1.0.0/pca.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
-  <script src="https://www.patrick-wied.at/static/heatmapjs/assets/js/heatmap.min.js"></script>
-  <script src="https://www.patrick-wied.at/static/heatmapjs/assets/js/leaflet-heatmap.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://www.patrick-wied.at/static/heatmapjs/assets/js/heatmap.min.js"></script>
+    <script src="https://www.patrick-wied.at/static/heatmapjs/assets/js/leaflet-heatmap.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
     <!-- UI Styles -->
     <style>
@@ -57,9 +58,10 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden;
+            /* Prevent body scroll */
         }
-        
+
         /* Main Layout */
         .app-container {
             display: flex;
@@ -70,7 +72,8 @@
 
         .controls-sidebar {
             width: 380px;
-            flex-shrink: 0; /* Prevent sidebar from shrinking */
+            flex-shrink: 0;
+            /* Prevent sidebar from shrinking */
             background-color: var(--surface-color);
             border-right: 1px solid var(--border-color);
             padding: 1rem;
@@ -79,7 +82,7 @@
             position: relative;
         }
 
-/*        
+        /*        
         .output-area {
             flex-grow: 1;
             padding: 1.5rem;
@@ -87,34 +90,43 @@
             position: relative;
         }
 */
-/* Update the .output-area to be a flex container that is fixed in height */
-.output-area {
-    flex-grow: 1;
-    padding: 1.5rem;
-    position: relative;
-    display: flex; /* Make it a flex container */
-    flex-direction: column; /* Stack children vertically */
-    overflow: hidden; /* Prevent the main output area from scrolling */
-}
+        /* Update the .output-area to be a flex container that is fixed in height */
+        .output-area {
+            flex-grow: 1;
+            padding: 1.5rem;
+            position: relative;
+            display: flex;
+            /* Make it a flex container */
+            flex-direction: column;
+            /* Stack children vertically */
+            overflow: hidden;
+            /* Prevent the main output area from scrolling */
+        }
 
-/* NEW: Add a fixed container for the map and tabs */
-.fixed-header-container {
-    position: sticky; /* This is the key */
-    top: 0; /* Stick it to the top */
-    z-index: 10; /* Ensure it's above the charts */
-    background-color: var(--background-color);
-    padding-bottom: 1.5rem;
-    padding-top: 1.5rem;
-    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.1); /* Optional: Adds a subtle shadow on scroll */
-}
+        /* NEW: Add a fixed container for the map and tabs */
+        .fixed-header-container {
+            position: sticky;
+            /* This is the key */
+            top: 0;
+            /* Stick it to the top */
+            z-index: 10;
+            /* Ensure it's above the charts */
+            background-color: var(--background-color);
+            padding-bottom: 1.5rem;
+            padding-top: 1.5rem;
+            box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            /* Optional: Adds a subtle shadow on scroll */
+        }
 
-/* NEW: Add a scrollable container for the charts */
-.scrollable-content {
-    flex-grow: 1; /* This makes the container fill the remaining space */
-    overflow-y: auto; /* This adds the vertical scrollbar */
-    /* Add padding to account for the space taken by the fixed header, preventing overlap */
-    padding-top: 1rem; 
-}
+        /* NEW: Add a scrollable container for the charts */
+        .scrollable-content {
+            flex-grow: 1;
+            /* This makes the container fill the remaining space */
+            overflow-y: auto;
+            /* This adds the vertical scrollbar */
+            /* Add padding to account for the space taken by the fixed header, preventing overlap */
+            padding-top: 1rem;
+        }
 
         /* Collapsible Sidebar Styles */
         .controls-sidebar.collapsed {
@@ -123,14 +135,14 @@
             border-right: none;
             overflow: hidden;
         }
-        
-        .controls-sidebar.collapsed > * {
+
+        .controls-sidebar.collapsed>* {
             display: none;
         }
 
         #sidebar-toggle {
             position: fixed;
-            left: 10px; 
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
             z-index: 100;
@@ -141,7 +153,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             border: 1px solid var(--border-color);
             transition: left 0.3s ease;
         }
@@ -162,7 +174,7 @@
             font-size: 1.4rem;
             margin: 0;
         }
-        
+
         /* General Controls Styling */
         button {
             background-color: var(--primary-color);
@@ -179,9 +191,9 @@
         button:hover {
             background-color: var(--secondary-color);
         }
-        
+
         button.secondary {
-             background-color: #6c757d;
+            background-color: #6c757d;
         }
 
         button.secondary:hover {
@@ -226,17 +238,19 @@
             font-size: 0.85rem;
             font-weight: 500;
         }
-        
-        .checkbox-group label, .radio-group label {
+
+        .checkbox-group label,
+        .radio-group label {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             font-weight: normal;
         }
-        
+
         /* Modal Styles */
         .modal {
-            display: none; /* Hidden by default */
+            display: none;
+            /* Hidden by default */
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -255,13 +269,13 @@
             border-radius: 8px;
             width: 80%;
             max-width: 700px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
             gap: 1rem;
             position: relative;
         }
-        
+
         .modal-content h2 {
             margin-top: 0;
             color: var(--secondary-color);
@@ -273,7 +287,7 @@
             gap: 0.5rem;
             margin-top: 1rem;
         }
-        
+
         .close-button {
             color: #aaa;
             position: absolute;
@@ -293,8 +307,10 @@
 
         /* Map and Chart Containers */
         #map {
-            aspect-ratio: 2 / 1; /* Width:Height = 2:1 (height is 50% of width) */
-            width: 100%; /* Or any other width value */
+            aspect-ratio: 2 / 1;
+            /* Width:Height = 2:1 (height is 50% of width) */
+            width: 100%;
+            /* Or any other width value */
             border-radius: 6px;
             border: 1px solid var(--border-color);
         }
@@ -304,7 +320,7 @@
             padding: 0.3rem 0.6rem;
             margin: 0 4px 8px 0;
         }
-        
+
         /* Tab container styles */
         .tab-buttons {
             border-bottom: 2px solid var(--border-color);
@@ -342,30 +358,35 @@
         .tab-content.active {
             display: block;
         }
-        
+
         /* NEW: Map Legend Styles */
         .map-legend-container {
             position: absolute;
-            bottom: 80px; /* Position above map buttons */
+            bottom: 80px;
+            /* Position above map buttons */
             right: 20px;
-            z-index: 1000; /* Ensure it's on top of the map */
+            z-index: 1000;
+            /* Ensure it's on top of the map */
             background: rgba(255, 255, 255, 0.85);
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
             max-height: 200px;
             overflow-y: auto;
         }
+
         .map-legend-container h4 {
             margin: 0 0 5px 0;
             text-align: center;
         }
+
         .legend-item {
             display: flex;
             align-items: center;
             margin-bottom: 5px;
         }
+
         .legend-item img {
             width: 18px;
             height: 18px;
@@ -374,50 +395,57 @@
 
 
         .scatter-chart-wrapper {
-    position: relative;
-    width: 100%;
-    height: 400px; /* Set a fixed height or use min-height */
-    flex: 1; /* If using flexbox */
-}
+            position: relative;
+            width: 100%;
+            height: 400px;
+            /* Set a fixed height or use min-height */
+            flex: 1;
+            /* If using flexbox */
+        }
 
-.scatter-chart-wrapper canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
+        .scatter-chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
 
-.scatter-flex-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-                .scatter-flex-container {
+        .scatter-flex-container {
             display: flex;
             flex-wrap: wrap;
-/*            gap: 1rem; /* Adds space between charts */
+            gap: 20px;
+        }
+
+        .scatter-flex-container {
+            display: flex;
+            flex-wrap: wrap;
+            /*            gap: 1rem; /* Adds space between charts */
         }
 
         .scatter-chart-wrapper {
-            flex: 1 1 100%; /* Default to full width on small screens */
+            flex: 1 1 100%;
+            /* Default to full width on small screens */
             /*flex-grow: 0; This prevents items from growing to fill space */
-/*            flex-shrink: 0;*/
-            min-width: 140px; /* Prevents charts from becoming too small */
-/*            height: 300px; /* Crucial: Gives the container a height */
-            position: relative; /* Required for Chart.js responsiveness */
+            /*            flex-shrink: 0;*/
+            min-width: 140px;
+            /* Prevents charts from becoming too small */
+            /*            height: 300px; /* Crucial: Gives the container a height */
+            position: relative;
+            /* Required for Chart.js responsiveness */
         }
 
 
         /* Media queries for responsive columns */
         @media (min-width: 768px) {
             .scatter-chart-wrapper {
-                flex-basis: 24%; /* 4 columns on medium screens */
-/*                flex-basis: 48%; /* 2 columns on medium screens */
+                flex-basis: 24%;
+                /* 4 columns on medium screens */
+                /*                flex-basis: 48%; /* 2 columns on medium screens */
             }
         }
 
         @media (min-width: 1200px) {
             .scatter-chart-wrapper {
-                flex-basis: 23%; /* 4 columns on large screens */
+                flex-basis: 23%;
+                /* 4 columns on large screens */
             }
         }
 
@@ -425,173 +453,193 @@
             padding: 6px 8px;
             font: 14px/16px Arial, Helvetica, sans-serif;
             background: white;
-            background: rgba(255,255,255,0.8);
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
             border-radius: 5px;
-            }
+        }
+
         .legend i {
             width: 18px;
             height: 18px;
             float: left;
             margin-right: 8px;
             opacity: 0.7;
-            }
+        }
+
         .legend.circle-legend-item {
-                display: flex;
-                align-items: center;
-                margin-bottom: 4px;
-            }
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
 
-.output-area.fixed-map {
-    display: flex;
-    flex-direction: column;
-    height: 40%; /* Important: Ensure the container has a defined height */
-    overflow-y: hidden; /* Prevent the main area from scrolling */
-}
+        .output-area.fixed-map {
+            display: flex;
+            flex-direction: column;
+            height: 40%;
+            /* Important: Ensure the container has a defined height */
+            overflow-y: hidden;
+            /* Prevent the main area from scrolling */
+        }
 
-.fixed-map-container {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background-color: var(--background-color);
-    padding-bottom: 1.5rem;
-}
+        .fixed-map-container {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: var(--background-color);
+            padding-bottom: 1.5rem;
+        }
 
-.scrollable-charts-container {
-    flex-grow: 1; /* This makes the container fill the remaining space */
-    overflow-y: auto; /* This adds the scrollbar */
-    padding-top: 1.5rem;
-}        
-        
-/* Ensure map containers render properly 
+        .scrollable-charts-container {
+            flex-grow: 1;
+            /* This makes the container fill the remaining space */
+            overflow-y: auto;
+            /* This adds the scrollbar */
+            padding-top: 1.5rem;
+        }
+
+        /* Ensure map containers render properly 
 div[id$="-contaminant-map"], div[id^="smallmap-"] {
     position: relative !important;
     display: block !important;
     overflow: hidden !important;
 }*/
 
-/* Force Leaflet containers to take full space */
-.leaflet-container {
-    width: 100% !important;
-    min-height: 90% !important;
-}
+        /* Force Leaflet containers to take full space */
+        .leaflet-container {
+            width: 100% !important;
+            min-height: 90% !important;
+        }
 
-/* Force Leaflet normal map containers to take half height */
-.map-container-original {
-    width: 100% !important;
-    min-height: 50% !important;
-}
+        /* Force Leaflet normal map containers to take half height */
+        .map-container-original {
+            width: 100% !important;
+            min-height: 50% !important;
+        }
 
-/* Ensure tiles render in correct position */
-.leaflet-map-pane {
-    left: 0 !important;
-    top: 0 !important;
-}
+        /* Ensure tiles render in correct position */
+        .leaflet-map-pane {
+            left: 0 !important;
+            top: 0 !important;
+        }
 
-/*div[id$="contaminant-map"], div[id^="smallmap-"] {
+        /*div[id$="contaminant-map"], div[id^="smallmap-"] {
     position: relative;
 }*/
 
-/*
+        /*
 .leaflet-container {
     position: relative;
     outline: 0;
 }*/
 
-.small-map-wrapper {
-    min-height: 280px !important;
-    min-width: 250px !important;
-    display: block !important;
-}
+        .small-map-wrapper {
+            min-height: 280px !important;
+            min-width: 250px !important;
+            display: block !important;
+        }
 
-div[id^="smallmap-"] {
-    display: block !important;
-    width: 100% !important;
-    height: calc(100% - 50px) !important;
-    min-height: 200px !important;
-}
+        div[id^="smallmap-"] {
+            display: block !important;
+            width: 100% !important;
+            height: calc(100% - 50px) !important;
+            min-height: 200px !important;
+        }
 
-div[id^="largemap-"] {
-    display: block !important;
-    width: 100% !important;
-    height: calc(100% - 50px) !important;
-    min-height: 700px !important;
-}
+        div[id^="largemap-"] {
+            display: block !important;
+            width: 100% !important;
+            height: calc(100% - 50px) !important;
+            min-height: 700px !important;
+        }
 
-#largeContaminantMapId {
-    height: 500px; /* Or whatever height you need */
-    width: 100%;
-}
+        #largeContaminantMapId {
+            height: 500px;
+            /* Or whatever height you need */
+            width: 100%;
+        }
 
-.collapsible-legend {
-    cursor: pointer;
-}
+        .collapsible-legend {
+            cursor: pointer;
+        }
 
-.collapsible-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out; /* Adjust the duration as needed */
-}
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            /* Adjust the duration as needed */
+        }
 
-.collapsible-content.show-content {
-    max-height: 750px; /* Use a value larger than your content will ever be */
-}
+        .collapsible-content.show-content {
+            max-height: 750px;
+            /* Use a value larger than your content will ever be */
+        }
 
-/* Make the app container take up the full viewport height */
-.app-container {
-    display: flex; /* Use flexbox to align children */
-    height: 100vh; /* Set height to 100% of the viewport height */
-}
+        /* Make the app container take up the full viewport height */
+        .app-container {
+            display: flex;
+            /* Use flexbox to align children */
+            height: 100vh;
+            /* Set height to 100% of the viewport height */
+        }
 
-/* Make the main content area flexible */
-.output-area {
-    flex-grow: 1; /* This will make the main content area take up the remaining space */
-    display: flex;
-    flex-direction: column;
-}
+        /* Make the main content area flexible */
+        .output-area {
+            flex-grow: 1;
+            /* This will make the main content area take up the remaining space */
+            display: flex;
+            flex-direction: column;
+        }
 
-/* Ensure the sidebar scrolls if its content overflows */
-.controls-sidebar {
-    overflow-y: auto; /* Enable vertical scrolling */
-    /* Other sidebar styles (width, etc.) go here */
-}
+        /* Ensure the sidebar scrolls if its content overflows */
+        .controls-sidebar {
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+            /* Other sidebar styles (width, etc.) go here */
+        }
 
-/* Add this new class for horizontal layouts */
-.horizontal-group {
-    flex-direction: row;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px; /* Adds space between items */
-    align-items: center; /* Vertically aligns elements */
-}
+        /* Add this new class for horizontal layouts */
+        .horizontal-group {
+            flex-direction: row;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            /* Adds space between items */
+            align-items: center;
+            /* Vertically aligns elements */
+        }
 
 
-.input-group {
-    display: flex;
-    flex-direction: row; /* Change to row to align items horizontally */
-    flex-wrap: wrap; /* Allows items to wrap onto a new line if the container is too narrow */
-    gap: 15px; /* Adds horizontal space between the elements */
-    align-items: center; /* Vertically aligns the labels and inputs */
-    margin-bottom: 15px; /* Adds space between lines */
-}
+        .input-group {
+            display: flex;
+            flex-direction: row;
+            /* Change to row to align items horizontally */
+            flex-wrap: wrap;
+            /* Allows items to wrap onto a new line if the container is too narrow */
+            gap: 15px;
+            /* Adds horizontal space between the elements */
+            align-items: center;
+            /* Vertically aligns the labels and inputs */
+            margin-bottom: 15px;
+            /* Adds space between lines */
+        }
 
-.input-line {
-    /* Make this container a flexbox container */
-    display: flex;
-    /* This aligns the items horizontally */
-    flex-wrap: wrap; 
-    /* This adds space between the items */
-    gap: 15px;
-    /* This vertically centers the labels and inputs */
-    align-items: center;
-    /* Adds vertical space between the lines of inputs */
-    margin-bottom: 15px; 
-}
+        .input-line {
+            /* Make this container a flexbox container */
+            display: flex;
+            /* This aligns the items horizontally */
+            flex-wrap: wrap;
+            /* This adds space between the items */
+            gap: 15px;
+            /* This vertically centers the labels and inputs */
+            align-items: center;
+            /* Adds vertical space between the lines of inputs */
+            margin-bottom: 15px;
+        }
 
-.input-line label {
-    white-space: nowrap; /* Prevents the label text from wrapping */
-}
-
+        .input-line label {
+            white-space: nowrap;
+            /* Prevents the label text from wrapping */
+        }
     </style>
 </head>
 
@@ -599,7 +647,7 @@ div[id^="largemap-"] {
     <div id="everything" style="display: none;"></div>
 
     <header>
-        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v2.20260409</small></h1>
+        <h1>Sediment Data Explorer <small style="font-weight: normal; opacity: 0.8;">v2.20260929</small></h1>
         <div class="header-actions">
             <button onclick="updateChart()">(Re)Plot Chart</button>
             <button onclick="exportCharts()" class="secondary">Export Chart</button>
@@ -608,160 +656,171 @@ div[id^="largemap-"] {
         </div>
     </header>
 
-<div class="app-container">
-    <aside id="controls-sidebar" class="controls-sidebar collapsed">
-        <fieldset>
-            <legend class="collapsible-legend">Data Sources</legend>
-            <div class="collapsible-content">
-                <div class="input-group">
-                    <label for="fileInput">MMO Templates (Local Files)</label>
-                    <input type="file" id="fileInput" multiple onchange="importData()">
+    <div class="app-container">
+        <aside id="controls-sidebar" class="controls-sidebar collapsed">
+            <fieldset>
+                <legend class="collapsible-legend">Data Sources</legend>
+                <div class="collapsible-content">
+                    <div class="input-group">
+                        <label for="fileInput">MMO Templates (Local Files)</label>
+                        <input type="file" id="fileInput" multiple onchange="importData()">
+                    </div>
+                    <div class="input-group">
+                        <label for="urlInput">MMO Templates (URLs)</label>
+                        <input type="text" id="urlInput" placeholder="Enter comma-separated URLs"
+                            onchange="importData()">
+                    </div>
+                    <button onclick="importData()">Import MMO Data</button>
+                    <hr>
+                    <button onclick="openCEFASSelection()">Select CEFAS Data</button>
+                    <button onclick="openAdditionalInfoModal()">Additional Information</button>
                 </div>
-                <div class="input-group">
-                    <label for="urlInput">MMO Templates (URLs)</label>
-                    <input type="text" id="urlInput" placeholder="Enter comma-separated URLs" onchange="importData()">
-                </div>
-                <button onclick="importData()">Import MMO Data</button>
-                <hr>
-                <button onclick="openCEFASSelection()">Select CEFAS Data</button>
-                <button onclick="openAdditionalInfoModal()">Additional Information</button>
-            </div>
-        </fieldset>
+            </fieldset>
 
-        <fieldset>
-            <legend class="collapsible-legend">Save / Load State</legend>
-            <div class="collapsible-content">
-                <div class="input-group">
-                    <label for="fileSave">Save Snapshot</label>
-                    <input type="text" id="fileSave" placeholder="Enter file name to save" onchange="saveSnapShot()">
+            <fieldset>
+                <legend class="collapsible-legend">Save / Load State</legend>
+                <div class="collapsible-content">
+                    <div class="input-group">
+                        <label for="fileSave">Save Snapshot</label>
+                        <input type="text" id="fileSave" placeholder="Enter file name to save"
+                            onchange="saveSnapShot()">
+                    </div>
+                    <div class="input-group">
+                        <label for="fileLoad">Load Snapshot from File</label>
+                        <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
+                    </div>
+                    <div class="input-group">
+                        <label for="urlLoad">Load Snapshot from URL</label>
+                        <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label for="fileLoad">Load Snapshot from File</label>
-                    <input type="file" id="fileLoad" onchange="loadSnapShotFile()">
-                </div>
-                <div class="input-group">
-                    <label for="urlLoad">Load Snapshot from URL</label>
-                    <input type="text" id="urlLoad" placeholder="Enter URL to load" onchange="loadSnapShotURL()">
-                </div>
-            </div>
-        </fieldset>
+            </fieldset>
 
-        <fieldset>
-            <legend class="collapsible-legend">Selection Tools</legend>
-            <div class="collapsible-content">
-                <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
-                <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
-                <button onclick="openChemicalSelection()">Select Chemicals</button>
-                <button onclick="clearSelections()" class="secondary">Clear All Selections</button>
-            </div>
-        </fieldset>
+            <fieldset>
+                <legend class="collapsible-legend">Selection Tools</legend>
+                <div class="collapsible-content">
+                    <button onclick="openDatasetSelection(sampleMeasurements)">Select Datasets</button>
+                    <button onclick="openSampleSelection(sampleMeasurements)">Select Samples</button>
+                    <button onclick="openChemicalSelection()">Select Chemicals</button>
+                    <button onclick="clearSelections()" class="secondary">Clear All Selections</button>
+                </div>
+            </fieldset>
 
-        <fieldset>
-            <legend class="collapsible-legend">Chart Configuration</legend>
-            <div class="collapsible-content">
-                <p><strong>Sheetnames to Include:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
-                    <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
-                    <label><input type="checkbox" id="pahdata" checked> PAH data</label>
-                    <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
-                    <label><input type="checkbox" id="bdedata" checked> BDE data</label>
-                    <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
-                    <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
+            <fieldset>
+                <legend class="collapsible-legend">Chart Configuration</legend>
+                <div class="collapsible-content">
+                    <p><strong>Sheetnames to Include:</strong></p>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="physicaldata" checked> Physical data</label>
+                        <label><input type="checkbox" id="tracemetaldata" checked> Trace metal data</label>
+                        <label><input type="checkbox" id="pahdata" checked> PAH data</label>
+                        <label><input type="checkbox" id="pcbdata" checked> PCB data</label>
+                        <label><input type="checkbox" id="bdedata" checked> BDE data</label>
+                        <label><input type="checkbox" id="organotinsdata" checked> Organotins data</label>
+                        <label><input type="checkbox" id="organochlorinedata" checked> Organochlorine data</label>
+                    </div>
+                    <hr>
+                    <p><strong>Physical Chart Types:</strong></p>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="splitbyweight" checked> Split by weight</label>
+                        <label><input type="checkbox" id="splitbyarea" checked> Split by area</label>
+                        <label><input type="checkbox" id="totalsolidsandtotalcarbon" checked> Total solids and total
+                            carbon</label>
+                        <label><input type="checkbox" id="cumulative" checked> Cumulative</label>
+                    </div>
+                    <button onclick="openParticleSizeModal()">Small particle details</button>
+                    <p><strong>Chemical Chart Types:</strong></p>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
+                        <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
+                        <label><input type="checkbox" id="correlationplots"> Correlation plots</label>
+                        <label><input type="checkbox" id="pcaanalysis"> PCA analysis</label>
+                        <label><input type="checkbox" id="mapgrid"> Map grid</label>
+                        <button onclick="openAdditionalChartsModal()">Additional Charts</button>
+                        <button onclick="openPcaOptionsModal()">PCA Options</button>
+                        <hr>
+                    </div>
+                    <p><strong>Relations:</strong></p>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="relationareadensity"> Area density</label>
+                        <label><input type="checkbox" id="relationhc"> Total hydrocarbons</label>
+                        <label><input type="checkbox" id="relationtotalsolids"> Total solids</label>
+                        <label><input type="checkbox" id="relationorganiccarbon"> Organic Carbon</label>
+                    </div>
                 </div>
-                <hr>
-                <p><strong>Physical Chart Types:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="splitbyweight" checked> Split by weight</label>
-                    <label><input type="checkbox" id="splitbyarea" checked> Split by area</label>
-                    <label><input type="checkbox" id="totalsolidsandtotalcarbon" checked> Total solids and total carbon</label>
-                    <label><input type="checkbox" id="cumulative" checked> Cumulative</label>
-                </div>
-                <button onclick="openParticleSizeModal()">Small particle details</button>
-                <p><strong>Chemical Chart Types:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="samplegroup" checked> Group by sample</label>
-                    <label><input type="checkbox" id="chemicalgroup" checked> Group by chemical</label>
-                    <label><input type="checkbox" id="correlationplots"> Correlation plots</label>
-                    <label><input type="checkbox" id="pcaanalysis"> PCA analysis</label>
-                    <label><input type="checkbox" id="mapgrid"> Map grid</label>
-                <button onclick="openAdditionalChartsModal()">Additional Charts</button>
-                <button onclick="openPcaOptionsModal()">PCA Options</button>
-                <hr>
-                </div>
-                <p><strong>Relations:</strong></p>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="relationareadensity"> Area density</label>
-                    <label><input type="checkbox" id="relationhc"> Total hydrocarbons</label>
-                    <label><input type="checkbox" id="relationtotalsolids"> Total solids</label>
-                    <label><input type="checkbox" id="relationorganiccarbon"> Organic Carbon</label>
-                </div>
-            </div>
-        </fieldset>
+            </fieldset>
 
-        <fieldset>
-            <legend class="collapsible-legend">Chart Customisation</legend>
-            <div class="collapsible-content">
-                <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
-                <button onclick="openSampleLabels()">Enter Sample Labels</button>
-                <button onclick="openChartModifiersModal()">Chart Modifiers</button>
-                <button onclick="openMapModifiersModal()">Map Modifiers</button>
-                <hr>
-                <div class="input-group">
-                    <label for="primary-sorting-select">Primary Sort:</label>
-                    <select id="primary-sorting-select"></select>
+            <fieldset>
+                <legend class="collapsible-legend">Chart Customisation</legend>
+                <div class="collapsible-content">
+                    <button onclick="openDatasetLabels()">Enter Dataset Labels</button>
+                    <button onclick="openSampleLabels()">Enter Sample Labels</button>
+                    <button onclick="openChartModifiersModal()">Chart Modifiers</button>
+                    <button onclick="openMapModifiersModal()">Map Modifiers</button>
+                    <hr>
+                    <div class="input-group">
+                        <label for="primary-sorting-select">Primary Sort:</label>
+                        <select id="primary-sorting-select"></select>
+                    </div>
+                    <div class="input-group">
+                        <label for="secondary-sorting-select">Secondary Sort:</label>
+                        <select id="secondary-sorting-select"></select>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label for="secondary-sorting-select">Secondary Sort:</label>
-                    <select id="secondary-sorting-select"></select>
-                </div>
-            </div>
-        </fieldset>
-    </aside>
+            </fieldset>
+        </aside>
 
-    <main class="output-area">
-        <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
+        <main class="output-area">
+            <button id="sidebar-toggle" onclick="toggleSidebar()">&#9654;</button>
 
-        <div class="fixed-header-container">
-            <div id="sedDredgeData" style="display: none;"></div>
-            <div id="fileDisplay"></div>
-            <div id="sample-info-table-container"></div>
-            <div id="everything-maps" style="display: none; margin-top: 1rem;">
-                <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
-                    <button onclick="toggleFileDisplay()">Toggle File Display</button>
-                    <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
-                    <button id="toggleAreaTooltipsBtn" onclick="toggleAllAreaTooltips()">Show All Area Names</button>
-                    <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
-                    <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
+            <div class="fixed-header-container">
+                <div id="sedDredgeData" style="display: none;"></div>
+                <div id="fileDisplay"></div>
+                <div id="sample-info-table-container"></div>
+                <div id="everything-maps" style="display: none; margin-top: 1rem;">
+                    <div style="text-align: center; margin: 10px 0; display: flex; justify-content: center; gap: 10px;">
+                        <button onclick="toggleFileDisplay()">Toggle File Display</button>
+                        <button id="toggleTooltipsBtn" onclick="toggleAllTooltips()">Show All Sample Names</button>
+                        <button id="toggleAreaTooltipsBtn" onclick="toggleAllAreaTooltips()">Show All Area
+                            Names</button>
+                        <button onclick="openRadarSelectionModal()">Radar Plot Options</button>
+                        <button id="toggleMapLegendBtn" onclick="toggleMapLegend()">Show Legend</button>
+                    </div>
+                    <div id="map" class="map-container-original"></div>
+                    <div id="map-legend" class="map-legend-container" style="display: none;">
+                        <h4>Legend</h4>
+                    </div>
                 </div>
-                <div id="map" class="map-container-original"></div>
-                <div id="map-legend" class="map-legend-container" style="display: none;">
-                    <h4>Legend</h4>
+
+                <div id="chart-tab-buttons" class="tab-buttons"></div>
+            </div>
+            <div class="scrollable-content">
+                <div id="charts-and-tables-container">
+                    <div id="chartContainer"></div>
+                    <div id="chartsForMapContainer"></div>
                 </div>
             </div>
-            
-            <div id="chart-tab-buttons" class="tab-buttons"></div>
-        </div>
-        <div class="scrollable-content">
-            <div id="charts-and-tables-container">
-                <div id="chartContainer"></div>
-                <div id="chartsForMapContainer"></div>
-            </div>
-        </div>
-    </main>
-</div>
+        </main>
+    </div>
 
     <!-- Modals -->
     <div id="sedDataModal" class="modal">
         <div class="modal-content">
             <h2>Select CEFAS Data Sets</h2>
-            <div class="input-group"><label for="fileInputDD">CEFAS dredge data file</label><input type="file" id="fileInputDD" onchange="importDredgeData()"></div>
-            <div class="input-group"><label for="urlInputDD">CEFAS dredge data URL</label><input type="text" id="urlInputDD" placeholder="URL" onchange="importDredgeData()"></div>
-            <div class="input-group"><label for="mlApplications">MLA IDs (comma-separated)</label><input type="text" id="mlApplications" placeholder="e.g., MLA/2023/00123"></div>
+            <div class="input-group"><label for="fileInputDD">CEFAS dredge data file</label><input type="file"
+                    id="fileInputDD" onchange="importDredgeData()"></div>
+            <div class="input-group"><label for="urlInputDD">CEFAS dredge data URL</label><input type="text"
+                    id="urlInputDD" placeholder="URL" onchange="importDredgeData()"></div>
+            <div class="input-group"><label for="mlApplications">MLA IDs (comma-separated)</label><input type="text"
+                    id="mlApplications" placeholder="e.g., MLA/2023/00123"></div>
             <hr>
-            <div class="input-group"><label>Search by Area</label><input type="number" id="centreLatitude" placeholder="Center Latitude"><input type="number" id="centreLongitude" placeholder="Center Longitude"><input type="number" id="radius" placeholder="Radius (m)"></div>
-            <div class="input-group"><label>Search by Date</label><input type="date" id="startDate"><input type="date" id="finishDate"></div>
-            <div class="modal-footer"><button onclick="closeCEFASSearch()">Search CEFAS Selection</button><button onclick="closeCEFASSelection()" class="secondary">Finish & Close</button></div>
+            <div class="input-group"><label>Search by Area</label><input type="number" id="centreLatitude"
+                    placeholder="Center Latitude"><input type="number" id="centreLongitude"
+                    placeholder="Center Longitude"><input type="number" id="radius" placeholder="Radius (m)"></div>
+            <div class="input-group"><label>Search by Date</label><input type="date" id="startDate"><input type="date"
+                    id="finishDate"></div>
+            <div class="modal-footer"><button onclick="closeCEFASSearch()">Search CEFAS Selection</button><button
+                    onclick="closeCEFASSelection()" class="secondary">Finish & Close</button></div>
         </div>
     </div>
     <div id="datasetModal" class="modal">
@@ -797,13 +856,16 @@ div[id^="largemap-"] {
                 <label for="areaSelect">Filter by Area:</label>
                 <select id="areaSelect" class="full-width-select" onchange="applyAreaFilter()">
                     <option value="">-- Select an Area --</option>
-                    </select>
+                </select>
             </div>
 
             <div class="horizontal-group">
-                <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat" placeholder="Leave blank for location">
-                <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon" placeholder="Leave blank for location">
-                <label for="centreDist">Distance (m):</label><input type="number" id="centreDist" placeholder="Select 1 location">
+                <label for="centreLat">Centre latitude:</label><input type="number" id="centreLat"
+                    placeholder="Leave blank for location">
+                <label for="centreLon">Centre longitude:</label><input type="number" id="centreLon"
+                    placeholder="Leave blank for location">
+                <label for="centreDist">Distance (m):</label><input type="number" id="centreDist"
+                    placeholder="Select 1 location">
             </div>
 
             <div class="horizontal-group">
@@ -815,17 +877,22 @@ div[id^="largemap-"] {
                 <label for="containsText">Filter by name (contains text):</label><input type="text" id="containsText">
             </div>
 
-            <div>Must have measurement of - <input type="checkbox" id="tracemetaldatasample"><label for="tracemetaldatasample">Trace metal data</label>
+            <div>Must have measurement of - <input type="checkbox" id="tracemetaldatasample"><label
+                    for="tracemetaldatasample">Trace metal data</label>
                 <input type="checkbox" id="pahdatasample"><label for="pahdatasample">PAH data</label>
                 <input type="checkbox" id="pcbdatasample"><label for="pcbdatasample">PCB data</label>
                 <input type="checkbox" id="bdedatasample"><label for="bdedatasample">BDE data</label>
-                <input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins data</label>
-                <input type="checkbox" id="organochlorinedatasample"><label for="organochlorinedatasample">Organochlorine data</label>
+                <input type="checkbox" id="organotinsdatasample"><label for="organotinsdatasample">Organotins
+                    data</label>
+                <input type="checkbox" id="organochlorinedatasample"><label
+                    for="organochlorinedatasample">Organochlorine data</label>
                 <input type="checkbox" id="physicaldatasample"><label for="physicaldatasample">Physical data</label>
             </div>
             <button onclick="applySampleFilter()">Apply Filter</button>
             <hr>
-            <div id="sampleCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;"></div>
+            <div id="sampleCheckboxes"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;">
+            </div>
             <div class="modal-footer">
                 <button onclick="cancelSampleSelection()" class="secondary">Cancel</button>
                 <button onclick="closeSampleSelection()">Confirm Selections and Close</button>
@@ -835,13 +902,18 @@ div[id^="largemap-"] {
     <div id="chemicalModal" class="modal">
         <div class="modal-content">
             <h2>Select Chemicals</h2>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button onclick="flipChemicalSelections(true)">Select All</button><button onclick="flipChemicalSelections(false)">Select None</button></div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;"><button
+                    onclick="flipChemicalSelections(true)">Select All</button><button
+                    onclick="flipChemicalSelections(false)">Select None</button></div>
             <hr>
             <p><strong>Filter Chemicals:</strong></p>
-            <div class="input-group"><label for="containsTextChemical">Filter by name (contains text):</label><input type="text" id="containsTextChemical"></div>
+            <div class="input-group"><label for="containsTextChemical">Filter by name (contains text):</label><input
+                    type="text" id="containsTextChemical"></div>
             <button onclick="applyChemicalFilter()">Apply Filter</button>
             <hr>
-            <div id="chemicalCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;"></div>
+            <div id="chemicalCheckboxes"
+                style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px;">
+            </div>
             <div class="modal-footer"><button onclick="closeChemicalSelection()">Confirm Selection</button></div>
         </div>
     </div>
@@ -849,25 +921,36 @@ div[id^="largemap-"] {
         <div class="modal-content">
             <h2>Enter Alternate Labels for Datasets</h2>
             <form id="datasetLabelsForm"></form>
-            <div class="modal-footer"><button onclick="updateDatasetLabels()">Confirm Labels</button><button onclick="closeDatasetLabels()" class="secondary">Cancel</button></div>
+            <div class="modal-footer"><button onclick="updateDatasetLabels()">Confirm Labels</button><button
+                    onclick="closeDatasetLabels()" class="secondary">Cancel</button></div>
         </div>
     </div>
     <div id="sampleLabels" class="modal">
         <div class="modal-content">
             <h2>Enter Alternate Labels for Samples</h2>
             <form id="sampleLabelsForm"></form>
-            <div class="modal-footer"><button onclick="updateSampleLabels()">Confirm Labels</button><button onclick="closeSampleLabels()" class="secondary">Cancel</button></div>
+            <div class="modal-footer"><button onclick="updateSampleLabels()">Confirm Labels</button><button
+                    onclick="closeSampleLabels()" class="secondary">Cancel</button></div>
         </div>
     </div>
     <div id="additionalInfoModal" class="modal">
         <div class="modal-content">
             <h2>Additional Information Files</h2>
-            <div class="input-group"><label for="fileLocations">Location co-ordinate files</label><input type="file" id="fileLocations" multiple><input type="text" id="urlLocations" placeholder="Enter comma-separated URLs"><button onclick="importLocations()">Import Locations</button></div>
+            <div class="input-group"><label for="fileLocations">Location co-ordinate files</label><input type="file"
+                    id="fileLocations" multiple><input type="text" id="urlLocations"
+                    placeholder="Enter comma-separated URLs"><button onclick="importLocations()">Import
+                    Locations</button></div>
             <hr>
-            <div class="input-group"><label for="fileShapes">Shape files (kml)</label><input type="file" id="fileShapes" multiple><input type="text" id="urlShapes" placeholder="Enter comma-separated URLs"><button onclick="importShapes()">Import shape files</button></div>
+            <div class="input-group"><label for="fileShapes">Shape files (kml)</label><input type="file" id="fileShapes"
+                    multiple><input type="text" id="urlShapes" placeholder="Enter comma-separated URLs"><button
+                    onclick="importShapes()">Import shape files</button></div>
             <hr>
-            <div class="input-group"><label for="fileChemInfo">ChemInfo files</label><input type="file" id="fileChemInfo" multiple><input type="text" id="urlChemInfo" placeholder="Enter comma-separated URLs"><button onclick="importChemInfo()">Import Chem Info</button></div>
-            <div class="modal-footer"><button onclick="closeAdditionalInfoModal()" class="secondary">Close</button></div>
+            <div class="input-group"><label for="fileChemInfo">ChemInfo files</label><input type="file"
+                    id="fileChemInfo" multiple><input type="text" id="urlChemInfo"
+                    placeholder="Enter comma-separated URLs"><button onclick="importChemInfo()">Import Chem
+                    Info</button></div>
+            <div class="modal-footer"><button onclick="closeAdditionalInfoModal()" class="secondary">Close</button>
+            </div>
         </div>
     </div>
     <div id="chartModifiersModal" class="modal">
@@ -882,16 +965,19 @@ div[id^="largemap-"] {
                 <label><input type="checkbox" id="useTabs" checked> Display charts in tabs</label>
             </div>
             <div class="checkbox-group">
-                <label><input type="checkbox" id="fixMap" onchange="toggleMapPosition()"> Fix map at top when scrolling</label>
+                <label><input type="checkbox" id="fixMap" onchange="toggleMapPosition()"> Fix map at top when
+                    scrolling</label>
             </div>
 
-            <div class="modal-footer"><button onclick="closeChartModifiersModal()" class="secondary">Close</button></div>
+            <div class="modal-footer"><button onclick="closeChartModifiersModal()" class="secondary">Close</button>
+            </div>
         </div>
     </div>
     <div id="mapModifiersModal" class="modal">
         <div class="modal-content">
             <h2>Map Modifiers</h2>
-            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling" placeholder="1" step="0.1" value="1">
+            <label for="markerScaling">Marker Scaling Factor:</label><input type="number" id="markerScaling"
+                placeholder="0.1" step="0.1" value="0.1">
             <div class="modal-footer"><button onclick="closeMapModifiersModal()" class="secondary">Close</button></div>
         </div>
     </div>
@@ -907,7 +993,8 @@ div[id^="largemap-"] {
                 <label><input type="checkbox" id="simpleratios" checked> PAH - Simple Ratios</label>
                 <label><input type="checkbox" id="congenertest" checked> PCB - Congener test</label>
             </div>
-            <div class="modal-footer"><button onclick="closeAdditionalChartsModal()" class="secondary">Close</button></div>
+            <div class="modal-footer"><button onclick="closeAdditionalChartsModal()" class="secondary">Close</button>
+            </div>
         </div>
     </div>
     <div id="pcaOptionsModal" class="modal">
@@ -928,8 +1015,10 @@ div[id^="largemap-"] {
         <div class="modal-content">
             <h2>Particle Size Details</h2>
             <p>Resuspension by overflow % or particle size (µm)</p>
-            <div class="input-group"><label for="overflowpercent">Percentage overflow:</label><input type="number" id="overflowpercent" placeholder="0 set by pt size"></div>
-            <div class="input-group"><label for="resuspensionsize">Maximum resuspension size (µm):</label><input type="number" id="resuspensionsize" placeholder="0 set by overflow %"></div>
+            <div class="input-group"><label for="overflowpercent">Percentage overflow:</label><input type="number"
+                    id="overflowpercent" placeholder="0 set by pt size"></div>
+            <div class="input-group"><label for="resuspensionsize">Maximum resuspension size (µm):</label><input
+                    type="number" id="resuspensionsize" placeholder="0 set by overflow %"></div>
             <div class="modal-footer"><button onclick="closeParticleSizeModal()" class="secondary">Close</button></div>
         </div>
     </div>
@@ -944,7 +1033,7 @@ div[id^="largemap-"] {
             </div>
         </div>
     </div>
-    
+
     <script src="os-transform.js"></script>
     <script src="sdeDataUtilities.js"></script>
     <script src="sdeDredgeData.js"></script>
@@ -955,12 +1044,12 @@ div[id^="largemap-"] {
     <script src="sdeSelections.js"></script>
     <script src="sdeMaps.js"></script>
     <script src="sdeTables.js"></script>
-    
+
     <script>
         function toggleMap() {
             const mapContainer = document.getElementById('everything-maps');
             const button = document.getElementById('toggleMapBtn');
-            
+
             if (mapContainer.style.display === 'none') {
                 mapContainer.style.display = 'block';
                 button.textContent = 'Hide Map';
@@ -974,13 +1063,13 @@ div[id^="largemap-"] {
             const sidebar = document.getElementById('controls-sidebar');
             const toggleBtn = document.getElementById('sidebar-toggle');
             sidebar.classList.toggle('collapsed');
-            
+
             if (sidebar.classList.contains('collapsed')) {
                 toggleBtn.innerHTML = '&#9654;';
                 toggleBtn.style.left = '10px';
             } else {
                 toggleBtn.innerHTML = '&#9664;';
-                toggleBtn.style.left = '364px'; 
+                toggleBtn.style.left = '364px';
             }
         }
 
@@ -1009,8 +1098,8 @@ div[id^="largemap-"] {
                 setTimeout(() => {
                     const canvases = activeTabPanel.getElementsByTagName('canvas');
                     for (const canvas of canvases) {
-                        const chart = Chart.getChart(canvas); 
-                        
+                        const chart = Chart.getChart(canvas);
+
                         if (chart) {
                             chart.resize();
                         }
@@ -1043,8 +1132,8 @@ div[id^="largemap-"] {
                 const canvases = activeTabPanel.getElementsByTagName('canvas');
                 for (const canvas of canvases) {
                     // Use the built-in Chart.js method to get the instance directly from the canvas
-                    const chart = Chart.getChart(canvas); 
-                    
+                    const chart = Chart.getChart(canvas);
+
                     if (chart) {
                         chart.resize();
                         console.log(`Resized chart for canvas ${canvas.id}`);
@@ -1084,10 +1173,10 @@ div[id^="largemap-"] {
                     const chartId = canvas.id;
                     const instanceNo = parseInt(chartId.replace('chart', ''), 10);
                     // If a chart instance exists for this canvas, resize it.
-console .log(window.chartInstance);
+                    console.log(window.chartInstance);
                     if (window.chartInstance && window.chartInstance[instanceNo]) {
                         window.chartInstance[instanceNo].resize();
-    console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
+                        console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
                     } else {
                         console.warn(`No chart instance found for canvas ${chartId}`);
                     }
@@ -1121,11 +1210,11 @@ console .log(window.chartInstance);
                 for (const canvas of canvases) {
                     const chartId = canvas.id;
                     const instanceNo = parseInt(chartId.replace('chart', ''), 10);
-                    
+
                     // If a chart instance exists for this canvas, resize it.
                     if (window.chartInstance && window.chartInstance[instanceNo]) {
                         window.chartInstance[instanceNo].resize();
-console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
+                        console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
                     } else {
                         console.warn(`No chart instance found for canvas ${chartId}`);
                     }
@@ -1161,7 +1250,7 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
                 const chartId = canvas.id;
                 // Extract the instance number from the canvas ID (e.g., "chart5" -> 5)
                 const instanceNo = parseInt(chartId.replace('chart', ''), 10);
-                
+
                 // If a chart instance exists for this canvas, resize it.
                 if (chartInstance && chartInstance[instanceNo]) {
                     chartInstance[instanceNo].resize();
@@ -1200,7 +1289,7 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
         function openChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'block'; }
         function closeChartModifiersModal() { document.getElementById('chartModifiersModal').style.display = 'none'; }
         function openMapModifiersModal() { document.getElementById('mapModifiersModal').style.display = 'block'; }
-        function closeMapModifiersModal() { 
+        function closeMapModifiersModal() {
             document.getElementById('mapModifiersModal').style.display = 'none';
             markerScaling = parseFloat(document.getElementById('markerScaling').value) || 1;
         }
@@ -1214,7 +1303,7 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
         function openRadarSelectionModal() { document.getElementById('radarModal').style.display = 'block'; }
         function closeRadarSelectionModal() { document.getElementById('radarModal').style.display = 'none'; }
 
-        window.addEventListener('keydown', function(event) {
+        window.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 const radarModal = document.getElementById('radarModal');
                 if (radarModal && radarModal.style.display === 'block') {
@@ -1223,21 +1312,22 @@ console.log(`Resized chart instance ${instanceNo} for canvas ${chartId}`);
             }
         });
 
-        document.addEventListener("DOMContentLoaded", function() {
-    const legends = document.querySelectorAll(".collapsible-legend");
+        document.addEventListener("DOMContentLoaded", function () {
+            const legends = document.querySelectorAll(".collapsible-legend");
 
-    legends.forEach(legend => {
-        legend.addEventListener("click", function() {
-            // Find the immediate sibling which is the div containing the content
-            const content = this.nextElementSibling;
-            
-            // Toggle the 'show-content' class on the content div
-            if (content) {
-                content.classList.toggle("show-content");
-            }
+            legends.forEach(legend => {
+                legend.addEventListener("click", function () {
+                    // Find the immediate sibling which is the div containing the content
+                    const content = this.nextElementSibling;
+
+                    // Toggle the 'show-content' class on the content div
+                    if (content) {
+                        content.classList.toggle("show-content");
+                    }
+                });
+            });
         });
-    });
-});
     </script>
 </body>
+
 </html>
