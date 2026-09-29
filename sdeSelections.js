@@ -208,21 +208,17 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
                         if (!(chemicalType in selectedMeas[dateSampled])) {
                             selectedMeas[dateSampled][chemicalType] = {};
                             selectedMeas[dateSampled][chemicalType].chemicals = {};
-                            selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled][chemicalType]['Unit of measurement'];
+                            selectedMeas[dateSampled][chemicalType]['Unit of measurement'] = sampleMeasurements[dateSampled]?.[chemicalType]?.['Unit of measurement'];
                             if (chemicalType == 'PAH data') {
                                 // Just copy all common data even if only 1 PAH is selected
-                                if (sampleMeasurements[dateSampled][chemicalType].gorhamTest !== undefined) selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
-                                if (sampleMeasurements[dateSampled][chemicalType].total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
-                                if (sampleMeasurements[dateSampled][chemicalType].totalHC !== undefined) selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
-                                if (sampleMeasurements[dateSampled][chemicalType].totalHCUnit !== undefined) selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
+                                if (sampleMeasurements[dateSampled]?.[chemicalType]?.gorhamTest !== undefined) selectedMeas[dateSampled][chemicalType].gorhamTest = sampleMeasurements[dateSampled][chemicalType].gorhamTest;
+                                if (sampleMeasurements[dateSampled]?.[chemicalType]?.total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                if (sampleMeasurements[dateSampled]?.[chemicalType]?.totalHC !== undefined) selectedMeas[dateSampled][chemicalType].totalHC = sampleMeasurements[dateSampled][chemicalType].totalHC;
+                                if (sampleMeasurements[dateSampled]?.[chemicalType]?.totalHCUnit !== undefined) selectedMeas[dateSampled][chemicalType].totalHCUnit = sampleMeasurements[dateSampled][chemicalType].totalHCUnit;
                             }
                             if (chemicalType == 'PCB data') {
-                                //console.log('Create ', dateSampled, chemicalType,'Gorham Test');
-/*                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                selectedMeas[dateSampled][chemicalType].congenerTest[sample] = sampleMeasurements[dateSampled][chemicalType].congenerTest[sample];*/
-//                                selectedMeas[dateSampled][chemicalType].congenerTest = {};
-                                if (sampleMeasurements[dateSampled][chemicalType].congenerTest !== undefined) selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
-                                if (sampleMeasurements[dateSampled][chemicalType].total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
+                                if (sampleMeasurements[dateSampled]?.[chemicalType]?.congenerTest !== undefined) selectedMeas[dateSampled][chemicalType].congenerTest = sampleMeasurements[dateSampled][chemicalType].congenerTest;
+                                if (sampleMeasurements[dateSampled]?.[chemicalType]?.total !== undefined) selectedMeas[dateSampled][chemicalType].total = sampleMeasurements[dateSampled][chemicalType].total;
                             }
                         }
                         for (sample in selectedSampleInfo[dateSampled].position) {
@@ -245,7 +241,13 @@ function getSelectedChemicalSampleMeasurements(selectedChemicals) {
                                 selectedMeas[dateSampled]["Physical Data"].sizes = selectedSampleMeasurements[dateSampled]["Physical Data"].sizes;
                                 selectedMeas[dateSampled]["Physical Data"].samples = {};
                             }*/
-                            if (selectedSampleMeasurements[dateSampled]["Physical Data"]?.samples[sample] !== undefined) {
+                            if (selectedSampleMeasurements[dateSampled]["Physical Data"]?.samples?.[sample] !== undefined) {
+                                if (!selectedMeas[dateSampled]["Physical Data"]) {
+                                    selectedMeas[dateSampled]["Physical Data"] = { samples: {} };
+                                }
+                                if (!selectedMeas[dateSampled]["Physical Data"].samples) {
+                                    selectedMeas[dateSampled]["Physical Data"].samples = {};
+                                }
                                 selectedMeas[dateSampled]["Physical Data"].samples[sample] = selectedSampleMeasurements[dateSampled]["Physical Data"].samples[sample];
                             }
                         }
